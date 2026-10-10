@@ -1,8 +1,116 @@
 ---
-title: "Webhooks"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Webhooks
+description: "How to create, test, enable, rotate and delete a webhook, how to read its delivery history, how bb-sign retries and when it disables an endpoint on its own."
 product: sign
 audience: admin
+source: docs/api/webhooks.md
 ---
 
-Content under construction.
+import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { WEBHOOKS } from '../../../../facts/sign';
+
+**Who:** organization admin (platform admins too, from each organization's page). **Where:** Settings,
+"Webhooks" tab (`/settings?tab=webhooks`).
+
+"bb-sign posts a signed JSON payload to your URL when an event happens, so you do not have to poll
+for changes". This page is for the admin who sets it up and watches it. The code that verifies the
+signature is in [Webhooks for developers](/en/sign/developers/webhooks/).
+
+## Create a webhook
+
+<Steps>
+
+1. Press "New webhook".
+
+2. Enter the "Endpoint URL". "Must be HTTPS and reachable from the internet. We refuse private and
+   internal addresses". The check runs again on every delivery, not only at creation.
+
+3. Tick the "Events to receive". At least one is required: "Select at least one event".
+
+4. Press "New webhook". "Save this signing secret now" opens with the "Signing secret". "This is
+   the only time the secret will be shown. Use it to verify the signature on every delivery — a
+   receiver that does not verify will accept anything anyone sends it".
+
+</Steps>
+
+| Event | Label in the app | When |
+| --- | --- | --- |
+| `envelope.sent` | "Envelope sent" | The envelope went out to its signers |
+| `envelope.completed` | "Envelope completed" | Everyone signed |
+| `envelope.cancelled` | "Envelope cancelled" | Someone cancelled the envelope |
+| `envelope.expired` | "Envelope expired" | The envelope expired unsigned |
+| `signer.signed` | "Signer signed" | One signer signed; others may remain |
+| `signer.viewed` | "Signer opened the document" | A signer opened the document |
+
+Your organization can hold up to <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
+
+## Test
+
+"Send test" delivers a synthetic event through the same path as a real one, signature included, and
+shows the answer: "Your endpoint answered code" or "Your endpoint did not accept the test: detail".
+An endpoint answering an error is not a bb-sign failure: it is the test's result.
+
+## Enable and disable
+
+"Disable" stops sending without deleting anything; "Enable" resumes. While a webhook is disabled,
+events that happen are recorded in the history as "Not sent" and are not queued for later: enabling
+it again does not flood you with old events.
+
+## Rotate the secret
+
+"Rotate secret" opens "Rotate the signing secret?": "Both the old and the new secret will be accepted
+for a grace period, so your receiver keeps working until you redeploy it with the new one". The grace
+lasts <Fact of={WEBHOOKS.secretRotationGraceHours} unit="hours" />; during that time the row shows
+"Both the old and the new signing secret are accepted right now" and every delivery carries two
+signatures. No maintenance window is needed.
+
+## Delete
+
+"Delete" opens "Delete this webhook?": "We will stop sending events to this endpoint. Its delivery
+history is deleted with it". It cannot be undone.
+
+## Retries and automatic disabling
+
+A delivery that gets no 2xx answer is retried after waits of
+<code>{WEBHOOKS.retryLadder.value.join(', ')}</code>, with a random variation of
+<Fact of={WEBHOOKS.retryJitterPct} unit="%" />: about <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="hours" />
+in all. The body never changes between retries; only the signature is recomputed.
+
+After <Fact of={WEBHOOKS.disableAfterLadders} /> consecutive deliveries that exhaust all their
+retries, bb-sign disables the webhook. The row becomes "Disabled automatically" with the note "We
+disabled this endpoint after its retries failed repeatedly. Fix the endpoint, then enable it again —
+we will also retry it on its own periodically", and the organization's admins receive the email
+"Action required: bb-sign disabled a webhook endpoint". bb-sign probes the endpoint again every
+<Fact of={WEBHOOKS.probeIntervalHours} unit="hours" />; one correct answer re-enables it.
+
+<Aside type="caution" title="While it is disabled, events are lost">
+  Every event in that period is recorded as "Not sent" and is not resent. Fix the endpoint and press
+  "Enable"; then use the history to see what you missed and recover it by reading those envelopes.
+</Aside>
+
+## The history
+
+"History" opens the webhook's delivery list; "Back to webhooks" returns. Each row shows the status,
+the event, the date and "N attempts". Opening it shows every attempt with its outcome, HTTP code and
+duration, the last error and, if another retry is scheduled, "Next attempt at time".
+
+| Status | Meaning |
+| --- | --- |
+| "Preparing" | bb-sign is building the payload. |
+| "Sending" | An attempt is in flight or pending. |
+| "Delivered" | Your endpoint answered 2xx. If you did not see it, the problem is on your side. |
+| "Gave up" | Every retry was used and none was accepted. |
+| "Not sent" | "Nothing was sent for this event: the endpoint was disabled at the time. This is why there is a gap in what you received". |
+| "Could not be built" | A problem on bb-sign's side. You cannot fix it; tell support. |
+
+| Attempt outcome | Meaning |
+| --- | --- |
+| "Accepted" | A 2xx answer. |
+| "Rejected" | Your endpoint answered with another code. The code is shown beside it. |
+| "Unreachable" | No answer: DNS, connection or timeout. |
+
+The history is kept for <Fact of={WEBHOOKS.deliveryLogRetentionDays} unit="days" />. Creating a
+webhook, rotating its secret and deleting it are recorded in the [audit trail](/en/sign/admin/audit-trail/).
+
+<LinkCard title="Webhooks for developers" href="/en/sign/developers/webhooks/" description="The body that arrives, the headers and the code that verifies the signature in JavaScript and Java." />

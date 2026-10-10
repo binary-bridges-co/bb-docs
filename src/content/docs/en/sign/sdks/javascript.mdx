@@ -1,8 +1,237 @@
 ---
-title: "JavaScript SDK"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: JavaScript SDK
+description: "The TypeScript client for Node: install from the tarball, create an envelope, page through lists, verify webhooks server-side, retries, errors and what it will not do."
 product: sign
 audience: developer
+source: sdk-js/README.md
 ---
 
-Content under construction.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { SDK, WEBHOOKS } from '../../../../facts/sign';
+
+A TypeScript client for the bb-sign API, with webhook signature verification. The package is
+<code><Fact of={SDK.js.packageName} /></code>, version <Fact of={SDK.js.version} />.
+
+<Aside type="note" title="Not published to any registry">
+  Consume it from an `npm pack` tarball; see Installing. The package name is provisional.
+</Aside>
+
+**Node <Fact of={SDK.js.minNode} /> or newer. ESM only.** The examples use `import`, and
+`require()` is not supported.
+
+## Installing
+
+You will be given the tarball <code><Fact of={SDK.js.tarball} /></code>:
+
+```bash
+npm install ../path/to/binarybridges-bb-sign-sdk-0.1.0.tgz
+```
+
+## Quickstart
+
+Credentials come from **Settings**, tab **API credentials** in bb-sign; the secret is shown once, at
+creation. Read them from the environment, not from source.
+
+```js
+import { createClient } from '@binarybridges/bb-sign-sdk'
+
+const client = createClient({
+  baseUrl: process.env.BBSIGN_BASE_URL,
+  tokenUrl: process.env.BBSIGN_TOKEN_URL,
+  clientId: process.env.BBSIGN_CLIENT_ID,
+  clientSecret: process.env.BBSIGN_CLIENT_SECRET,
+})
+
+const envelope = await client.envelopes.createEnvelope({
+  createEnvelopeRequest: {
+    title: 'Q3 Agreement',
+    otpRequired: false,
+    expiresAt: new Date(Date.now() + 72 * 3600 * 1000),
+    signers: [{ email: 'signer@example.com', name: 'A Signer', signOrder: 1 }],
+  },
+})
+
+console.log('Created', envelope.id)
+```
+
+Tokens are fetched, cached and refreshed automatically. Concurrent calls share one token request
+rather than each minting their own. The client exposes `envelopes`, `documents` and `verification`.
+
+### Listing, one page at a time
+
+```js
+for await (const envelope of client.eachPage(
+  (page) => client.envelopes.listEnvelopes({ page, size: 50 }),
+  (p) => p.content,
+)) {
+  console.log(envelope.title)
+}
+```
+
+Pages are fetched lazily, so counting fifty thousand envelopes does not put fifty thousand envelopes
+in memory.
+
+## Verifying a webhook
+
+<Aside type="caution" title="Server-side only">
+  This helper needs your **webhook signing secret**. It is on a separate import path,
+  <code><Fact of={SDK.js.webhookSubpath} /></code>, with no browser build, and a bundler targeting
+  the browser will fail to resolve it, deliberately. A secret in a browser bundle is a disclosed
+  secret, and no amount of minification changes that.
+</Aside>
+
+```js
+import { verifyWebhookSignature } from '@binarybridges/bb-sign-sdk/webhooks'
+```
+
+### Read this before writing the handler
+
+The signature covers **the exact bytes on the wire**, and every popular Node framework destroys them
+by default: it parses the JSON and hands you an object. Re-encoding that object produces different
+bytes, so verification fails for a reason you cannot see: the object looks right.
+
+This is the number-one cause of failed verification. Capture the raw body.
+
+**Express**
+
+```js
+import express from 'express'
+
+app.use(express.json({
+  verify: (req, _res, buf) => { req.rawBody = buf },   // keep the bytes
+}))
+
+app.post('/webhooks/bb-sign', (req, res) => {
+  if (!verifyWebhookSignature(req.get('X-BBSign-Signature'), req.rawBody, SECRET)) {
+    return res.sendStatus(401)
+  }
+  const event = JSON.parse(req.rawBody.toString('utf8'))
+  res.sendStatus(200)                                   // ack first, work after
+  void handle(event)
+})
+```
+
+**Next.js (App Router)**
+
+```js
+export async function POST(request) {
+  const rawBody = await request.text()                  // text(), not json()
+  if (!verifyWebhookSignature(request.headers.get('x-bbsign-signature'), rawBody, SECRET)) {
+    return new Response(null, { status: 401 })
+  }
+  const event = JSON.parse(rawBody)
+  return new Response(null, { status: 200 })
+}
+```
+
+**Fastify**: register a content-type parser that keeps the buffer:
+
+```js
+fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+  req.rawBody = body
+  done(null, JSON.parse(body.toString('utf8')))
+})
+```
+
+The helper accepts a `string` or a `Buffer`. **Passing a parsed object is a type error, not a silent
+`JSON.stringify`**: silently stringifying is exactly how you end up verifying different bytes than
+we signed.
+
+### It returns a boolean and never throws
+
+You are calling it on data an attacker controls. A thrown error would be a 500 in your webhook route,
+and a distinguishable one, which leaks information about why verification failed.
+
+### Respond fast, work later
+
+Return 2xx as soon as the signature checks out. bb-sign retries on a ladder spanning roughly
+<Fact of={WEBHOOKS.retryLadderHoursApprox} unit="hours" />, and after
+<Fact of={WEBHOOKS.disableAfterLadders} /> consecutive exhausted ladders it **disables your
+endpoint**. A handler that does thirty seconds of work inline will trip that under load.
+
+### Deduplicate on the event id
+
+`X-BBSign-Event-Id` is stable across retries and identical for redeliveries. Delivery is
+at-least-once, so treat it as an idempotency key.
+
+### During a secret rotation
+
+The header carries two `v1=` values while a rotation window is open, and either verifies. That is
+what lets you redeploy without downtime. Nothing to configure.
+
+### Testing your handler
+
+Verification is time-sensitive: a signature older than
+<Fact of={WEBHOOKS.toleranceSeconds} unit="s" /> is rejected, so a fixed fixture fails tomorrow. Pin
+the clock:
+
+```js
+verifyWebhookSignature(header, rawBody, secret, { nowSeconds: 1760000000 })
+```
+
+A receiver behind a queue can widen the window with `toleranceSeconds`.
+
+## Retries, and the one thing this SDK will not do
+
+`GET` requests are retried on 5xx and transport failures, with exponential backoff and full jitter.
+
+**A `POST` whose response was never seen is never retried.** If `createEnvelope` times out, the
+outcome is genuinely unknown: the envelope may exist. Retrying creates a second one, and these are
+legal agreements sent to real people. The API has no idempotency key, so there is no way to make it
+safe. The Java SDK behaves identically.
+
+If a create times out, **list before you retry**:
+
+```js
+try {
+  await client.envelopes.createEnvelope({ createEnvelopeRequest: request })
+} catch (error) {
+  if (error.statusCode === 0) {
+    // Never reached bb-sign, or the answer was lost. Check before sending again.
+  }
+}
+```
+
+`429` and `503` **are** retried, including for `POST`: those mean the server explicitly did not
+process the request.
+
+## Errors
+
+Every failure throws a `BbSignError` with a `statusCode`. `0` means the request never got an answer.
+
+| Status | Meaning |
+|---|---|
+| 400 | Malformed or failed validation |
+| 401 | Credentials rejected. The SDK refreshes and retries once before surfacing this |
+| 403 | Authenticated, but this credential lacks the organization permission |
+| 404 | No such resource, or it belongs to another organization or a workspace you cannot see. Deliberately indistinguishable |
+| 409 | Not in a state that allows this |
+| 429 | An organization quota is exhausted |
+
+The error carries a status and a message, and **not** the `Response` object: logging it cannot leak
+your `Authorization` header. Messages never contain your secret, including when bb-sign's response
+does. [Errors](/en/sign/developers/errors/) has the full table and the error body.
+
+## What this SDK will not do
+
+- **Log your credentials.** There is no logging hook.
+- **Let you disable TLS verification.** There is no flag.
+- **Retry a write with an unknown outcome.** See above.
+- **Run the webhook helper in a browser.** By construction, not by convention.
+
+## Building from source
+
+```bash
+cd sdk-js
+npm install
+npm run generate     # regenerates src/generated from docs/api/openapi.json
+npm run build
+npm test
+./verify.sh          # the CI gate: drift, browser-bundle refusal, any-leaks, pack contents
+npm pack             # produces binarybridges-bb-sign-sdk-0.1.0.tgz
+```
+
+`src/generated/` is **generated and committed**. Never edit it; regenerate. `GENERATION.md` in the
+SDK source explains why the generator is configured the way it is; two of those settings are
+load-bearing and one works around an upstream bug.

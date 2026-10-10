@@ -1,8 +1,83 @@
 ---
 title: "Correos que envía bb-sign"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+description: Cada correo que bb-sign envía a firmantes, administradores y usuarios, con su asunto, su destinatario, qué lo dispara y desde qué dirección sale.
 product: sign
 audience: all
 ---
 
-Contenido en construcción.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { EMAILS, REMINDERS, URLS } from '../../../facts/sign';
+
+export const RECIPIENT = {
+  signer: 'Firmante',
+  org_admin: 'Administradores de la organización',
+  user: 'Usuario de la aplicación',
+};
+
+export const TRIGGER = {
+  'envelope.sent': 'Se envía el sobre.',
+  'signer.eligible (sequential signing)': 'Le llega el turno a un firmante (firma secuencial).',
+  'otp.ready_for_delivery': 'El firmante pide un código de un solo uso.',
+  'daily; invitation older than the threshold': 'Cada día, a los firmantes cuya invitación supera el umbral de recordatorio y aún no han firmado.',
+  'envelope.completed': 'El sobre se completa.',
+  'envelope.expired': 'El sobre vence.',
+  'webhook circuit breaker': 'bb-sign desactiva un webhook tras agotar los reintentos.',
+  'user invited': 'Un administrador invita a un usuario.',
+  'user request': 'El usuario pide restablecer su contraseña.',
+  'realm flow': 'El flujo de identidad exige verificar el correo.',
+};
+
+Esta es la lista completa de los correos que bb-sign envía hoy. Si un correo no está aquí, bb-sign no
+lo envía. Los asuntos se muestran tal como salen; `{title}` es el título del sobre.
+
+## Remitentes
+
+Los correos de sobres (invitaciones, códigos, recordatorios, completado, vencido y el aviso de webhook)
+salen de **<Fact of={URLS.senderAddress} />**. Los correos de identidad (invitación a la aplicación,
+restablecer contraseña, verificar correo) salen de **<Fact of={URLS.identitySenderAddress} />**. Pide a
+tu equipo de TI que permita ambas direcciones si tu organización filtra el correo entrante.
+
+## Todos los correos
+
+<table>
+  <thead>
+    <tr>
+      <th>Plantilla</th>
+      <th>Asunto</th>
+      <th>Destinatario</th>
+      <th>Cuándo se envía</th>
+    </tr>
+  </thead>
+  <tbody>
+    {EMAILS.map((email) => (
+      <tr>
+        <td><code>{email.template}</code></td>
+        <td>{email.subject}</td>
+        <td>{RECIPIENT[email.recipient]}</td>
+        <td>{TRIGGER[email.trigger] ?? email.trigger}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+Los recordatorios salen una vez al día, a los firmantes cuya invitación tiene más de
+<Fact of={REMINDERS.thresholdHours} unit="horas" />, y nunca más de uno cada
+<Fact of={REMINDERS.cooldownHours} unit="horas" /> al mismo firmante. Los asuntos de los correos de
+identidad los define la plantilla del servidor de identidad, no una plantilla de bb-sign; por eso
+aparecen entre paréntesis.
+
+<Aside type="note" title="Los correos de sobres van solo en inglés">
+  La aplicación está en español y en inglés, pero los correos que reciben los firmantes salen solo en
+  inglés hoy. Si tus firmantes no leen inglés, avísales por tu propio canal qué van a recibir y de
+  qué dirección. Ver [El correo de invitación](/sign/signing/receiving-the-email/).
+</Aside>
+
+## Lo que bb-sign no envía
+
+- **No hay correo al remitente cuando el sobre se completa.** Quien envió el sobre lo ve en la
+  aplicación o lo recibe por webhook (`envelope.completed`).
+- **No hay correo de cancelación.** Al cancelar un sobre, los firmantes que aún no habían firmado
+  simplemente encuentran el enlace no disponible. Ver [Cancelar un sobre](/sign/sending/cancel/).
+- **No hay correo de aviso de vencimiento del certificado** de la organización.
+- **No hay SMS.** El código de un solo uso llega siempre por correo.

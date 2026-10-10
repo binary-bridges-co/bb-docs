@@ -1,8 +1,73 @@
 ---
-title: "Audit trail"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Audit trail
+description: "What an envelope's audit trail records and who sees it, which organization events are recorded, how the hash chain works and what is not recorded today."
 product: sign
 audience: admin
 ---
 
-Content under construction.
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+**Who:** organization admin (platform admins too). **Where:** the "Audit Trail" section of every
+envelope's detail page (`/envelopes/id`).
+
+bb-sign writes to a tamper-evident record what happens to each envelope while it is signed, and also
+some configuration changes of the organization. This page says what is in that record, who sees it
+and what is not there. The probative value of the evidence is in
+[Evidence and audit](/en/sign/concepts/evidence-and-audit/).
+
+## An envelope's trail
+
+On the envelope detail, the "Audit Trail (N events)" section lists every event with its type, who
+caused it (the actor's email or "System"), the date and time, and its hash ("hash: …").
+
+It is visible to the Auditors, Contributors and Managers of the envelope's workspace, and to every
+admin. A Viewer sees instead "The audit trail is available to auditors and managers of this
+workspace".
+
+| Event | When it is recorded |
+| --- | --- |
+| `SIGNING_LINK_CLICKED` | A signer opened their link. |
+| `SIGNING_VIEW_OPENED`, `SIGNING_VIEW_CLOSED` | A signer opened or closed the document view. |
+| `SIGNER_ELIGIBLE` | In sequential signing, a signer's turn came. |
+| `SIGNER_SIGNED` | A signer signed, with their IP address. |
+| `ENVELOPE_COMPLETED` | The last signer signed. |
+| `SIGNED_COPY_ACCESSED` | Someone downloaded the signed copy from the signer's link. |
+| `EMAIL_SENT`, `EMAIL_DELIVERED`, `EMAIL_OPENED`, `EMAIL_BOUNCED` | An envelope email was sent, delivered, opened or bounced. |
+
+## Organization events
+
+The same record keeps configuration changes that belong to no envelope:
+
+| Event | When it is recorded |
+| --- | --- |
+| `API_CREDENTIAL_CREATED`, `API_CREDENTIAL_REVOKED` | An API credential was created or revoked. |
+| `WEBHOOK_SUBSCRIPTION_CREATED`, `WEBHOOK_SUBSCRIPTION_SECRET_ROTATED`, `WEBHOOK_SUBSCRIPTION_DELETED` | A webhook was created, its secret rotated or it was deleted. |
+| `WORKSPACE_CREATED`, `WORKSPACE_RENAMED`, `WORKSPACE_DELETED` | A workspace was created, renamed or deleted. |
+| `WORKSPACE_MEMBER_GRANTED`, `WORKSPACE_MEMBER_REVOKED` | A workspace role was granted to or removed from a person or API key. |
+
+Today the app has no screen that lists these events. They are kept and belong to your organization;
+if you need them, ask Binary Bridges support.
+
+## The hash chain
+
+Every event has a SHA-256 hash computed over its content: identifier, envelope, organization, type,
+date, actor, IP address, metadata and the hash of the previous event of the same envelope. Because
+every hash includes the previous one, modifying, inserting or deleting an event breaks the chain from
+that point on and the alteration is detectable. Organization events carry their hash but are not
+chained to each other.
+
+## What is not recorded today
+
+- The creation, sending, cancellation and expiration of an envelope. Those status changes are visible
+  on the envelope itself and arrive through [webhooks](/en/sign/admin/webhooks/), but they are not
+  in the record.
+- The verification of the one-time code.
+- The rotation of a credential, enabling or disabling a webhook, and changes to label keys.
+
+<Aside type="note" title="There is no evidence export">
+  Today there is no evidence certificate and no export of the record. What you can consult is what
+  you see on screen. If you need an envelope's evidence for a third party, ask Binary Bridges
+  support.
+</Aside>
+
+<LinkCard title="Evidence and audit" href="/en/sign/concepts/evidence-and-audit/" description="What each piece of evidence proves and how to verify a signed document." />

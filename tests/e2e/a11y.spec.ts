@@ -7,6 +7,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
     test(`${path} has no axe violations (${colorScheme})`, async ({ page }) => {
       await useTheme(page, colorScheme);
       await page.goto(path);
+      // Expressive Code marks overflowing code blocks focusable from an idle callback; let it run
+      // before axe measures scrollable regions.
+      await page.waitForLoadState('networkidle');
+      await page.evaluate(() => new Promise<void>((resolve) => (window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 50)))(() => resolve())));
       const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
       expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(', ')}`)).toEqual([]);
     });

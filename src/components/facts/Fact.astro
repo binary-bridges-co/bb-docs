@@ -15,7 +15,15 @@ interface Props {
 }
 
 const { of, unit, locale } = Astro.props;
-const lang = locale ?? Astro.locals.starlightRoute?.lang ?? 'es-CO';
+// Outside a Starlight route (the llms.txt renders) `starlightRoute` throws; fall back to Spanish.
+let lang = locale ?? 'es-CO';
+if (!locale) {
+  try {
+    lang = Astro.locals.starlightRoute.lang ?? lang;
+  } catch {
+    // not a Starlight page
+  }
+}
 const text = typeof of.value === 'number' ? new Intl.NumberFormat(lang).format(of.value) : String(of.value);
 ---
 

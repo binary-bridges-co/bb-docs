@@ -1,8 +1,173 @@
 ---
 title: "Your organization's own certificate"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+description: Why to configure your own certificate, what to buy, where to buy it, how to export it with the full chain, how to upload it and how to renew it.
 product: sign
 audience: admin
+source: docs/guias/certificado-propio.md
 ---
 
-Content under construction.
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { CERTIFICATE } from '../../../../facts/sign';
+
+Until your organization configures a certificate of its own, bb-sign seals signed documents with a
+testing certificate. It is fine for trying the service, but validators show it as untrusted. This
+guide accompanies the [Terms and conditions of service](/en/sign/legal/terms/) and explains what to
+buy, where, how to prepare it and how to upload it.
+
+<Aside type="caution" title="Today your documents are sealed with a testing certificate">
+  Without a certificate of your own, every document is sealed with the Binary Bridges certificate
+  <code><Fact of={CERTIFICATE.defaultSubject} /></code>. It is self-signed: Adobe Acrobat and the
+  other validators show it as untrusted. Sending envelopes is never blocked because of this, so
+  nothing will remind you. Configure your own.
+</Aside>
+
+## 1. What the organization's certificate is for
+
+The certificate seals each signed document: it guarantees that the document did not change after it
+was signed and lets a third party trust who sealed it. It is not the digital signature of the people
+who sign; they sign with bb-sign's electronic-signature mechanism. See
+[Electronic and digital signature](/en/sign/legal/electronic-vs-digital-signature/).
+
+With your own certificate, the display name and reason shown in the PDF's signature box can also be
+customized ("Signature appearance" section, configured by a platform administrator). With the testing
+certificate the Binary Bridges mark is always shown.
+
+## 2. What to buy
+
+- A certificate **in the organization's name** (legal entity or public function; the commercial name
+  varies by issuer), not in a person's name.
+- Delivered as a **PKCS#12 file (.p12 or .pfx) with an exportable private key**. This is the
+  requirement that ruins most purchases: a key on a USB token or a key that exists only in the cloud
+  (the vendor's HSM) is no use. bb-sign needs the file.
+- An **RSA key of <Fact of={CERTIFICATE.minKeyBits} unit="bits" /> or more**. Elliptic-curve (EC)
+  keys are not supported.
+- Key usage **digital signature** (`digitalSignature`) and, preferably, **non-repudiation**
+  (`nonRepudiation`).
+- With the **full certification chain**: the organization's certificate, the intermediates and the
+  root.
+
+We recommend a document-signing or legal-entity certificate; what is required is the delivery format.
+Ask the issuer, before paying, whether it delivers a PKCS#12 with an exportable key.
+
+## 3. Where to buy in Colombia
+
+Buy from a **Digital Certification Entity (ECD) accredited by ONAC**. Verify the current
+accreditation in ONAC's directory ([onac.org.co](https://onac.org.co/)) before buying; accreditations
+change.
+
+Entities listed in public sources as accredited ECDs:
+
+| Entity | Official site |
+|---|---|
+| Certicámara | [certicamara.com](https://www.certicamara.com/) |
+| GSE (Gestión de Seguridad Electrónica) | [gse.com.co](https://www.gse.com.co/) |
+| Andes SCD | [andesscd.com.co](https://www.andesscd.com.co/) |
+| Camerfirma Colombia | [camerfirma.co](https://www.camerfirma.co/) |
+| Olimpia IT | [olimpiait.com](https://www.olimpiait.com/) |
+| Thomas Signe | [thomas-signe.com](https://www.thomas-signe.com/) |
+| Viafirma Colombia | [viafirma.com.co](https://www.viafirma.com.co/) |
+
+List verified on 2026-10-07; confirm before buying that the entity delivers the certificate as a
+PKCS#12 file with an exportable key.
+
+## 4. Where to buy in other countries
+
+If your organization is outside Colombia, buy from a member of the **Adobe Approved Trust List
+(AATL)**, so Adobe Acrobat trusts the seal without installing anything: DigiCert, GlobalSign, Sectigo,
+Entrust and SSL.com issue document-signing certificates in an organization's name.
+
+Many of these products ship by default on a USB token or in a cloud HSM. Ask explicitly for a
+**software certificate with an exportable key**; without it, you will not be able to upload it to
+bb-sign.
+
+List verified on 2026-10-07; confirm before buying that the entity delivers the certificate as a
+PKCS#12 file with an exportable key.
+
+## 5. Export with the full chain
+
+The file must include the organization's certificate, the intermediate certificates and the root.
+
+- On Windows: `certmgr.msc`, select the certificate, Export, say yes to exporting the private key,
+  PKCS#12 format, and tick "Include all certificates in the certification path if possible".
+- With OpenSSL:
+
+```bash
+openssl pkcs12 -export -inkey clave.key -in certificado.crt -certfile cadena.pem -out organizacion.p12
+```
+
+If bb-sign reports that it could not upload the certificate and the password is correct, export again
+with OpenSSL 3's `-legacy` option.
+
+## 6. Check before uploading
+
+```bash
+openssl pkcs12 -in organizacion.p12 -nokeys -info
+```
+
+It must list the organization's certificate, the intermediate(s) and the root. Today this is the only
+way to check the chain: bb-sign does not inspect it on upload (see section 9).
+
+## 7. Upload the certificate
+
+The **Signing Certificate** section is on the organization's detail page, reached from
+**Organizations** in the menu. Today only platform administrators see that page. If you administer
+the organization and do not see **Organizations** in your menu, arrange the upload with Binary
+Bridges; never send the file or its password by email.
+
+<Steps>
+
+1. Open **Organizations**, enter your organization and find the **Signing Certificate** section.
+   Without a certificate of your own you will see "No certificate configured — global fallback will
+   be used".
+2. Press **Upload certificate** (or **Replace certificate** if there already is one).
+3. Type a **Label** (for example "Acme Corp 2025"), choose the **Certificate file (.p12, .pfx,
+   .pem)** and type the **Password (if protected)**.
+4. Press **Upload Certificate**. While it uploads, the button reads "Uploading…". When it finishes,
+   the section shows the label and "Expires:" followed by the expiry date.
+
+</Steps>
+
+If "Failed to upload certificate" appears, the file failed one of the rules below or the password is
+wrong. Check the file with the command in section 6 and try again.
+
+| Rule | What bb-sign does |
+|---|---|
+| Accepted extensions | {CERTIFICATE.allowedExtensions.value.map((ext) => `.${ext}`).join(', ')} |
+| Maximum file size | <Fact of={CERTIFICATE.maxFileMb} unit="MB" /> |
+| Expired certificate | Rejected. |
+| Key under <Fact of={CERTIFICATE.minKeyBits} unit="bits" /> | Rejected. |
+| Key usage | Requires <code><Fact of={CERTIFICATE.requiredKeyUsage} /></code>. |
+| A new upload | Replaces the previous certificate. |
+| Password | Stored encrypted and used only to seal. |
+| PEM files | Accepted on upload, but they **do not seal**. Upload a PKCS#12. |
+
+## 8. Renewal
+
+Upload the renewed certificate before the current one expires. The change takes at most
+<Fact of={CERTIFICATE.cacheMinutes} unit="minutes" /> to apply to new seals. bb-sign does not send
+expiry notice emails today; note the date shown in the **Signing Certificate** section.
+
+Keep in mind that QR-code verification compares the seal with the organization's **active**
+certificate. After you change the certificate, seals made with the previous one stop reading "valid"
+in that check; the PDF is intact and its signature panel in Acrobat remains valid. See
+[Verify a signed document](/en/sign/signing/verify-a-document/).
+
+## 9. Today's limitation: leaf certificate only
+
+Today bb-sign embeds in the seal **only the organization's certificate**
+(<Fact of={CERTIFICATE.chainEmbedded} />), not the intermediates or the root. A validator that does
+not have your issuer's root installed cannot build the path and shows the seal as untrusted, even if
+the certificate is good. To check a PDF, import your issuer's root as trusted in Acrobat (section
+10). Embedding the full chain in the seal and checking it on upload is planned, but does not exist
+yet.
+
+## 10. Check a sealed PDF
+
+Open the signed PDF in Adobe Acrobat and review the signature panel. If you imported your
+certification entity's root as trusted, you will see the full path and that the identity is valid.
+
+## 11. Security
+
+Never send the `.p12` file or its password by email. Keep them in your organization's secrets manager
+and upload them from the application.

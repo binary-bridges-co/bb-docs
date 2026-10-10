@@ -1,8 +1,84 @@
 ---
 title: "Emails bb-sign sends"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+description: Every email bb-sign sends to signers, administrators and users, with its subject, its recipient, what triggers it and which address it comes from.
 product: sign
 audience: all
 ---
 
-Content under construction.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { EMAILS, REMINDERS, URLS } from '../../../../facts/sign';
+
+export const RECIPIENT = {
+  signer: 'Signer',
+  org_admin: 'Organization administrators',
+  user: 'Application user',
+};
+
+export const TRIGGER = {
+  'envelope.sent': 'The envelope is sent.',
+  'signer.eligible (sequential signing)': "It is a signer's turn (sequential signing).",
+  'otp.ready_for_delivery': 'The signer requests a one-time code.',
+  'daily; invitation older than the threshold': 'Every day, to signers whose invitation is older than the reminder threshold and who have not signed yet.',
+  'envelope.completed': 'The envelope completes.',
+  'envelope.expired': 'The envelope expires.',
+  'webhook circuit breaker': 'bb-sign disables a webhook after exhausting its retries.',
+  'user invited': 'An administrator invites a user.',
+  'user request': 'The user asks to reset their password.',
+  'realm flow': 'The identity flow requires verifying the email.',
+};
+
+This is the complete list of the emails bb-sign sends today. If an email is not here, bb-sign does
+not send it. Subjects are shown as they go out; `{title}` is the envelope title.
+
+## Senders
+
+Envelope emails (invitations, codes, reminders, completed, expired and the webhook notice) come from
+**<Fact of={URLS.senderAddress} />**. Identity emails (invitation to the application, password reset,
+email verification) come from **<Fact of={URLS.identitySenderAddress} />**. Ask your IT team to allow
+both addresses if your organization filters incoming mail.
+
+## All emails
+
+<table>
+  <thead>
+    <tr>
+      <th>Template</th>
+      <th>Subject</th>
+      <th>Recipient</th>
+      <th>When it is sent</th>
+    </tr>
+  </thead>
+  <tbody>
+    {EMAILS.map((email) => (
+      <tr>
+        <td><code>{email.template}</code></td>
+        <td>{email.subject}</td>
+        <td>{RECIPIENT[email.recipient]}</td>
+        <td>{TRIGGER[email.trigger] ?? email.trigger}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+Reminders go out once a day, to signers whose invitation is older than
+<Fact of={REMINDERS.thresholdHours} unit="hours" />, and never more than one every
+<Fact of={REMINDERS.cooldownHours} unit="hours" /> to the same signer. The subjects of the identity
+emails are defined by the identity server's template, not by a bb-sign template; that is why they
+appear in parentheses.
+
+<Aside type="note" title="Envelope emails are English only">
+  The application is available in Spanish and English, but the emails signers receive go out in
+  English only today. If your signers do not read English, tell them through your own channel what
+  they will receive and from which address. See
+  [The invitation email](/en/sign/signing/receiving-the-email/).
+</Aside>
+
+## What bb-sign does not send
+
+- **No email to the sender when the envelope completes.** Whoever sent the envelope sees it in the
+  application or receives it by webhook (`envelope.completed`).
+- **No cancellation email.** When an envelope is cancelled, signers who had not signed yet simply find
+  the link unavailable. See [Cancel an envelope](/en/sign/sending/cancel/).
+- **No expiry notice email** for the organization's certificate.
+- **No SMS.** The one-time code always arrives by email.

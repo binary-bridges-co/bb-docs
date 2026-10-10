@@ -197,7 +197,7 @@ Required cases, <Fact of={WEBHOOKS.testVectorCount} /> in all; every implementat
 | Case | `expected` |
 |---|---|
 | valid signature, fresh timestamp | `true` |
-| valid, at exactly +300s | `true` |
+| valid, at exactly `+300s` | `true` |
 | valid, at +301s | `false` |
 | valid, at -301s | `false` |
 | tampered body, one byte changed | `false` |

@@ -58,8 +58,11 @@ export default defineConfig({
             ),
           },
         ),
-        // Links into public/ (the synced OpenAPI and webhook vectors) are files, not pages.
-        starlightLinksValidator({ exclude: ['/sync/**'] }),
+        // Links into public/ (the synced OpenAPI and webhook vectors) are files, not pages, and the
+        // generated API reference is injected by starlight-openapi, so the validator cannot see it.
+        starlightLinksValidator({
+          exclude: ['/sync/**', ...PRODUCTS.filter((p) => p.sync.openapi).flatMap((p) => [`/${p.id}/api/`, `/${p.id}/api/**`])],
+        }),
         starlightLlmsTxt(),
       ],
       // High-contrast code themes, as on the homepage: the standard GitHub themes fail AA on comments (axe).

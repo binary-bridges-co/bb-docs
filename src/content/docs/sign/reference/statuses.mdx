@@ -1,8 +1,89 @@
 ---
 title: "Estados"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+description: Todos los estados de sobres, firmantes, entregas de webhooks y credenciales de API, con la etiqueta que muestra la aplicación para cada uno.
 product: sign
 audience: all
 ---
 
-Contenido en construcción.
+import Fact from '../../../../components/facts/Fact.astro';
+import StatusFlow from '../../../../components/facts/StatusFlow.astro';
+import { AUTH, DELIVERY_STATUSES, WEBHOOKS } from '../../../facts/sign';
+
+export const DELIVERY = {
+  PENDING_RENDER: { label: 'Preparando', meaning: 'bb-sign está construyendo el contenido de la entrega. Aún no se ha intentado enviar nada.' },
+  PENDING_SEND: { label: 'Enviando', meaning: 'El contenido está listo y hay un intento en curso o programado. La fila muestra "Próximo intento a las" con la hora.' },
+  DELIVERED: { label: 'Entregado', meaning: 'Tu endpoint respondió con un código 2xx. No habrá más intentos.' },
+  FAILED_PERMANENT: { label: 'No se pudo construir', meaning: 'bb-sign no pudo construir el contenido de la entrega. No se intentó enviar.' },
+  SKIPPED: { label: 'No enviado', meaning: 'El endpoint estaba desactivado cuando ocurrió el evento. Nada se envió; por eso hay un hueco en lo que recibiste.' },
+  DEAD_LETTERED: { label: 'Abandonado', meaning: 'Se agotaron todos los reintentos sin una respuesta 2xx. bb-sign no volverá a intentar esta entrega.' },
+};
+
+Esta página es la referencia de cada estado que la aplicación y la API muestran, con el nombre
+interno (el que viaja en la API y en los webhooks) y la etiqueta que ves en pantalla en español. Los
+conceptos detrás de los estados de sobres y firmantes están en
+[Sobres y firmantes](/sign/concepts/envelopes-and-signers/).
+
+## Estados del sobre
+
+<StatusFlow locale="es" of="envelope" />
+
+Un sobre pasa a `EXPIRED` solo si se le fijó una fecha de vencimiento al crearlo. Cancelar es la única
+transición que inicia una persona después del envío; vencer y completar las produce el propio flujo.
+No existen los estados "rechazado" ni "anulado": hoy un firmante no puede declinar.
+
+## Estados del firmante
+
+<StatusFlow locale="es" of="signer" />
+
+En un sobre con firma secuencial, los firmantes de los turnos siguientes permanecen en `PENDING` hasta
+que el turno anterior termina; entonces reciben su enlace y pasan a `NOTIFIED`.
+
+## Entregas de webhooks
+
+Cada evento al que está suscrito un webhook genera una entrega, y cada entrega puede tener varios
+intentos. La página **Configuración**, pestaña **Webhooks**, muestra el historial con estas etiquetas.
+
+<table>
+  <thead>
+    <tr>
+      <th>Estado</th>
+      <th>Etiqueta en la aplicación</th>
+      <th>Qué significa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {DELIVERY_STATUSES.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{DELIVERY[status].label}</td>
+        <td>{DELIVERY[status].meaning}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+Los reintentos siguen la escalera {WEBHOOKS.retryLadder.value.join(', ')} con una variación aleatoria
+de <Fact of={WEBHOOKS.retryJitterPct} unit="%" />. Tras <Fact of={WEBHOOKS.disableAfterLadders} />
+escaleras agotadas seguidas, bb-sign desactiva el endpoint y avisa por correo a los administradores.
+Ver [Webhooks](/sign/admin/webhooks/).
+
+### Resultado de cada intento
+
+| Resultado | Etiqueta en la aplicación | Qué significa |
+|---|---|---|
+| `SUCCESS` | Aceptado | Tu endpoint respondió 2xx. |
+| `HTTP_ERROR` | Rechazado | Tu endpoint respondió, pero con un código distinto de 2xx. Revisa tus registros con el `X-BBSign-Event-Id` de la entrega. |
+| `TRANSPORT_ERROR` | Inaccesible | No hubo respuesta: DNS, conexión rechazada, TLS inválido o tiempo de espera agotado. Comprueba que la URL sea pública y HTTPS. |
+
+## Credenciales de API
+
+Las credenciales aparecen en **Configuración**, pestaña **Credenciales de API**.
+
+| Estado | Etiqueta en la aplicación | Qué significa |
+|---|---|---|
+| Activa | Activa | La credencial puede obtener tokens y llamar a la API. |
+| Revocada, en expiración | Revocada — en expiración | Acabas de revocarla. No puede obtener tokens nuevos, pero los tokens que ya emitió siguen valiendo hasta que caducan, como máximo <Fact of={AUTH.tokenLifetimeSeconds} unit="segundos" /> después de emitidos. La fila muestra "Los tokens que esta credencial ya emitió dejan de funcionar a las" con la hora. |
+| Revocada | Revocada | Ningún token de esta credencial funciona. Sigue en la lista durante <Fact of={AUTH.revokedCredentialListedDays} unit="días" /> y luego desaparece. |
+
+Rotar una credencial no cambia su estado: el secreto anterior deja de funcionar de inmediato y el
+nuevo se muestra una sola vez. Ver [Credenciales de API](/sign/admin/api-credentials/).

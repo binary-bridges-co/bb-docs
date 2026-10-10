@@ -1,8 +1,127 @@
 ---
-title: "Migrating from Adobe Acrobat Sign"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Migrating from Adobe Acrobat Sign
+description: For teams with an Acrobat Sign integration. Maps agreements, participants, integration keys and webhooks onto bb-sign, and says where there is no equivalent.
 product: sign
 audience: developer
+source: docs/api/migrating-from-adobe.md
 ---
 
-Content under construction.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { AUTH, DOCUMENTS } from '../../../../facts/sign';
+
+For teams who already have an Acrobat Sign integration. It maps their vocabulary onto ours and, more
+usefully, says where there is no equivalent, so you find that out here rather than three days in.
+
+<Aside type="note" title="Written against Acrobat Sign API v6">
+  If something below no longer matches what you see on their side, tell us; this page is a
+  translation and translations go stale.
+</Aside>
+
+## Concepts
+
+| Acrobat Sign | bb-sign | Not quite the same because |
+|---|---|---|
+| **Agreement** | **Envelope** | Close enough to translate directly |
+| **Participant set** / recipient | **Signer** | We have no participant *sets*. Each signer is an individual with a `signOrder`; there is no "any one of these three may sign" |
+| **Transient document** | Upload to `POST /api/v1/documents`, then reference by id | Ours is not transient while attached: it persists with the envelope and counts against your storage quota. Unattached uploads are deleted after <Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> |
+| **Library document / template** | *No equivalent* | Every envelope carries its own documents. If you send the same contract repeatedly, keep the template your side |
+| **Agreement state** `OUT_FOR_SIGNATURE` | `SENT`, then `IN_PROGRESS` once the first signer signs | |
+| **Agreement state** `SIGNED` | `COMPLETED` | Ours means *every* signer signed. A single signer finishing is the `signer.signed` event, not a state |
+| **Integration key** | **Client credential** | See below; the difference matters |
+| **Webhook** with the echo handshake | **Webhook** with an HMAC signature | See below; this is the biggest change |
+| **Megasign / bulk send** | *No equivalent* | Create envelopes in a loop. There is no bulk endpoint |
+| **Custom workflow** | *No equivalent* | Sequential vs parallel signing is a boolean on the envelope, not a designable flow |
+| **Form fields / anchors** | A text marker in the PDF | The seal lands where the PDF contains <code>{DOCUMENTS.placementMarker.value}</code> (N is the signer's order); without a marker, seals stack on the last page. Nothing is addressable through the API. See [Documents](/en/sign/concepts/documents/) |
+
+## Authentication: from integration key to client credentials
+
+Acrobat Sign's integration key is a long-lived bearer token you paste into a header. Ours is an OAuth2
+client-credentials pair you exchange for a short-lived token.
+
+| | Acrobat Sign | bb-sign |
+|---|---|---|
+| What you hold | An integration key | A client id and secret |
+| What you send | The key itself | A bearer token you obtained with them |
+| Lifetime | Until revoked | The token expires after <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; the credential lasts until revoked |
+| Where it comes from | Adobe admin console | **Settings**, tab **API credentials**, self-service for an org admin |
+
+```bash
+curl -X POST "$BBSIGN_TOKEN_URL" \
+  -d grant_type=client_credentials \
+  -d client_id="$BBSIGN_CLIENT_ID" \
+  -d client_secret="$BBSIGN_CLIENT_SECRET"
+```
+
+Both SDKs do this for you, cache the token and refresh it before expiry. If you are writing your own
+client, cache it: minting one per request is a lot of avoidable load on the identity provider.
+
+**Revocation is not instantaneous, and this catches people out.** Revoking stops *new* tokens
+immediately, but a token already issued keeps working until it expires, up to
+<Fact of={AUTH.tokenLifetimeSeconds} unit="s" />. The settings panel states the exact window before
+you confirm, and shows a revoked credential as **Revoked — draining** until it elapses. If you are
+responding to a leak, treat the credential as live until that time has passed.
+
+## Webhooks: from echo handshake to HMAC signature
+
+This is the biggest behavioural difference, and the one most likely to cost you an afternoon.
+
+**Acrobat Sign** verifies your endpoint by sending a `clientId` in the request and requiring you to
+echo it back in the response. Registration and verification are the same mechanism.
+
+**bb-sign** signs every delivery with an HMAC-SHA256 over the raw body, in an `X-BBSign-Signature`
+header. There is no handshake, no echo, and nothing to return in the response body.
+
+What that means practically:
+
+| | Acrobat Sign | bb-sign |
+|---|---|---|
+| Proving a request is genuine | Echo the `clientId` | Verify the HMAC signature |
+| What you return | A JSON body containing the id | Nothing. A 2xx |
+| Per-request or per-registration | Per request, same value every time | Per request, different every time |
+| If you skip it | Adobe stops delivering | **We keep delivering, and you accept anything anyone sends you** |
+
+That last row is the important one. Adobe's handshake fails loudly if you get it wrong. **Ours fails
+silently**: an endpoint that never checks the signature works perfectly and is wide open. Anyone who
+learns your URL can post a fake `envelope.completed`.
+
+Do not write the verification yourself unless you want to. Both SDKs have it, and there are
+<a href="/sync/sign/webhook-signature-vectors.json">test vectors</a> if you do. The
+[webhook guide](/en/sign/developers/webhooks/) has the three mistakes worth knowing about.
+
+**Also different:** Adobe delivers a full agreement snapshot. We deliver a small, typed event:
+envelope id, title, status, and the signer for `signer.*` events. If you need more, fetch it. That
+keeps payloads small and stops the webhook body becoming an accidental API.
+
+## Rough endpoint mapping
+
+| Acrobat Sign | bb-sign |
+|---|---|
+| `POST /transientDocuments` | `POST /api/v1/documents` |
+| `POST /agreements` | `POST /api/v1/envelopes` then `POST /api/v1/envelopes/{id}/send` |
+| `GET /agreements` | `GET /api/v1/envelopes` |
+| `GET /agreements/{id}` | `GET /api/v1/envelopes/{id}` |
+| `GET /agreements/{id}/documents` | `GET /api/v1/envelopes/{id}/documents` |
+| `PUT /agreements/{id}/state` to `CANCELLED` | `POST /api/v1/envelopes/{id}/cancel` |
+| `POST /webhooks` | **Settings**, tab **Webhooks** (UI only; webhook management is not in the public API) |
+
+**Creation and sending are two calls, not one.** An envelope is created in `DRAFT`, you attach
+documents, and then you send. Adobe lets you do it in one; we deliberately do not, so an abandoned
+half-built agreement is a draft rather than something already emailed to a signer.
+
+See the [API reference](/sign/api/) for the full surface.
+
+## Things worth checking before you start
+
+- **No templates.** If your current integration leans on library documents, that logic moves to your
+  side.
+- **No bulk send.** A loop over `POST /api/v1/envelopes` is the answer, and quotas apply per
+  organization.
+- **No form field placement.** If you position signature blocks programmatically today, the only
+  lever is the text marker in the PDF itself.
+- **Signer order is a number, not a workflow.** `signOrder` plus a `sequentialSigning` boolean.
+- **Every envelope lives in a workspace.** A credential reaches only the workspaces it was granted;
+  see [Machine authentication](/en/sign/developers/authentication/).
+
+If one of these blocks you, say so early. They are gaps, not oversights, and knowing which one you
+need changes what gets built next.
