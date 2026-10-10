@@ -1,81 +1,73 @@
 ---
 title: What bb-sign is
-description: Electronic signature for organizations. What bb-sign does, what it does not do, who each part of this documentation is for and where to start.
+description: bb-sign is Binary Bridges' electronic signature platform for organizations. What it offers, who each section is for and where to start.
 product: sign
 audience: all
 ---
 
-import { Aside, Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { RETENTION_POLICY, URLS } from '../../../facts/sign';
 
-bb-sign is Binary Bridges' electronic signature platform. An organization uploads PDF documents,
-gathers them in an **envelope**, says who must sign and sends it. Each signer receives a link by
-email, reviews the documents, verifies their identity if the organization asked for it, and signs.
-When the envelope completes, bb-sign seals every document with a digital certificate and keeps the
-evidence of the whole process.
+bb-sign is Binary Bridges' electronic signature platform. With it, an organization sends documents
+for signature, identifies every signer, receives the documents sealed with its certificate and keeps
+complete evidence of the process. Sending and tracking envelopes is also available through an
+integration API.
 
-The application lives at <a href={URLS.app.value}>{URLS.app.value}</a>.
+The process is straightforward: you upload one or more PDFs, gather them in an **envelope**, say who
+must sign and send it. Each signer receives a link by email, reviews the documents, confirms their
+identity and signs. When the envelope completes, bb-sign seals every document and records the
+evidence.
 
-## What bb-sign does
+The application is available at <a href={URLS.app.value}>{URLS.app.value}</a>.
 
-bb-sign covers one part of the signing process, and covers it completely:
+## What bb-sign offers
 
-- **Integrity.** Every signed document is sealed; any later alteration is detectable.
-- **Identification.** The signer is identified by their email and, when the organization requires
-  it, by a one-time code.
-- **Compliance with agreements.** What the signer saw and accepted is recorded with date and time.
-- **Inconsistency detection.** The audit chain lets you check that nothing was inserted or deleted
+- **Integrity.** Every signed document is sealed, and any later change is detected.
+- **Identification.** Each signer is identified by their email and, when the organization requires
+  it, by a one-time verification code.
+- **A record of what was accepted.** What the signer saw and accepted is recorded with date and time.
+- **Inconsistency detection.** The audit chain lets you check that no event was inserted or removed
   afterwards.
-- **Probative value.** The evidence (who, what, when, from where) can be consulted and downloaded.
-- **Traceability.** Every relevant action on an envelope is in its history.
+- **Probative value.** The evidence of the process (who, what, when and from where) can be consulted
+  on each envelope.
+- **Traceability.** Every relevant action on an envelope is kept in its history.
 
-## What bb-sign does not do
+bb-sign keeps signed documents and their evidence for a fixed period of
+<Fact of={RETENTION_POLICY.retentionDays} unit="days" />; from then on, keeping them is the
+organization's responsibility, as described in [Scope and retention](/en/sign/legal/retention/).
 
-<Aside type="caution" title="Conservation is the customer's responsibility">
-  bb-sign keeps signed documents and their evidence for a **fixed, non-negotiable** period of
-  <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. After that, keeping them is the
-  responsibility of the organization that sent them. The details are in
-  [Scope and retention](/en/sign/legal/retention/).
-</Aside>
-
-- bb-sign provides **electronic signature** (*firma electrónica*, Decreto 2364 de 2012). It is not
-  *firma digital* in the terms of article 28 of Ley 527 de 1999. Each customer, through its legal
-  office, decides whether the mechanism suits its documents. See
-  [Electronic and digital signature](/en/sign/legal/electronic-vs-digital-signature/).
-- The seal bb-sign places on each document uses, by default, a Binary Bridges **testing
-  certificate**. For third parties to trust the seal, the organization must configure its own
-  certificate. See [Your own certificate](/en/sign/admin/own-certificate/).
-- There are no templates, no bulk sending and no drag-and-drop fields on the PDF. What exists is in
-  this documentation; what is not here does not exist yet.
+For each document's seal to carry your organization's name and for PDF readers to recognize it as
+trusted, we recommend configuring your [own certificate](/en/sign/admin/own-certificate/).
 
 ## Who this documentation is for
 
 <CardGrid>
   <Card title="Signers" icon="pencil">
     You received an email asking you to sign a document and you have no account. Follow
-    [The signer's path](/en/sign/signing/): start to finish on one page.
+    [The signer's path](/en/sign/signing/), which guides you from start to finish.
   </Card>
   <Card title="Organization users" icon="document">
     You create envelopes, attach documents and send them for signature. Start with
     [Your first envelope](/en/sign/getting-started/first-envelope/).
   </Card>
   <Card title="Administrators" icon="setting">
-    You invite users, organize workspaces, configure the certificate, API credentials and webhooks.
-    It is all in [Administer the organization](/en/sign/admin/).
+    You invite users, organize workspaces and configure the certificate, API credentials and
+    webhooks. You will find it all in [Administer the organization](/en/sign/admin/).
   </Card>
   <Card title="Developers" icon="seti:json">
-    You integrate bb-sign with your systems. [Quickstart](/en/sign/developers/quickstart/), then
-    [Webhooks](/en/sign/developers/webhooks/) and the [API reference](/sign/api/).
+    You integrate bb-sign with your systems. Start with the [Quickstart](/en/sign/developers/quickstart/)
+    and continue with [Webhooks](/en/sign/developers/webhooks/) and the [API reference](/sign/api/).
   </Card>
 </CardGrid>
 
 ## How it is organized
 
-Each section of this documentation is for one audience, and the badge at the top of every page says
-which. The [Concepts](/en/sign/concepts/organizations-workspaces-roles/) explain the model
-(organizations, workspaces, roles, envelopes, signers, seal, evidence) and serve everyone. The
-[Legal](/en/sign/legal/terms/) section holds the terms of service and the scope of retention. In
-[Reference](/en/sign/reference/limits-and-defaults/) every limit and default is in one table.
+Each section is for one audience, shown in the badge at the top of every page. The
+[Concepts](/en/sign/concepts/organizations-workspaces-roles/) explain the bb-sign model
+(organizations, workspaces, roles, envelopes, signers, seal and evidence) and are useful to everyone.
+The [Legal](/en/sign/legal/terms/) section holds the terms of service and the retention policy. In
+[Reference](/en/sign/reference/limits-and-defaults/) you will find every limit and default in one
+table.
 
-<LinkCard title="Limits and defaults" href="/en/sign/reference/limits-and-defaults/" description="Every number in this documentation, with where it comes from in the code." />
+<LinkCard title="Limits and defaults" href="/en/sign/reference/limits-and-defaults/" description="Every bb-sign limit and default, gathered in one table." />

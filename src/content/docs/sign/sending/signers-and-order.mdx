@@ -1,90 +1,81 @@
 ---
 title: Firmantes y orden
-description: El correo y el nombre de cada firmante, los números de orden, qué cambia entre firmar a la vez o en orden, quién recibe el enlace y cuándo, y qué queda fijo al enviar.
+description: Indique quién firma y en qué orden. Cómo funcionan los turnos, quién recibe el enlace al enviar y cómo seguir a cada firmante.
 product: sign
 audience: user
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { ENVELOPE } from '../../../facts/sign';
 
-El paso Firmantes del asistente "Crear Sobre" dice quién firma. Junto con el "Orden de firma" que
-elegiste en Detalles, decide quién recibe su enlace al enviar y quién tiene que esperar. Esta
-página explica los datos de cada firmante, las dos formas de ordenar la firma y lo que ya no cambia
-una vez enviado el sobre.
+En el paso **Firmantes** del asistente **Crear Sobre** usted indica quién firma. Junto con el
+**Orden de firma** elegido en **Detalles**, este paso determina quién recibe el enlace al enviar y
+quién firma después, para que cada firma llegue en el momento adecuado.
 
-## Datos de cada firmante
+## Añadir los firmantes
 
-La pantalla "Añadir firmantes" muestra una fila por persona con dos campos:
+La pantalla **Añadir firmantes** muestra una fila por persona con dos campos:
 
-- "Correo": la dirección a la que llega el enlace de firma y, si pediste verificación OTP, el
-  código. Es la identidad del firmante en todo el proceso.
-- "Nombre": el nombre completo. Aparece en la página de firma ("Firmando como ...") y en el sello
-  que se estampa en el documento.
+| Campo | Uso |
+|---|---|
+| **Correo** | Dirección a la que llegan el enlace de firma y, si activó la verificación OTP, el código. Identifica al firmante durante todo el proceso. |
+| **Nombre** | Nombre completo. Aparece en la página de firma ("Firmando como ...") y en el sello del documento. |
 
-"Añadir otro firmante" añade una fila; el icono de papelera ("Quitar firmante") la elimina. Las
-filas vacías se descartan al continuar. Si falta un dato, la aplicación lo marca: "El correo es
-obligatorio" o "El nombre es obligatorio". Sin ningún firmante completo, avisa "Añade al menos un
-firmante con correo y nombre."
+**Añadir otro firmante** agrega una fila y el icono **Quitar firmante** la elimina. Las filas vacías
+se descartan al continuar. Si falta un dato, la aplicación lo señala con "El correo es obligatorio"
+o "El nombre es obligatorio".
 
-Una misma persona puede ser firmante en varios sobres; dentro de un sobre, cada fila es un enlace
-distinto.
+Cada fila genera un enlace de firma propio. Una misma persona puede firmar en varios sobres.
 
-## Todos firman a la vez
+Revise la lista antes de continuar: los firmantes quedan fijos una vez creado el sobre. Si necesita
+cambiarlos después, [cancele el sobre](/sign/sending/cancel/) y cree uno nuevo.
 
-Con "Todos firman a la vez" (firma en paralelo), el campo "Orden" no aparece. Al enviar, todos los
-firmantes reciben a la vez el correo `You have a document to sign: {title}`, y cada uno firma
-cuando quiera, sin esperar a nadie. El sobre pasa a "En Progreso" con la primera firma y a
-"Completado" con la última.
+## Firmar a la vez
 
-La página del sobre lo recuerda: "Firma en paralelo · Todos recibieron el correo a la vez. Los
-números de orden de abajo no se aplican." Los números que ves ahí reflejan el orden en que
-escribiste las filas, nada más.
+Con **Todos firman a la vez** (firma en paralelo), el campo **Orden** no se muestra. Al enviar,
+todos los firmantes reciben al mismo tiempo el correo `You have a document to sign: {title}` y cada
+uno firma cuando le resulte conveniente. El sobre pasa a **En Progreso** con la primera firma y a
+**Completado** con la última.
 
-## Los firmantes firman en orden
+La página del sobre lo indica: "Firma en paralelo · Todos recibieron el correo a la vez. Los
+números de orden de abajo no se aplican." En este modo, los números solo reflejan el orden en que
+se ingresaron las filas.
 
-Con "Los firmantes firman en orden" (firma secuencial), cada fila tiene un campo "Orden" con un
+## Firmar en orden
+
+Con **Los firmantes firman en orden** (firma secuencial), cada fila tiene un campo **Orden** con un
 número. Los números definen turnos:
 
-- Al enviar, solo los firmantes con el número más bajo reciben el correo.
-- Cuando todos los de un turno han firmado, los del número siguiente reciben
-  `It's your turn to sign: {title}`. Su enlace se genera en ese momento, así que la caducidad del
+- Al enviar, reciben el correo los firmantes con el número más bajo.
+- Cuando todos los firmantes de un turno han firmado, los del número siguiente reciben
+  `It's your turn to sign: {title}`. Su enlace se genera en ese momento, por lo que la caducidad del
   enlace (por defecto <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />) empieza a contar
   entonces.
-- Dos firmantes con el mismo número forman un turno y firman a la vez.
+- Los firmantes con el mismo número forman un turno y firman a la vez.
 
-Un firmante que abra su enlace antes de tiempo ve "Esperando a los firmantes anteriores" y puede
-"Comprobar de nuevo" más tarde. La página del sobre lo resume: "Firma secuencial · Cada firmante
-recibe el correo solo cuando han firmado todos los anteriores."
+Si un firmante abre su enlace antes de su turno, ve **Esperando a los firmantes anteriores** y puede
+pulsar **Comprobar de nuevo** más tarde. La página del sobre lo resume: "Firma secuencial · Cada
+firmante recibe el correo solo cuando han firmado todos los anteriores."
+
+## Elegir el modo adecuado
 
 | | Todos a la vez | En orden |
 |---|---|---|
-| Campo "Orden" | No se muestra | Un número por firmante |
-| Quién recibe el enlace al enviar | Todos | Solo el primer turno |
-| Correo a los siguientes turnos | No aplica | `It's your turn to sign: {title}` cuando el turno anterior termina |
-| Si un firmante no firma | Los demás siguen | Los turnos siguientes esperan |
+| Campo **Orden** | No se muestra | Un número por firmante |
+| Quién recibe el enlace al enviar | Todos | El primer turno |
+| Correo a los turnos siguientes | No aplica | `It's your turn to sign: {title}` cuando termina el turno anterior |
+| Mientras un firmante no firma | Los demás continúan | Los turnos siguientes esperan |
 
-Elige "en orden" cuando una firma deba condicionar la siguiente (quien aprueba firma después de
-quien solicita). Elige "a la vez" en el resto de casos: es más rápido y ningún firmante bloquea a
-otro.
+Elija **en orden** cuando una firma deba preceder a la siguiente, por ejemplo cuando quien aprueba
+firma después de quien solicita. En los demás casos, **a la vez** es más rápido y ningún firmante
+espera a otro.
 
-## Añadir firmantes a un borrador
+## Seguir a cada firmante
 
-La aplicación no permite añadir ni quitar firmantes a un sobre ya creado, aunque siga en
-"Borrador". Por la API, un sobre en "Borrador" sí admite firmantes nuevos con la operación
-`POST /envelopes/{id}/signers`; ver la [referencia de la API](/sign/api/). Si trabajas desde la
-aplicación y te falta alguien, [cancela el sobre](/sign/sending/cancel/) y crea uno nuevo.
-
-## Al enviar, los firmantes quedan fijos
-
-Enviar congela la lista: no se puede añadir, quitar ni corregir un firmante, ni por la aplicación
-ni por la API. Tampoco se puede reenviar ni regenerar un enlace, y el firmante no tiene la opción
-de rechazar la firma; si no quiere firmar, simplemente no lo hace y el sobre se queda abierto hasta
-que lo canceles o expire.
-
-Desde la página del sobre sigues a cada firmante por su estado: "Pendiente" (aún sin enlace),
-"Notificado" (recibió el correo), "Visto" (abrió el enlace) y "Firmado". Ver
+Desde la página del sobre puede ver el estado de cada firmante: **Pendiente** (aún sin enlace),
+**Notificado** (recibió el correo), **Visto** (abrió el enlace) y **Firmado**. Si un firmante no
+va a firmar, cancele el sobre o deje que expire. Consulte
 [Enviar y seguir](/sign/sending/send-and-track/).
 
 <LinkCard title="Enviar y seguir" href="/sign/sending/send-and-track/" description="Estados, filtros de la lista, la página de detalle y los recordatorios automáticos." />

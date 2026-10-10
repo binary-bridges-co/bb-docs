@@ -1,6 +1,6 @@
 ---
 title: Etiquetas
-description: Claves de etiqueta definidas por los administradores y valores por sobre asignados por los usuarios. Límites, filtrado de la lista y quién hace qué.
+description: Clasifique sus sobres con etiquetas de clave y valor. Claves definidas por los administradores, valores por sobre, límites, filtros y permisos.
 product: sign
 audience: user
 ---
@@ -9,66 +9,59 @@ import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { LABELS } from '../../../facts/sign';
 
-Las etiquetas sirven para clasificar sobres y encontrarlos después: el contratista al que
-pertenecen, el proyecto, el departamento. Cada etiqueta es un par **clave: valor**. Las claves las
-define un administrador para toda la organización; el valor lo pone quien trabaja con el sobre.
-Así, todos usan las mismas categorías y nadie escribe "Proyecto", "proyecto" y "PROYECTO" como tres
-cosas distintas.
+Las etiquetas le permiten clasificar los sobres y encontrarlos después por contratista, proyecto o
+departamento. Cada etiqueta es un par **clave: valor**. Un administrador define las claves para toda
+la organización y quien trabaja con el sobre asigna el valor. Así, toda la organización clasifica
+con las mismas categorías.
 
 ## Claves y valores
 
-Una **clave** es una categoría con nombre, color y descripción: `contratista`, `proyecto`,
-`departamento`. Un **valor** es lo que un sobre concreto tiene en esa categoría: `Acme S.A.S.`,
-`Renovación 2026`, `Compras`. Un sobre lleva como máximo un valor por clave, y solo de claves que
-existan en la organización. La lista de sobres muestra las etiquetas de cada fila y permite filtrar
-por ellas.
+Una **clave** es una categoría con nombre, color y descripción, por ejemplo `contratista`,
+`proyecto` o `departamento`. Un **valor** es lo que un sobre concreto tiene en esa categoría, por
+ejemplo `Acme S.A.S.`, `Renovación 2026` o `Compras`. Cada sobre admite un valor por clave, para las
+claves definidas en la organización. La lista de sobres muestra las etiquetas de cada fila y permite
+filtrar por ellas.
 
-## Las claves las define un administrador
+## Definir las claves
 
-En la página "Claves de etiqueta" (en el menú, "Etiquetas"), un Administrador de Organización pulsa
-"Nueva clave" y rellena:
+En la página **Claves de etiqueta** (**Etiquetas** en el menú), un Administrador de Organización
+pulsa **Nueva clave** y completa:
 
 | Campo | Regla |
 | --- | --- |
-| "Nombre *" | Obligatorio, único en la organización, hasta <Fact of={LABELS.keyNameMaxChars} /> caracteres. La aplicación sugiere "p. ej. contratista, proyecto, departamento". |
-| "Color" | Un color para distinguir la etiqueta en las listas. |
-| "Descripción" | Opcional, hasta <Fact of={LABELS.keyDescriptionMaxChars} /> caracteres. Úsala para decir qué valores se esperan. |
+| **Nombre** | Obligatorio, único en la organización, hasta <Fact of={LABELS.keyNameMaxChars} /> caracteres. |
+| **Color** | Distingue la etiqueta en las listas. |
+| **Descripción** | Opcional, hasta <Fact of={LABELS.keyDescriptionMaxChars} /> caracteres. Úsela para indicar qué valores se esperan. |
 
-El administrador también edita la descripción de una clave y la elimina. Eliminar una clave la quita
-de todos los sobres que la usaban, y la aplicación lo advierte antes: "¿Eliminar la clave de etiqueta
-«nombre»? Se quitará de todos los sobres." Los miembros de la organización no ven la página
-"Etiquetas": si necesitas una clave nueva, pídesela a tu administrador. Los pasos están en
-[Claves de etiqueta](/sign/admin/labels/).
+El administrador también puede editar la descripción de una clave o eliminarla. Al eliminar una
+clave, esta se retira de todos los sobres que la usaban, y la aplicación pide confirmación antes de
+hacerlo. Si usted es miembro y necesita una clave nueva, solicítela a su administrador. Los pasos
+están en [Claves de etiqueta](/sign/admin/labels/).
 
-## Los valores los pone quien trabaja con el sobre
+## Asignar valores
 
 Un Colaborador asigna valores de dos maneras:
 
-- **Al crear el sobre**, en el asistente, antes de enviarlo.
-- **En el detalle del sobre**, con "+ Añadir etiqueta": elige una clave y escribe su valor en el
-  campo "valor de *clave*...". Esto funciona en cualquier estado del sobre, también después de
-  enviarlo o completarlo. Las etiquetas son lo único de un sobre que sigue siendo editable después
-  del envío.
+- **Al crear el sobre**, en el asistente.
+- **En el detalle del sobre**, con **+ Añadir etiqueta**: elija una clave y escriba su valor. Esto
+  funciona en cualquier estado del sobre, también después de enviarlo o completarlo.
 
-Un valor no puede estar vacío y tiene como máximo <Fact of={LABELS.valueMaxChars} /> caracteres.
-Si una clave ya no existe (porque un administrador la eliminó), el valor desaparece con ella. Si la
-aplicación no consigue guardar, lo dice: "No se pudieron actualizar las etiquetas".
+Cada valor tiene entre uno y <Fact of={LABELS.valueMaxChars} /> caracteres.
 
-<Aside type="tip" title="Acuerda los valores antes de empezar">
-  bb-sign no restringe el valor de una etiqueta a una lista cerrada: cualquier texto vale. Si varios
-  usuarios etiquetan sobres del mismo proyecto, acuerden un valor exacto (y anótenlo en la
-  descripción de la clave), o el filtro no los reunirá.
+<Aside type="tip" title="Acuerde los valores con su equipo">
+  El valor de una etiqueta es texto libre. Si varias personas etiquetan sobres del mismo proyecto,
+  acuerden un valor exacto y regístrenlo en la descripción de la clave, para que el filtro los reúna
+  todos.
 </Aside>
 
 ## Filtrar la lista por etiqueta
 
-En la lista "Sobres", el control "Filtrar por etiqueta..." permite elegir una clave y escribir el
-valor en "valor de *clave*...". Se pueden añadir varios filtros de etiqueta a la vez; un sobre
-aparece solo si cumple todos. El filtro se combina con los demás (estado, título, fechas, espacio
-de trabajo) y se muestra como una ficha que puedes quitar con "Quitar filtro" o borrar junto a los
-demás con "Limpiar filtros". Las etiquetas de cada fila se listan bajo el título del sobre.
+En la lista **Sobres**, el control **Filtrar por etiqueta...** le permite elegir una clave y escribir
+su valor. Puede combinar varios filtros de etiqueta: la lista muestra los sobres que cumplen todos.
+Los filtros de etiqueta se combinan también con los de estado, título, fechas y espacio de trabajo,
+y se pueden quitar uno a uno con **Quitar filtro** o todos a la vez con **Limpiar filtros**.
 
-## Quién hace qué
+## Permisos
 
 | Acción | Quién | Permiso |
 | --- | --- | --- |
@@ -76,6 +69,6 @@ demás con "Limpiar filtros". Las etiquetas de cada fila se listan bajo el títu
 | Asignar o cambiar valores en un sobre | Colaboradores y Gestores del espacio del sobre, y los administradores. | `label:assign` |
 | Crear, editar y eliminar claves | Administradores de Organización. | `label:manage` |
 
-Un Lector o un Auditor ve las etiquetas de los sobres y filtra por ellas, pero no las cambia. Una
-credencial de API asigna valores en los espacios donde sea Colaborador o Gestor, pero nunca crea
-claves. Ver [Organizaciones, espacios y roles](/sign/concepts/organizations-workspaces-roles/).
+Los Lectores y Auditores ven las etiquetas de los sobres y filtran por ellas. Las credenciales de
+API asignan valores en los espacios donde son Colaboradoras o Gestoras. Consulte
+[Organizaciones, espacios y roles](/sign/concepts/organizations-workspaces-roles/).

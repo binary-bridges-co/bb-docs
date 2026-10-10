@@ -1,11 +1,11 @@
 ---
 title: Developer platform
-description: Map of the developer section (quickstart, authentication, webhooks, SDKs, API reference), the production URLs and what the public contract covers.
+description: Integrate bb-sign into your systems with the HTTP API, signed webhooks and the JavaScript and Java SDKs. Production URLs and contract scope.
 product: sign
 audience: developer
 ---
 
-import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { URLS, AUTH } from '../../../../facts/sign';
 import openapi from '../../../../sync/sign/openapi.json';
@@ -13,9 +13,9 @@ import openapi from '../../../../sync/sign/openapi.json';
 export const pathCount = Object.keys(openapi.paths).length;
 export const operationCount = Object.values(openapi.paths).reduce((n, p) => n + Object.keys(p).length, 0);
 
-bb-sign exposes a small HTTP API for the envelope workflow, signed webhooks for what happens
-afterwards, and two SDKs that wrap both. This page is the map of the section: what exists, where
-it lives and in what order to read it.
+With the bb-sign API, your systems create and send envelopes, receive a signed notification each
+time an envelope changes status, and download the signed document without manual steps. The
+JavaScript and Java SDKs cover the API and webhook verification.
 
 ## Production URLs
 
@@ -24,51 +24,46 @@ it lives and in what order to read it.
 | API base URL | <Fact of={URLS.api} /> |
 | Token URL (OAuth2 client credentials) | <Fact of={URLS.tokenUrl} /> |
 | OpenAPI contract | <a href={URLS.api.value + URLS.openapiPath.value}><Fact of={URLS.api} /><Fact of={URLS.openapiPath} /></a> |
-| Rendered API reference | [/sign/api/](/sign/api/) |
+| API reference | [/sign/api/](/sign/api/) |
 
-Set the first two as environment variables in anything that calls bb-sign. Tokens live
-<Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; both SDKs fetch and refresh them for you.
+Set the first two as environment variables in every service that calls bb-sign. A token is valid
+for <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; both SDKs fetch and refresh it
+automatically.
 
-## What the public contract covers
+## Public contract scope
 
-The contract version <code>{openapi.info.version}</code> has {pathCount} paths ({operationCount}
-operations) in five areas:
+Contract version <code>{openapi.info.version}</code> has {pathCount} paths ({operationCount}
+operations) organized in five areas:
 
-| Area | What it does | Credential needed |
+| Area | Operations | Credential required |
 |---|---|---|
-| Documents | Upload a PDF before an envelope exists | Yes |
-| Envelopes | Create, list, read, attach documents, add signers, send, cancel, counts by status | Yes |
-| Signing ceremony | Open a link, request and verify a one-time code, sign, download the signed copy, open and close beacons | No: the link token is the credential |
+| Documents | Upload a PDF before creating the envelope | Yes |
+| Envelopes | Create, list, read, attach documents, add signers, send, cancel, count by status | Yes |
+| Signing ceremony | Open a link, request and verify a one-time code, sign, download the signed copy, record open and close | No: the link token is the credential |
 | Verify | Check a seal from the QR code on a signed document | No |
-| Workspaces | List the workspaces the credential can reach | Yes |
+| Workspaces | List the workspaces the credential can access | Yes |
 
-Everything a credential can call is scoped to its organization by the token, and within the
-organization by its **workspace roles**. [Machine authentication](/en/sign/developers/authentication/)
-explains both.
+The token scopes every call to the credential's organization and, within it, to its **workspace
+roles**. [Machine authentication](/en/sign/developers/authentication/) explains both levels.
 
-## What is not in the API
+## Administration operations
 
-Managing organizations, users, certificates, quotas, API credentials, webhooks and workspaces are
-**UI operations**: an org admin does them in **Settings**, and they are not part of the public
-contract. The pages under [Administer the organization](/en/sign/admin/) document them. In
-particular, a webhook is registered in **Settings**, tab **Webhooks**, not through an endpoint.
-
-<Aside type="note" title="Only what is shipped">
-  There are no templates, no bulk send, no form fields, no rate limits and no SDKs other than
-  JavaScript and Java. If a page here does not describe it, it does not exist today.
-</Aside>
+Organizations, users, certificates, quotas, API credentials, webhooks and workspaces are managed
+in **Settings** by an organization admin. The pages under
+[Administer the organization](/en/sign/admin/) describe each one. Webhooks, in particular, are
+registered in **Settings**, tab **Webhooks**.
 
 ## Where to start
 
 <CardGrid>
-  <LinkCard title="Quickstart" href="/en/sign/developers/quickstart/" description="A 201 from POST /api/v1/envelopes, in curl, JavaScript or Java." />
-  <LinkCard title="Machine authentication" href="/en/sign/developers/authentication/" description="Client credentials, what the token carries, what it can reach, how long it lives." />
-  <LinkCard title="From credential to signed document" href="/en/sign/developers/envelope-walkthrough/" description="Upload, create, add a signer, send, receive the webhook, download the signed PDF." />
-  <LinkCard title="Webhooks" href="/en/sign/developers/webhooks/" description="The six events, the three headers, verifying the signature, delivery and retries." />
-  <LinkCard title="Webhook signature specification" href="/en/sign/developers/webhook-signature-spec/" description="The normative scheme: header grammar, what is signed, tolerance, the algorithm, the payload." />
-  <LinkCard title="Errors" href="/en/sign/developers/errors/" description="Every status the API answers, the error body, and the 404-not-403 rule." />
+  <LinkCard title="Quickstart" href="/en/sign/developers/quickstart/" description="Get a 201 from POST /api/v1/envelopes with curl, JavaScript or Java." />
+  <LinkCard title="Machine authentication" href="/en/sign/developers/authentication/" description="Client credentials: token contents, scope and lifetime." />
+  <LinkCard title="From credential to signed document" href="/en/sign/developers/envelope-walkthrough/" description="Upload, create, add a signer, send, receive the webhook and download the signed PDF." />
+  <LinkCard title="Webhooks" href="/en/sign/developers/webhooks/" description="The six events, the three headers, signature verification, delivery and retries." />
+  <LinkCard title="Webhook signature specification" href="/en/sign/developers/webhook-signature-spec/" description="The normative scheme: header grammar, signed content, tolerance, algorithm and payload." />
+  <LinkCard title="Errors" href="/en/sign/developers/errors/" description="Every status the API returns, the error body and the 404-instead-of-403 rule." />
   <LinkCard title="JavaScript SDK" href="/en/sign/sdks/javascript/" description="ESM client for Node, with webhook verification on a server-only subpath." />
-  <LinkCard title="Java SDK" href="/en/sign/sdks/java/" description="Retrofit client with a handover jar, and Webhooks.verify over byte arrays." />
+  <LinkCard title="Java SDK" href="/en/sign/sdks/java/" description="Retrofit client distributed as a jar, with Webhooks.verify over byte arrays." />
   <LinkCard title="API reference" href="/sign/api/" description="Every operation and schema, generated from the contract." />
-  <LinkCard title="Migrating from Adobe Acrobat Sign" href="/en/sign/developers/migrating-from-adobe/" description="Concept mapping, and where there is no equivalent." />
+  <LinkCard title="Migrating from Adobe Acrobat Sign" href="/en/sign/developers/migrating-from-adobe/" description="Concept mapping between Adobe Acrobat Sign and bb-sign." />
 </CardGrid>

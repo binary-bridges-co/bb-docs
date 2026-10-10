@@ -1,6 +1,6 @@
 ---
 title: "bb-sign terms and conditions of service"
-description: Courtesy translation of the current terms of service (Version 1) and of the draft retention clause planned for Version 2. The Spanish text prevails.
+description: "Courtesy translation of the bb-sign terms of service in force (Version 1) and the draft retention clauses for Version 2. The Spanish text prevails."
 product: sign
 audience: legal
 source: docs/legal/terminos-y-condiciones.md
@@ -14,7 +14,7 @@ import { RETENTION_POLICY } from '../../../../facts/sign';
 
 <LegalHeader locale="en" version={frontmatter.legalVersion} source={frontmatter.source} />
 
-These terms form part of the service agreement signed between Binary Bridges S.A.S. and each customer. They are published in the application for reference; they do not require online acceptance. Every change increments the version and is recorded in the history at the end of this document.
+These terms form part of the service agreement between Binary Bridges S.A.S. and each customer. They are published in the application for reference and do not require online acceptance. Every change creates a new version, recorded in the history at the end of this page.
 
 ## 1. Nature of the service
 
@@ -38,18 +38,17 @@ These terms form part of the service agreement signed between Binary Bridges S.A
 
 - Version 1 (2026-10-07): sections 1 and 2.
 
-## Retention (draft for Version 2)
+## Document retention (draft for Version 2)
 
 <Aside type="caution" title="Draft">
-  Draft. It is not part of the published Version 1. The clauses below will be added to the terms when
-  bb-sign publishes Version 2. Until then they describe the agreed policy, not a text in force. The
-  numbering is provisional.
+  These clauses describe the agreed retention policy and will be added to the terms with Version 2.
+  They are not part of Version 1 in force, and their numbering is provisional.
 </Aside>
 
 **3.1** The signed documents and the evidence of each envelope are kept for a **fixed, non-configurable** period of <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. When that period ends, they are deleted.
 
-**3.2** Files older than <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> move to archive storage and **cannot be downloaded immediately**. They are restored at the customer's request and sent to the requester when available, usually within hours and without a guaranteed time.
+**3.2** Files older than <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> move to archive storage and **cannot be downloaded immediately**. They are restored at the customer's request and sent to the requester when available, usually within a few hours and without a guaranteed time.
 
 **3.3** Conservation beyond the period in clause 3.1 is the customer's responsibility, under article 12 of Ley 527 de 1999 and the customer's own archiving rules. Binary Bridges recommends archiving each envelope on completion, through the `envelope.completed` webhook event and the API. The procedure is in [Scope and retention](/en/sign/legal/retention/).
 
-**3.4** Each customer is the data controller for the personal data of its signers and must keep an active data-processing authorization published in bb-sign.
+**3.4** Each customer is the data controller for the personal data of its signers and must keep a current data-processing authorization published in bb-sign.

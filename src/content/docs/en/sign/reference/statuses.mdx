@@ -1,6 +1,6 @@
 ---
 title: "Statuses"
-description: Every status of envelopes, signers, webhook deliveries and API credentials, with the label the application shows for each one.
+description: "Every status of envelopes, signers, webhook deliveries and API credentials, with the label the application shows for each one."
 product: sign
 audience: all
 ---
@@ -10,26 +10,26 @@ import StatusFlow from '../../../../../components/facts/StatusFlow.astro';
 import { AUTH, DELIVERY_STATUSES, WEBHOOKS } from '../../../../facts/sign';
 
 export const DELIVERY = {
-  PENDING_RENDER: { label: 'Preparing', meaning: 'bb-sign is building the delivery payload. Nothing has been sent yet.' },
+  PENDING_RENDER: { label: 'Preparing', meaning: 'bb-sign is preparing the delivery payload. Sending starts once it is ready.' },
   PENDING_SEND: { label: 'Sending', meaning: 'The payload is ready and an attempt is in flight or scheduled. The row shows "Next attempt at" with the time.' },
-  DELIVERED: { label: 'Delivered', meaning: 'Your endpoint answered with a 2xx code. There will be no more attempts.' },
-  FAILED_PERMANENT: { label: 'Could not be built', meaning: 'bb-sign could not build the delivery payload. No attempt was made.' },
-  SKIPPED: { label: 'Not sent', meaning: 'The endpoint was disabled when the event happened. Nothing was sent; this is why there is a gap in what you received.' },
-  DEAD_LETTERED: { label: 'Gave up', meaning: 'Every retry was exhausted without a 2xx answer. bb-sign will not try this delivery again.' },
+  DELIVERED: { label: 'Delivered', meaning: 'Your endpoint answered with a 2xx code. The delivery is complete.' },
+  FAILED_PERMANENT: { label: 'Could not be built', meaning: 'bb-sign could not generate the delivery payload, so nothing was sent.' },
+  SKIPPED: { label: 'Not sent', meaning: 'The endpoint was disabled when the event happened, so this event was not sent. It explains a gap in the events you received.' },
+  DEAD_LETTERED: { label: 'Gave up', meaning: 'Every retry was used without a 2xx answer. The delivery is closed.' },
 };
 
-This page is the reference for every status the application and the API show, with the internal name
-(the one that travels in the API and in webhooks) and the label you see on screen in English. The
-concepts behind envelope and signer statuses are in
+Use this reference to interpret every status the application and the API show. Each status appears
+with its name in the API and webhooks and with the label the application shows in English. The
+concepts behind envelope and signer statuses are explained in
 [Envelopes and signers](/en/sign/concepts/envelopes-and-signers/).
 
 ## Envelope statuses
 
 <StatusFlow locale="en" of="envelope" />
 
-An envelope becomes `EXPIRED` only if an expiry date was set when it was created. Cancelling is the
-only transition a person starts after sending; expiring and completing are produced by the flow
-itself. There is no "declined" or "voided" status: a signer cannot decline today.
+An envelope becomes `EXPIRED` when an expiry date was set at creation and that date arrives. After
+sending, cancelling is the transition a person starts; expiring and completing happen
+automatically.
 
 ## Signer statuses
 
@@ -62,7 +62,7 @@ attempts. The **Settings** page, **Webhooks** tab, shows the history with these 
   </tbody>
 </table>
 
-Retries follow the ladder {WEBHOOKS.retryLadder.value.join(', ')} with a random variation of
+Retries follow the ladder {WEBHOOKS.retryLadder.value.join(', ')}, with a random variation of
 <Fact of={WEBHOOKS.retryJitterPct} unit="%" />. After <Fact of={WEBHOOKS.disableAfterLadders} />
 consecutive exhausted ladders, bb-sign disables the endpoint and emails the administrators. See
 [Webhooks](/en/sign/admin/webhooks/).
@@ -71,9 +71,9 @@ consecutive exhausted ladders, bb-sign disables the endpoint and emails the admi
 
 | Outcome | Label in the application | What it means |
 |---|---|---|
-| `SUCCESS` | Accepted | Your endpoint answered 2xx. |
-| `HTTP_ERROR` | Rejected | Your endpoint answered, but with a code other than 2xx. Check your logs with the delivery's `X-BBSign-Event-Id`. |
-| `TRANSPORT_ERROR` | Unreachable | No answer at all: DNS, connection refused, invalid TLS or timeout. Check that the URL is public and HTTPS. |
+| `SUCCESS` | Accepted | Your endpoint answered with a 2xx code. |
+| `HTTP_ERROR` | Rejected | Your endpoint answered with a code other than 2xx. Look up the delivery's `X-BBSign-Event-Id` in your logs. |
+| `TRANSPORT_ERROR` | Unreachable | No answer, because of a DNS error, a refused connection, an invalid TLS certificate or a timeout. Check that the URL is public and uses HTTPS. |
 
 ## API credentials
 
@@ -82,8 +82,8 @@ Credentials are listed in **Settings**, **API credentials** tab.
 | Status | Label in the application | What it means |
 |---|---|---|
 | Active | Active | The credential can obtain tokens and call the API. |
-| Revoked, draining | Revoked — draining | You just revoked it. It cannot obtain new tokens, but the tokens it already issued keep working until they expire, at most <Fact of={AUTH.tokenLifetimeSeconds} unit="seconds" /> after they were issued. The row shows "Tokens this credential already issued stop working at" with the time. |
-| Revoked | Revoked | No token from this credential works. It stays listed for <Fact of={AUTH.revokedCredentialListedDays} unit="days" /> and then disappears. |
+| Revoked, draining | Revoked — draining | The credential was recently revoked. It no longer obtains new tokens, and the tokens it already issued stay valid until they expire, at most <Fact of={AUTH.tokenLifetimeSeconds} unit="seconds" /> after they were issued. The row shows "Tokens this credential already issued stop working at" with the time. |
+| Revoked | Revoked | No token from this credential is valid. The credential stays listed for <Fact of={AUTH.revokedCredentialListedDays} unit="days" /> and is then removed. |
 
 Rotating a credential does not change its status: the previous secret stops working immediately and
 the new one is shown once. See [API credentials](/en/sign/admin/api-credentials/).

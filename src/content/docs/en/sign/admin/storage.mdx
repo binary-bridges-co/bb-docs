@@ -1,6 +1,6 @@
 ---
 title: Storage
-description: "What the Storage page shows, where its numbers come from, what production storage does today and who can change the configuration."
+description: "What the Storage page shows, how long bb-sign keeps your organization's documents and how to save your copies in time."
 product: sign
 audience: admin
 ---
@@ -9,55 +9,43 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../../facts/sign';
 
-**Who:** organization admin, read-only (platform admins can also change it). **Where:** Storage
-(`/storage/lifecycle`) in the sidebar.
+bb-sign keeps your organization's documents for a fixed retention period and moves them over time
+to lower-cost storage tiers. The **Storage** page shows you those rules in read-only mode.
 
-The "Storage Lifecycle" page shows the rules the application applies to stored files: when they move
-to cheaper storage tiers and when they expire. What you see is service configuration, the same for
-every organization.
+**Who:** organization admins, read-only; platform admins can change it. **Where:** **Storage**, in
+the sidebar.
 
 ## What the page shows
 
-"Configuration" holds three values:
+The **Storage Lifecycle** page has two parts:
 
-| Field | What it is |
+- **Configuration** shows, in days, when files move to lower-cost storage tiers and the **Object
+  Expiration** value.
+- The rules list shows which files they apply to. The organization's certificates are excluded: they
+  do not expire.
+
+This configuration is the same for every organization.
+
+## How long your documents are kept
+
+| Stage | When |
 | --- | --- |
-| "Standard-IA Transition" "(AWS S3 only)" | Days after which a file moves to an infrequent-access tier. It reads the same. |
-| "Glacier Transition" "(AWS S3 only)" | Days after which a file moves to cold storage. Retrieving it is no longer immediate. |
-| "Object Expiration" | Days after which the rule deletes the file. |
+| Retention of signed documents | <Fact of={RETENTION_POLICY.retentionDays} unit="days" />, a fixed period, the same for every organization |
+| Move to archive storage | After <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="days" /> |
 
-"Bucket Rules" lists every "managed" bucket with its rules and, when one expires, "expires after
-N d". The certificates bucket is "excluded": "No lifecycle rules — certificates do not expire".
+Documents in archive storage are kept intact; retrieving them takes longer than a recent document.
+When the retention period ends, keeping the documents is your organization's responsibility.
 
-## Where those numbers come from
-
-The "Configuration" values are the application's lifecycle defaults, with an expiration of
-<Fact of={RETENTION_IMPLEMENTED.nonProdLifecycleDefaultDays} unit="days" />. They apply in the
-environments that are not production. In production, storage is governed by the infrastructure, not
-by this page.
-
-## What production does today
-
-| What | Today in production |
-| --- | --- |
-| Move to Standard-IA | After <Fact of={RETENTION_IMPLEMENTED.documentsStandardIaDays} unit="days" /> |
-| Move to Glacier (cold storage) | After <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="days" /> |
-| Expiration rule | None. Today no process deletes signed documents. |
-
-This describes what the infrastructure does right now, not what the service promises. The promise is
-in the terms: a fixed retention of <Fact of={RETENTION_POLICY.retentionDays} unit="days" /> and,
-after that, conservation is your organization's responsibility.
-
-<Aside type="caution" title="Do not mistake the page for the policy">
-  That no expiration rule exists today does not mean documents are kept forever. The period that
-  counts is the one in the terms of service. Keep your copies in time; the recommended way is in
+<Aside type="caution" title="Save your copies within the period">
+  Download and archive the signed documents your organization must keep before the
+  <Fact of={RETENTION_POLICY.retentionDays} unit="days" /> period ends. The recommended way is in
   [Scope and retention](/en/sign/legal/retention/).
 </Aside>
 
-## Who can change it
+## Who can change the configuration
 
-An organization admin sees the page read-only. Only a platform admin sees the editable "Object
-Expiration" field and the "Apply" button. The Standard-IA and Glacier transitions are not edited from
-the app. There is no per-organization configuration: retention is not negotiable.
+Organization admins view the page. The Binary Bridges platform administrator is the one who can
+change the **Object Expiration** with the **Apply** button. The retention period is fixed and is not
+configured per organization.
 
-<LinkCard title="Scope and retention" href="/en/sign/legal/retention/" description="The binding retention terms, what is implemented today and what your organization must do." />
+<LinkCard title="Scope and retention" href="/en/sign/legal/retention/" description="The service's retention terms and how to archive your signed documents." />

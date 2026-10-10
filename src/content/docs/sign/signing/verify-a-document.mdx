@@ -1,6 +1,6 @@
 ---
 title: Verificar un documento firmado
-description: Qué abre el código QR del sello, qué significan Firma válida y Firma no válida, qué no comprueba esa página y cómo ver el sello del certificado.
+description: Cómo confirmar una firma con el código QR del sello, qué indica cada resultado y cómo comprobar la integridad del PDF con el sello del certificado.
 product: sign
 audience: all
 ---
@@ -9,62 +9,62 @@ import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { CERTIFICATE } from '../../../facts/sign';
 
-Cualquier persona con el PDF firmado puede comprobar el sello sin cuenta. Esta página explica qué
-comprueba esa verificación y, sobre todo, qué no.
+Cualquier persona que tenga el PDF firmado puede verificarlo sin cuenta. El código QR del sello
+confirma los datos de la firma, y el sello del certificado de la organización confirma que el
+archivo no ha cambiado.
 
 ## Escanear el código QR
 
-Cada sello lleva un código QR. Al escanearlo se abre la página "Verificación de firma" de bb-sign,
-que consulta el servidor y muestra un resultado y cuatro datos: "Firmante", "Correo", "Firmado" y
-"Documento" (el identificador del sobre). Si abres el enlace a mano y le falta algo, verás "A este
-enlace le faltan los datos de verificación. Vuelve a escanear el código QR del documento firmado, o
-abre el enlace tal y como aparece allí."
+Al escanear el código QR del sello se abre la página **Verificación de firma**, que muestra el
+resultado y cuatro datos: **Firmante**, **Correo**, **Firmado** y **Documento** (el identificador
+del sobre). Si el enlace está incompleto, la página muestra "A este enlace le faltan los datos de
+verificación. Vuelve a escanear el código QR del documento firmado, o abre el enlace tal y como
+aparece allí."
 
-## Qué significa "Firma válida"
+## Resultado "Firma válida"
 
-Bajo el resultado se lee "Este documento no ha sido alterado desde que se firmó." En concreto,
-bb-sign recalcula la huella del sello, <Fact of={CERTIFICATE.sealHashFormula} />, con los datos
-del firmante que tiene guardados y el certificado **activo hoy** en la organización, y la compara
-con la que se imprimió en el sello. Si coinciden, los datos del sello (quién, con qué correo, qué
-día, qué sobre) son los que bb-sign registró y nadie los ha cambiado.
+**Firma válida** indica que los datos del sello (firmante, correo, fecha y sobre) coinciden con los
+que bb-sign registró al momento de la firma. Para comprobarlo, bb-sign recalcula la huella del
+sello, <Fact of={CERTIFICATE.sealHashFormula} />, con los datos registrados y el certificado
+activo de la organización, y la compara con la huella impresa en el sello.
 
-## Qué puede significar "Firma no válida"
+## Resultado "Firma no válida"
 
-La página dice "El documento no coincide con su firma. Puede haberse editado después de firmarlo, o
-puede no ser el archivo original." Las causas posibles:
+**Firma no válida** indica que la huella no coincide. Puede deberse a:
 
-- El QR o el enlace no corresponden a ninguna firma registrada (un enlace mal copiado, por
-  ejemplo).
-- La organización cambió de certificado después de la firma. La huella incluye el certificado,
-  así que los sellos anteriores dejan de coincidir aunque el documento esté intacto.
-- No hay certificado activo con el que comparar ("Certificate not available for verification").
+- un código QR o un enlace que no corresponde a una firma registrada, por ejemplo un enlace mal
+  copiado;
+- un cambio de certificado en la organización después de la firma: la huella incluye el
+  certificado, de modo que los sellos anteriores dejan de coincidir aunque el documento esté
+  intacto;
+- la ausencia de un certificado activo para comparar ("Certificate not available for
+  verification").
 
-Si tienes dudas, pide a la organización que te confirme la firma desde el historial del sobre.
+En cualquiera de estos casos, la organización que envió el documento puede confirmar la firma desde
+el historial del sobre.
 
-## Lo que esta comprobación no hace
+## Comprobar la integridad del PDF
 
-<Aside type="caution" title="El QR no examina el archivo PDF">
-  La verificación compara datos guardados en bb-sign, no el archivo que tienes delante. Un PDF
-  editado después de firmar, con el sello intacto, seguiría dando "Firma válida" al escanear su
-  QR. Para saber si el archivo cambió, mira el sello del certificado.
+<Aside type="caution" title="Use el sello del certificado para comprobar el archivo">
+  El código QR verifica los datos registrados en bb-sign. Para confirmar que el archivo PDF no se
+  modificó después de firmarse, revise el sello del certificado.
 </Aside>
 
-## Comprobar el sello del certificado
+Al completarse el sobre, bb-sign sella cada PDF con el certificado de la organización. Abra el
+archivo en Adobe Acrobat Reader y abra el panel de firmas (el icono de la pluma en la barra
+lateral). Allí puede ver:
 
-Al completarse el sobre, bb-sign firma cada PDF con el certificado de la organización. Abre el
-archivo en Adobe Acrobat Reader y abre el panel de firmas (el icono de la pluma en la barra
-lateral). Allí verás:
+- si el archivo cambió después de sellarse, lo que Acrobat indica junto a la firma;
+- a nombre de quién está el certificado. Una organización con certificado propio aparece con su
+  nombre. Si la organización usa el certificado de pruebas de Binary Bridges, que viene por
+  defecto, Acrobat lo marca como no confiable. Consulte
+  [Certificado propio de la organización](/sign/admin/own-certificate/).
 
-- si el archivo cambió después de sellarse: Acrobat lo avisa junto a la firma;
-- a nombre de quién está el certificado. Por defecto bb-sign usa un certificado de pruebas de
-  Binary Bridges, que Acrobat marca como no confiable; una organización con certificado propio
-  aparece con su nombre. Ver [Certificado propio de la organización](/sign/admin/own-certificate/).
-
-Hoy el PDF incluye solo el certificado final, no la cadena completa, por lo que Acrobat puede
-pedirte que confíes en él manualmente.
+El PDF incluye el certificado final sin la cadena completa, por lo que Acrobat puede solicitarle
+que confíe en él manualmente.
 
 ## Si el servicio no responde
 
-Verás "No pudimos contactar con el servicio de verificación. Esto no significa que la firma sea
-inválida — inténtalo de nuevo en un momento." Es un fallo temporal del servicio, no del documento:
-vuelve a escanear el QR más tarde.
+Si la página muestra "No pudimos contactar con el servicio de verificación. Esto no significa que
+la firma sea inválida — inténtalo de nuevo en un momento.", se trata de una interrupción temporal
+del servicio. Escanee de nuevo el código QR más tarde.

@@ -1,6 +1,6 @@
 ---
 title: Espacios y miembros
-description: "Qué es el espacio General, cómo crear, renombrar y eliminar espacios de trabajo, y cómo dar a personas y claves de API el rol Lector, Auditor o Gestor."
+description: "Cómo organizar los sobres en espacios de trabajo y dar a personas y claves de API el rol Lector, Auditor o Gestor en cada uno."
 product: sign
 audience: admin
 ---
@@ -9,91 +9,82 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { AUTH } from '../../../facts/sign';
 
-**Quién:** administrador de la organización (también los administradores de plataforma, desde la
-página de cada organización). **Dónde:** Configuración, pestaña «Espacios de trabajo»
-(`/settings?tab=workspaces`).
+Los espacios de trabajo le permiten decidir quién ve cada sobre. Cada sobre pertenece a un espacio, y
+lo ven sus miembros y los administradores. Así puede reservar, por ejemplo, los contratos laborales
+para el equipo de talento humano.
 
-Los espacios de trabajo deciden quién puede ver qué sobres. Cada sobre vive en un espacio; solo sus
-miembros y los administradores lo ven. Hasta que creas uno, todo está en General.
+**Quién:** administradores de la organización y administradores de plataforma. **Dónde:**
+**Configuración**, pestaña **Espacios de trabajo**.
 
 ## El espacio General
 
-General existe desde el primer día y la pestaña lo describe así: «Todos en la organización · los
-miembros son Colaboradores y pueden crear y enviar aquí». Cada miembro de la organización es
-Colaborador en General sin que nadie lo añada, y ese rol no se puede quitar ni cambiar. General no se
-puede renombrar ni eliminar: «El espacio de trabajo General no se puede renombrar ni eliminar».
+Toda organización comienza con el espacio General. Todos los miembros de la organización son
+Colaboradores en General de forma automática: pueden crear y enviar sobres allí. General es
+permanente, así que no se renombra ni se elimina.
 
-Crea otro espacio cuando quieras que algunos sobres los vea un grupo más pequeño. La pestaña lo
-sugiere: «Por ahora solo existe General. Crea un espacio de trabajo para limitar algunos sobres a un
-grupo más pequeño».
+Cree otro espacio cuando quiera que un grupo más pequeño vea ciertos sobres.
 
-## Crear, renombrar y eliminar
+## Crear, renombrar y eliminar un espacio
 
 <Steps>
 
-1. Pulsa «Nuevo espacio de trabajo», escribe el «Nombre» y pulsa «Crear espacio de trabajo». Verás
-   «Espacio de trabajo "nombre" creado». Si el nombre ya existe: «Ya existe otro espacio de trabajo
-   con ese nombre».
+1. Pulse **Nuevo espacio de trabajo**, escriba el **Nombre** y pulse **Crear espacio de trabajo**.
+   Cada espacio necesita un nombre distinto.
 
-2. Para cambiar el nombre, pulsa «Renombrar» en la fila y escribe el «Nuevo nombre».
+2. Para cambiar el nombre, pulse **Renombrar** en la fila y escriba el **Nuevo nombre**.
 
-3. Para eliminarlo, pulsa «Eliminar». El diálogo avisa: «Solo se pueden eliminar espacios de trabajo
-   vacíos, incluidos sus sobres archivados. No se puede deshacer». Confirma con «Eliminar espacio de
-   trabajo».
+3. Para eliminar un espacio vacío, pulse **Eliminar** y confirme con **Eliminar espacio de trabajo**.
+   La eliminación es definitiva.
 
 </Steps>
 
-Un espacio con sobres no se elimina. Verás «todavía tiene sobres, incluidos los archivados, así que
-no se puede eliminar» con el enlace «Ver sus sobres». Los sobres no se mueven de espacio: un espacio
-que alguna vez tuvo un sobre se queda.
+Un espacio se puede eliminar cuando no tiene sobres, ni activos ni archivados. Los sobres permanecen
+en el espacio donde se crearon, de modo que un espacio que ya tuvo sobres se conserva. Si intenta
+eliminarlo, la aplicación le ofrece el enlace **Ver sus sobres**.
 
-## Miembros: personas y claves de API
+## Añadir miembros
 
-Pulsa «Miembros» en la fila del espacio. Si está vacío verás «Todavía no hay miembros. Solo los
-administradores ven este espacio de trabajo hasta que añadas a alguien».
+Los miembros de un espacio pueden ser personas o claves de API. Pulse **Miembros** en la fila del
+espacio.
 
 <Steps>
 
-1. En «Añadir miembro», abre «Selecciona…». Las personas aparecen como «nombre — correo» y las
-   credenciales de API como «etiqueta (clave de API)».
+1. En **Añadir miembro**, abra **Selecciona…**. Las personas aparecen con su nombre y correo, y las
+   credenciales con su etiqueta seguida de «(clave de API)».
 
-2. Elige el rol y pulsa «Añadir». Si eliges Gestor, el diálogo explica: «Los gestores pueden crear,
-   enviar y cancelar sobres, leer el archivo y el registro de auditoría, descargar documentos y
-   asignar etiquetas en este espacio de trabajo».
+2. Elija el rol y pulse **Añadir**.
 
-3. Para cambiar el rol de alguien, usa el selector «Rol de nombre» en su fila. Para quitarlo, pulsa
-   «Quitar» y confirma.
+3. Para cambiar el rol de un miembro, use el selector de rol en su fila. Para retirarlo, pulse
+   **Quitar** y confirme.
 
 </Steps>
 
-<Aside type="note" title="Los administradores no se añaden">
-  «Los administradores ya ven todos los espacios de trabajo, así que no aparecen». Un administrador
-  tiene acceso a todo sin membresía; intentar añadirlo responde «Los administradores ya ven todos los
-  espacios de trabajo».
-</Aside>
+Los administradores ven todos los espacios sin necesidad de añadirlos, por eso no aparecen en la
+lista de miembros.
 
-## Roles que puedes asignar
+## Roles de espacio
 
 | Rol | Qué puede hacer en el espacio |
 | --- | --- |
-| Lector (`viewer`) | Ver los sobres y el archivo. No descarga documentos ni lee la auditoría. |
-| Auditor (`auditor`) | Lo del Lector, más leer el registro de auditoría y descargar documentos. |
-| Gestor (`manager`) | Todo: crear, editar, enviar y cancelar sobres, subir documentos, asignar etiquetas, descargar y auditar. |
+| Lector | Ver los sobres y el archivo. |
+| Auditor | Lo mismo que el Lector, y además leer el registro de auditoría y descargar documentos. |
+| Gestor | Crear, editar, enviar y cancelar sobres, subir documentos, asignar etiquetas, descargar y leer la auditoría. |
 
-Colaborador (`contributor`) es el rol implícito de todo miembro en General y no se puede asignar en
-ningún espacio: «Ese rol no se puede asignar. Elige Lector, Auditor o Gestor». Si alguien necesita
-crear y enviar en un espacio privado, dale Gestor. La tabla completa está en la
+Colaborador es el rol que todos los miembros tienen en General. Para que alguien cree y envíe sobres
+en otro espacio, asígnele Gestor. La tabla completa está en la
 [Matriz de permisos](/sign/admin/permissions/).
 
-## Límites y tiempos
+## Límites y tiempos de aplicación
 
-- Una persona o clave de API puede pertenecer como máximo a
-  <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> espacios. Al superarlo, la aplicación lo
-  rechaza y nombra el máximo.
-- Los cambios no son instantáneos: «Los cambios llegan a una persona o integración cuando se renueva
-  su sesión». Una sesión dura <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />, así que ese es el
-  máximo de espera, tanto para dar acceso como para quitarlo.
-- Si ves «El acceso todavía se está configurando. Inténtalo de nuevo en un momento» o «Todavía se
-  está guardando otro cambio», espera unos segundos y repite.
-- Una clave de API necesita acceso al menos a un espacio; ver
-  [Credenciales de API](/sign/admin/api-credentials/).
+- Una persona o clave de API puede pertenecer hasta a
+  <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> espacios.
+- Los cambios de acceso se aplican cuando se renueva la sesión de la persona o integración, en
+  máximo <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />. Esto vale tanto para dar acceso como para
+  retirarlo.
+- Si ve «El acceso todavía se está configurando. Inténtalo de nuevo en un momento», espere unos
+  segundos y repita la acción.
+
+<Aside type="tip" title="Claves de API">
+  Cada credencial de API necesita acceso al menos a un espacio. Puede asignarlo al crearla o
+  añadirla después como miembro; ver [Credenciales de API](/sign/admin/api-credentials/).
+</Aside>

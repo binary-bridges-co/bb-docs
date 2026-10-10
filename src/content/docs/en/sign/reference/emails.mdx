@@ -1,6 +1,6 @@
 ---
 title: "Emails bb-sign sends"
-description: Every email bb-sign sends to signers, administrators and users, with its subject, its recipient, what triggers it and which address it comes from.
+description: "Every email bb-sign sends to signers, administrators and users: subject, recipient, when it is sent and the address it comes from."
 product: sign
 audience: all
 ---
@@ -25,18 +25,20 @@ export const TRIGGER = {
   'webhook circuit breaker': 'bb-sign disables a webhook after exhausting its retries.',
   'user invited': 'An administrator invites a user.',
   'user request': 'The user asks to reset their password.',
-  'realm flow': 'The identity flow requires verifying the email.',
+  'realm flow': 'The identity service asks the user to verify their email.',
 };
 
-This is the complete list of the emails bb-sign sends today. If an email is not here, bb-sign does
-not send it. Subjects are shown as they go out; `{title}` is the envelope title.
+bb-sign keeps signers, administrators and users informed with automatic emails at every key moment
+of the process. This page lists all of them. Subjects are shown exactly as they are sent; `{title}` is
+the envelope title.
 
 ## Senders
 
-Envelope emails (invitations, codes, reminders, completed, expired and the webhook notice) come from
-**<Fact of={URLS.senderAddress} />**. Identity emails (invitation to the application, password reset,
-email verification) come from **<Fact of={URLS.identitySenderAddress} />**. Ask your IT team to allow
-both addresses if your organization filters incoming mail.
+Envelope emails (invitations, codes, reminders, envelope completed, envelope expired and the webhook
+notice) are sent from **<Fact of={URLS.senderAddress} />**. Account emails (invitation to the
+application, password reset and email verification) are sent from
+**<Fact of={URLS.identitySenderAddress} />**. If your organization filters incoming mail, ask your IT
+team to allow both addresses.
 
 ## All emails
 
@@ -61,24 +63,24 @@ both addresses if your organization filters incoming mail.
   </tbody>
 </table>
 
-Reminders go out once a day, to signers whose invitation is older than
-<Fact of={REMINDERS.thresholdHours} unit="hours" />, and never more than one every
-<Fact of={REMINDERS.cooldownHours} unit="hours" /> to the same signer. The subjects of the identity
-emails are defined by the identity server's template, not by a bb-sign template; that is why they
-appear in parentheses.
+Reminders are sent once a day to signers whose invitation is older than
+<Fact of={REMINDERS.thresholdHours} unit="hours" />, with at most one every
+<Fact of={REMINDERS.cooldownHours} unit="hours" /> per signer. The subjects of account emails are set
+by the identity service, which is why they appear in parentheses.
 
-<Aside type="note" title="Envelope emails are English only">
-  The application is available in Spanish and English, but the emails signers receive go out in
-  English only today. If your signers do not read English, tell them through your own channel what
-  they will receive and from which address. See
+<Aside type="note" title="Language of envelope emails">
+  The emails signers receive are sent in English. If your signers do not read English, let them know
+  through your own channels which email they will receive and from which address. See
   [The invitation email](/en/sign/signing/receiving-the-email/).
 </Aside>
 
-## What bb-sign does not send
+## Tracking from the application
 
-- **No email to the sender when the envelope completes.** Whoever sent the envelope sees it in the
-  application or receives it by webhook (`envelope.completed`).
-- **No cancellation email.** When an envelope is cancelled, signers who had not signed yet simply find
-  the link unavailable. See [Cancel an envelope](/en/sign/sending/cancel/).
-- **No expiry notice email** for the organization's certificate.
-- **No SMS.** The one-time code always arrives by email.
+These moments are handled in the application or through webhooks:
+
+- **Envelope completed.** Whoever sent the envelope sees the completion in the application or
+  receives it by webhook with the `envelope.completed` event.
+- **Envelope cancelled.** When you cancel an envelope, the link of pending signers stops being
+  available. Let those signers know yourself. See [Cancel an envelope](/en/sign/sending/cancel/).
+- **Certificate expiry.** Keep track of your organization's certificate expiry date and renew it
+  ahead of time. See [Your own certificate](/en/sign/admin/own-certificate/).

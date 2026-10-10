@@ -1,6 +1,6 @@
 ---
 title: Java SDK
-description: "The Java client: install the handover jar with -DpomFile, create an envelope, page through lists, verify webhooks over byte arrays, retries and errors."
+description: "Java client: installing the jar with -DpomFile, creating envelopes, pagination, webhook verification, retries, errors and security guarantees."
 product: sign
 audience: developer
 source: sdk-java/README.md
@@ -10,24 +10,21 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { SDK, WEBHOOKS } from '../../../../facts/sign';
 
-A Java client for the bb-sign API, with webhook signature verification. The coordinates are
+The Java SDK connects your services to the bb-sign API: it manages tokens, retries safely and
+verifies webhook signatures. The coordinates are
 <code><Fact of={SDK.java.groupId} />:<Fact of={SDK.java.artifactId} />:<Fact of={SDK.java.version} /></code>.
 This page merges the SDK's `README.md` and its `README-INSTALL.md`.
 
-<Aside type="note" title="Not published to any registry">
-  Build it locally, or install the handover artifact; see Installing. The coordinates are
-  provisional and will change before any release.
-</Aside>
-
 Requires **Java <Fact of={SDK.java.minJava} />** or newer.
 
-## Installing
+## Installation
 
-You have been given four files: the jar, its pom, a `.sha256` and this guide. Install the jar into
-your local Maven repository, then depend on it.
+The SDK is delivered as four files: the jar, its pom, a `.sha256` and the installation guide. You
+can also build it from source (see [Build from source](#build-from-source)). Install the jar into
+your local Maven repository and declare it as a dependency.
 
 <Steps>
-1. Check you received what we sent:
+1. Verify the integrity of the file you received:
 
    ```bash
    shasum -a 256 -c bb-sign-sdk-java-0.1.0-SNAPSHOT.jar.sha256
@@ -41,7 +38,7 @@ your local Maven repository, then depend on it.
      -DpomFile=bb-sign-sdk-java-0.1.0-SNAPSHOT.pom
    ```
 
-3. Depend on it:
+3. Declare it as a dependency:
 
    ```xml
    <dependency>
@@ -52,27 +49,26 @@ your local Maven repository, then depend on it.
    ```
 </Steps>
 
-<Aside type="caution" title="Do not omit -DpomFile">
-  Without it Maven synthesises a pom that declares no dependencies. The install succeeds and your
-  build succeeds, and then your first API call fails at runtime with `NoClassDefFoundError` for a
-  Retrofit or okhttp class, a long way from the cause. The pom is what carries okhttp, Retrofit and
-  Jackson. If you see that error, reinstall with `-DpomFile`.
+<Aside type="caution" title="Always include -DpomFile">
+  Without this parameter, Maven generates a pom with no dependencies. The install and the build
+  complete without errors, but the first API call fails at runtime with `NoClassDefFoundError` for
+  a Retrofit or okhttp class. The pom is what declares okhttp, Retrofit and Jackson. If that error
+  appears, reinstall with `-DpomFile`.
 </Aside>
 
-### What this assumes
+### Dependencies
 
-**Your build can reach Maven Central.** This is a plain jar, not a shaded one, so your build resolves
-okhttp, Retrofit and Jackson itself and, importantly, dedupes them against versions you already
-have. Jackson in particular is present in most Java services already, and bundling a second copy
-causes conflicts that are much harder to diagnose than a missing dependency.
+**The build must have access to Maven Central.** The SDK is a plain jar, not a shaded one: your
+build resolves okhttp, Retrofit and Jackson and aligns them with the versions you already use. This
+avoids conflicts with Jackson, which is present in most Java services.
 
-If your build cannot reach Central, tell us before you start. A shaded build is possible; it is a
-different artifact and we would rather produce it than have you discover the problem mid-integration.
+If your build has no access to Maven Central, contact us before you start the integration to
+receive a shaded variant of the SDK.
 
 ## Quickstart
 
-Everything below is one file. Credentials come from **Settings**, tab **API credentials** in
-bb-sign; the secret is shown once, at creation.
+The complete example fits in one file. Credentials are created in bb-sign under **Settings**, tab
+**API credentials**; the secret is shown once, at creation.
 
 ```java
 import co.binarybridges.sign.sdk.BbSignClient;
@@ -100,12 +96,11 @@ try (BbSignClient client = BbSignClient.builder()
 }
 ```
 
-Read the credentials from the environment, not from source. The secret cannot be retrieved after
-creation: it is stored only in Keycloak and bb-sign keeps no copy. If it is lost, rotate, which
-invalidates the old one **immediately**. The client exposes `envelopes()`, `documents()` and
-`verification()`.
+Read the credentials from environment variables, outside your source code. The secret is stored
+only in Keycloak and bb-sign keeps no copy; if it is lost, rotate it, which invalidates the old one
+**immediately**. The client exposes `envelopes()`, `documents()` and `verification()`.
 
-### Listing, one page at a time
+### List by page
 
 ```java
 client.eachPage(
@@ -114,13 +109,13 @@ client.eachPage(
     .forEach(envelope -> System.out.println(envelope.getTitle()));
 ```
 
-Pages are fetched lazily as you iterate, so counting fifty thousand envelopes does not put fifty
-thousand envelopes in memory.
+Pages are fetched on demand as you iterate, so going through thousands of envelopes does not load
+them all into memory.
 
-## Verifying a webhook
+## Verify a webhook
 
-**Read this section before writing the handler.** The most common integration failure is not in this
-SDK; it is in how the body reaches it.
+`Webhooks.verify` checks the signature over the body exactly as received. Declare the body as
+`byte[]` in your handler:
 
 ```java
 import co.binarybridges.sign.sdk.Webhooks;
@@ -144,54 +139,53 @@ public ResponseEntity<Void> receive(
 }
 ```
 
-### The raw body is not a detail
+### Capture the raw body
 
-The signature covers **the exact bytes on the wire**. Declaring the parameter as a DTO makes Spring
-parse the JSON and hand you an object; re-serialising that object produces different bytes (key
-order and whitespace change) and verification fails for a reason you cannot see in a debugger,
-because the object looks correct.
+The signature covers **the exact bytes received**. If the parameter is declared as a DTO, Spring
+parses the JSON and hands you an object; re-serializing it produces different bytes (key order and
+whitespace change) and verification fails even though the object is correct.
 
 - **Spring MVC**: `@RequestBody byte[]` or `@RequestBody String`, or a `ContentCachingRequestWrapper`
-  if you need the parsed form too.
-- **Jakarta Servlet**: read `request.getInputStream()` once, before anything else touches it.
+  if you also need the parsed form.
+- **Jakarta Servlet**: read `request.getInputStream()` once, before any other component.
 
-The SDK takes `byte[]` rather than `String` deliberately: the type makes this hard to get wrong.
+The SDK takes `byte[]` rather than `String` deliberately: the type guides you to the correct use.
 
-### Respond fast, work later
+### Respond immediately, process afterwards
 
-Return 2xx as soon as the signature checks out and do the work asynchronously. bb-sign retries on a
-ladder spanning roughly <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="hours" />, and after
-<Fact of={WEBHOOKS.disableAfterLadders} /> consecutive exhausted ladders it **disables your
-endpoint**; a handler that does thirty seconds of work inline will trip that under load.
+Return 2xx as soon as the signature is valid and process the event asynchronously. bb-sign retries
+on a schedule spanning roughly <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="hours" />, and after
+<Fact of={WEBHOOKS.disableAfterLadders} /> consecutive exhausted schedules it **disables the
+endpoint**; asynchronous processing keeps the response fast under load.
 
 ### Deduplicate on the event id
 
-`X-BBSign-Event-Id` is stable across retries and identical for redeliveries of the same event.
-Delivery is at-least-once, so the same event can arrive twice; treat the id as an idempotency key.
+`X-BBSign-Event-Id` is stable across retries and redeliveries of the same event. Delivery is
+at-least-once, so an event can arrive twice; use the id as an idempotency key.
 
-### During a secret rotation
+### Secret rotation
 
-The header carries two `v1=` values while a rotation window is open. `Webhooks.verify` accepts either,
-which is what lets you redeploy without downtime. Nothing to configure.
+While a rotation window is open, the header carries two `v1=` values. `Webhooks.verify` accepts
+either, which lets you deploy the new secret without downtime and with no extra configuration.
 
-### Testing your handler
+### Test the handler
 
 Verification is time-sensitive: a signature older than
-<Fact of={WEBHOOKS.toleranceSeconds} unit="s" /> is rejected, so a fixed fixture in a unit test fails
-tomorrow. Use the clock-bearing overload:
+<Fact of={WEBHOOKS.toleranceSeconds} unit="s" /> is rejected, so a fixed fixture in a unit test
+stops being valid. Use the clock-bearing overload:
 
 ```java
 Webhooks.verify(signature, rawBody, secret, Duration.ofSeconds(300), Instant.ofEpochSecond(1760000000L));
 ```
 
-## Retries, and the one thing this SDK will not do for you
+## Retries
 
-`GET` requests are retried on 5xx and on connect timeouts, with exponential backoff and full jitter.
+`GET` requests are retried on 5xx errors and connect timeouts, with exponential backoff and full
+jitter.
 
-**A `POST` whose response was never seen is never retried.** If `createEnvelope` times out, the
-outcome is genuinely unknown: the envelope may exist. Retrying would create a second one, and these
-are legal agreements sent to real people. The API has no idempotency key, so there is no way to make
-that safe.
+**A `POST` whose response was not received is not retried.** If `createEnvelope` times out, the
+outcome is unknown: the envelope may already exist, and a retry would create a second agreement
+sent to the same people. The API does not use idempotency keys.
 
 If a create times out, **list before you retry**:
 
@@ -205,36 +199,36 @@ try {
 }
 ```
 
-`429` and `503` **are** retried, including for `POST`: those mean the server explicitly did not
-process the request.
+`429` and `503` are also retried for `POST`, because they indicate the server did not process the
+request.
 
 ## Errors
 
-Every non-2xx throws `BbSignException`, carrying `statusCode()`. `0` means the request never got an
-answer.
+Every non-2xx response throws `BbSignException`, which exposes `statusCode()`. `0` indicates the
+request got no answer.
 
 | Status | Meaning |
 |---|---|
-| 400 | Malformed or failed validation |
+| 400 | Malformed request or failed validation |
 | 401 | Credentials rejected. The SDK refreshes the token and retries once before surfacing this |
 | 403 | Authenticated, but this credential lacks the organization permission |
-| 404 | No such resource, or it belongs to another organization or a workspace you cannot see. Deliberately indistinguishable |
-| 409 | Not in a state that allows this, e.g. sending an already-sent envelope |
+| 404 | The resource does not exist, or belongs to another organization or a workspace the credential cannot see. Deliberately indistinguishable |
+| 409 | The resource is not in a state that allows the operation, e.g. sending an already-sent envelope |
 | 429 | An organization quota is exhausted |
 
-Exception messages never contain your secret or access token, including when bb-sign's response
-does. [Errors](/en/sign/developers/errors/) has the full table and the error body.
+Exception messages never include your secret or access token, even when bb-sign's response
+contains them. [Errors](/en/sign/developers/errors/) includes the full table and the error body.
 
-## What this SDK will not do
+## Security guarantees
 
-- **Log your credentials.** There is no logging interceptor and no hook to install one. okhttp's
-  `HttpLoggingInterceptor` at `BODY` prints the `Authorization` header and the token form body
-  verbatim; enable it yourself and your secret goes to your log aggregator permanently.
-- **Let you disable TLS verification.** There is no flag. It gets switched on for a staging
-  certificate and never switched off.
-- **Retry a write with an unknown outcome.** See above.
+- **Credentials stay out of logs.** The SDK includes no logging interceptor and no hook to install
+  one. Avoid adding okhttp's `HttpLoggingInterceptor` at `BODY` yourself: it prints the
+  `Authorization` header and the token form body verbatim.
+- **TLS is always verified.** Certificate verification cannot be disabled.
+- **No duplicate writes.** A write with an unknown outcome is not retried (see
+  [Retries](#retries)).
 
-## Building from source
+## Build from source
 
 ```bash
 cd sdk-java
@@ -243,6 +237,6 @@ mvn verify          # regenerates the client, compiles, runs the tests
 mvn package         # writes the handover artifact to target/handover/
 ```
 
-The client under `src/main/java/co/binarybridges/sign/sdk/generated/` is **generated and committed**.
-Never edit it; regenerate. Committed rather than ignored so a spec change shows up as a reviewable
-diff instead of appearing silently in the next build.
+The client under `src/main/java/co/binarybridges/sign/sdk/generated/` is **generated and
+committed** code: regenerate it rather than editing it. It is committed so that every spec change
+shows up as a reviewable diff.

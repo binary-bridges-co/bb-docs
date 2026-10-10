@@ -1,97 +1,93 @@
 ---
-title: Tu primer sobre
-description: El asistente Crear Sobre paso a paso, con las etiquetas que verás en pantalla, qué pasa al pulsar Enviar y qué significa que un sobre se creó pero no se envió.
+title: Su primer sobre
+description: Cree y envíe su primer sobre con el asistente Crear Sobre, paso a paso, y sepa qué ocurre al enviarlo y cómo completar un envío pendiente.
 product: sign
 audience: user
 ---
 
-import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { DOCUMENTS, ENVELOPE } from '../../../facts/sign';
 
-Un **sobre** reúne uno o más documentos PDF, las personas que deben firmarlos y las condiciones de
-la firma. Se crea con el asistente "Crear Sobre", al que llegas con el botón "Nuevo Sobre" del menú
-lateral. El asistente tiene cinco pasos: Detalles, Documentos, Firmantes, Revisión y Listo.
+Un **sobre** reúne uno o más documentos PDF, las personas que deben firmarlos y las condiciones de la
+firma. Con el asistente **Crear Sobre**, al que se accede con el botón **Nuevo Sobre** del menú
+lateral, usted lo prepara y lo envía en cinco pasos: **Detalles**, **Documentos**, **Firmantes**,
+**Revisión** y **Listo**.
 
-Mientras avanzas, nada existe todavía en el servidor: el asistente guarda un borrador en tu
-navegador y te lo dice ("Borrador guardado en este navegador. No se crea nada hasta que envíes.").
-Si cierras la pestaña y vuelves, retomas donde lo dejaste; "Empezar de nuevo" descarta ese
-borrador.
+Mientras avanza, el asistente guarda un borrador en su navegador ("Borrador guardado en este
+navegador. No se crea nada hasta que envíes."). Si cierra la pestaña y vuelve, continúa donde lo
+dejó. Para descartar el borrador, use **Empezar de nuevo**.
 
 ## Antes de empezar
 
-- Necesitas poder crear sobres en al menos un espacio de trabajo. Si no ves el botón "Nuevo Sobre",
-  pide a un administrador el rol de colaborador o gestor en un espacio. Ver
+- Necesita permiso para crear sobres en al menos un espacio de trabajo. Si no ve el botón **Nuevo
+  Sobre**, pida a un administrador el rol de Colaborador o Gestor en un espacio. Consulte
   [Organizaciones, espacios y roles](/sign/concepts/organizations-workspaces-roles/).
-- Ten a mano los PDF que se van a firmar, cada uno de hasta
-  <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />.
-- Ten el correo y el nombre completo de cada firmante.
+- Tenga a mano los PDF que se van a firmar, de hasta <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />
+  cada uno.
+- Tenga el correo y el nombre completo de cada firmante.
 
-## Los cinco pasos
+## Crear y enviar el sobre
 
 <Steps>
 
-1. **Detalles.** La pantalla "Detalles del sobre" pide el "Espacio de trabajo" (por defecto,
-   General), el "Título *", las "Etiquetas" si tu organización las usa, un "Mensaje para los
-   firmantes", la casilla "Requerir verificación OTP a los firmantes" (marcada por defecto), el
-   "Orden de firma" ("Todos firman a la vez" o "Los firmantes firman en orden"), la "Caducidad del
-   enlace (horas)" (por defecto <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />) y la fecha
-   "Expira el (opcional)". Solo el título y el espacio son obligatorios. Pulsa "Siguiente". Cada
-   campo está explicado en [Crear un sobre](/sign/sending/create-an-envelope/).
+1. **Detalles.** En **Detalles del sobre**, complete el **Espacio de trabajo** (por defecto,
+   General) y el **Título**, que son los únicos campos obligatorios. Además puede agregar
+   **Etiquetas**, un **Mensaje para los firmantes**, la opción **Requerir verificación OTP a los
+   firmantes** (activada por defecto), el **Orden de firma** (**Todos firman a la vez** o **Los
+   firmantes firman en orden**), la **Caducidad del enlace (horas)** (por defecto
+   <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />) y la fecha **Expira el (opcional)**.
+   Pulse **Siguiente**. Cada campo se explica en [Crear un sobre](/sign/sending/create-an-envelope/).
 
-2. **Documentos.** En "Subir documentos", pulsa "Haz clic para subir un PDF" y elige uno o varios
-   archivos. Cada archivo se sube en ese momento y aparece en la lista. Solo PDF. Hasta que no haya
-   al menos uno, el asistente avisa: "Sube al menos un documento para continuar." Ver
+2. **Documentos.** En **Subir documentos**, pulse **Haz clic para subir un PDF** y elija uno o
+   varios archivos PDF. Cada archivo se carga de inmediato y aparece en la lista. Consulte
    [Adjuntar documentos](/sign/sending/documents/).
 
-3. **Firmantes.** En "Añadir firmantes", escribe el "Correo" y el "Nombre" de cada persona y usa
-   "Añadir otro firmante" para añadir filas. El campo "Orden" solo aparece si elegiste firma en
-   orden. Ver [Firmantes y orden](/sign/sending/signers-and-order/).
+3. **Firmantes.** En **Añadir firmantes**, escriba el **Correo** y el **Nombre** de cada persona y
+   use **Añadir otro firmante** para agregar más. Si eligió firma en orden, verá también el campo
+   **Orden**. Consulte [Firmantes y orden](/sign/sending/signers-and-order/).
 
-4. **Revisión.** La pantalla "Revisar y enviar" resume "Título:", "Espacio de trabajo:",
-   "OTP requerido:", "Firma secuencial:", "Documentos:", "Firmantes:" y "Etiquetas:". Debajo
-   recuerda: "Al enviar se generarán enlaces de firma únicos para cada firmante. Esto no se puede
-   deshacer." Pulsa "Enviar sobre". Un diálogo pregunta "¿Enviar el sobre?" y explica: "Se generarán
-   enlaces de firma únicos para cada firmante y se enviará el sobre. Esta acción no se puede
-   deshacer." Confirma con "Enviar".
+4. **Revisión.** En **Revisar y enviar**, verifique el resumen: título, espacio de trabajo,
+   verificación OTP, firma secuencial, documentos, firmantes y etiquetas. Pulse **Enviar sobre** y
+   confirme con **Enviar** en el diálogo **¿Enviar el sobre?**.
 
-5. **Listo.** La pantalla "¡Sobre enviado!" muestra el enlace de firma de cada firmante con un botón
-   "Copiar". bb-sign ya envió a cada uno el correo con ese mismo enlace (si elegiste firma en orden,
-   solo a los primeros). Desde aquí puedes ir a "Ver detalles del sobre" o "Crear otro".
+5. **Listo.** La pantalla **¡Sobre enviado!** muestra el enlace de firma de cada firmante con un
+   botón **Copiar**. bb-sign ya envió a cada firmante el correo con su enlace (en la firma en orden,
+   a los primeros del orden). Desde aquí puede ir a **Ver detalles del sobre** o **Crear otro**.
 
 </Steps>
 
-## Qué pasa al enviar
+## Qué ocurre al enviar
 
-Enviar es el punto sin retorno. El sobre pasa de "Borrador" a "Enviado", cada firmante recibe un
-enlace único por correo, y los documentos y la lista de firmantes quedan fijos: ya no se pueden
-cambiar, ni desde la aplicación ni por la API. Si te equivocaste, la única salida es
-[cancelar el sobre](/sign/sending/cancel/) y crear otro.
+Al enviar, el sobre pasa de **Borrador** a **Enviado** y cada firmante recibe un enlace único por
+correo. Desde ese momento, los documentos y la lista de firmantes quedan fijos, lo que garantiza que
+todos firman exactamente lo mismo. Si necesita corregir algo,
+[cancele el sobre](/sign/sending/cancel/) y cree uno nuevo.
 
-Después del envío, seguirás el progreso desde Sobres. Ver [Enviar y seguir](/sign/sending/send-and-track/).
+A partir de entonces, siga el avance desde **Sobres**. Consulte
+[Enviar y seguir](/sign/sending/send-and-track/).
 
-## Si el sobre se creó pero no se envió
+## Completar un envío pendiente
 
-Por dentro, "Enviar sobre" hace dos cosas: primero crea el sobre con todo lo que reuniste y después
-lo envía. Si la primera sale bien y la segunda falla (por ejemplo, porque tu organización alcanzó
-un límite de su plan), el sobre existe en estado "Borrador" y el asistente lo avisa:
+**Enviar sobre** crea el sobre con todo lo que reunió y luego lo envía. Si el sobre se crea pero el
+envío no se completa (por ejemplo, porque su organización alcanzó un límite de su plan), el sobre
+queda en **Borrador** y el asistente lo indica:
 
 > El sobre se creó pero no se envió. Si vuelves a enviar, se envía tal como está; para cambiarlo,
 > ábrelo desde Sobres.
 
-A partir de ahí los pasos anteriores quedan bloqueados. Puedes volver a pulsar "Enviar sobre" cuando
-la causa del fallo esté resuelta. Si cierras y vuelves más tarde, el asistente lo reconoce
-("Ya creaste este sobre, pero no se envió.") y ofrece "Enviar el sobre que ya creaste".
+Una vez resuelta la causa, pulse de nuevo **Enviar sobre**. Si cierra el asistente y vuelve más
+tarde, este reconoce el sobre ("Ya creaste este sobre, pero no se envió.") y ofrece **Enviar el
+sobre que ya creaste**.
 
-Desde Sobres, un borrador creado así se puede abrir para cambiar sus etiquetas o cancelarlo. Sus
-documentos y firmantes no se cambian desde la aplicación: si necesitas otros, cancélalo y crea uno
-nuevo.
+Desde **Sobres** también puede abrir ese borrador para cambiar sus etiquetas o cancelarlo. Si
+necesita otros documentos o firmantes, cancélelo y cree uno nuevo.
 
 ## Lo que ve el firmante
 
-El firmante no tiene cuenta. Recibe un correo en inglés con el asunto
-`You have a document to sign: {title}`, abre el enlace, revisa cada documento, introduce el código
-de verificación si lo pediste, dibuja o escribe su firma y descarga su copia al final. Conocer ese
-camino te ayuda a responder sus preguntas:
+El firmante no necesita cuenta. Recibe un correo en inglés con el asunto
+`You have a document to sign: {title}`, abre el enlace, revisa cada documento, ingresa el código de
+verificación si usted lo solicitó, dibuja o escribe su firma y descarga su copia al final. Conocer
+ese recorrido le ayudará a responder sus preguntas.
 
 <LinkCard title="El camino del firmante" href="/sign/signing/" description="Lo que ve y hace cada firmante, de principio a fin, en una sola página." />

@@ -1,6 +1,6 @@
 ---
 title: Matriz de permisos
-description: "Qué permite cada rol de organización y de espacio de trabajo, las cinco barreras que una credencial de API nunca cruza, y por qué unas denegaciones son 403 y otras 404."
+description: "Qué permite cada rol de organización y de espacio de trabajo en bb-sign, y cómo se protegen las tareas de administración frente a las credenciales de API."
 product: sign
 audience: admin
 source: edge-api/src/main/kotlin/co/binarybridges/sign/edge/domain/security/PermissionCatalog.kt
@@ -9,62 +9,61 @@ source: edge-api/src/main/kotlin/co/binarybridges/sign/edge/domain/security/Perm
 import { Aside } from '@astrojs/starlight/components';
 import RolesMatrix from '../../../../components/facts/RolesMatrix.astro';
 
-**Quién:** administrador de la organización (también los administradores de plataforma). **Dónde:**
-no es una pantalla; es el catálogo que la aplicación y la API aplican en cada petición.
+Esta matriz muestra qué puede hacer cada rol en bb-sign. La aplicación y la API aplican las mismas
+reglas en cada operación, de modo que una persona y una integración con el mismo rol tienen el mismo
+alcance.
 
-Un permiso es algo que el producto hace: `envelope:send` es enviar un sobre. Los roles son paquetes
-de permisos. Hay dos niveles: los roles de organización, que deciden qué se puede administrar, y los
-roles de espacio de trabajo, que deciden qué se puede hacer con los sobres de un espacio.
+Los permisos se agrupan en dos niveles. Los roles de organización definen qué se puede administrar.
+Los roles de espacio de trabajo definen qué se puede hacer con los sobres de cada espacio.
 
 ## Roles de organización
 
-| Rol | Quién | Qué decide |
+| Rol | Quién lo tiene | Alcance |
 | --- | --- | --- |
-| `platform_admin` | Personal de Binary Bridges | Todo lo de `org_admin` en cualquier organización, más crear organizaciones, cuotas y apariencia. |
-| `org_admin` | Administradores de tu organización | Administrar usuarios, espacios, etiquetas, credenciales, webhooks y auditoría. Acceso a todos los espacios sin membresía (`workspace:access-all`). |
-| `org_member` | Usuarios de tu organización | Listar espacios y claves de etiqueta. Todo lo demás viene de sus roles de espacio, incluido el Colaborador implícito en General. |
-| `org_api` | Credenciales de API | Lo mismo que un miembro, con los roles de espacio que le des. Nunca administra. |
+| Administrador de plataforma (`platform_admin`) | Personal de Binary Bridges | Todo lo del administrador de organización, en cualquier organización, más la creación de organizaciones, las cuotas y la apariencia de la firma. |
+| Administrador de organización (`org_admin`) | Administradores de su organización | Usuarios, espacios, etiquetas, credenciales, webhooks y auditoría. Accede a todos los espacios sin ser miembro (`workspace:access-all`). |
+| Miembro de organización (`org_member`) | Usuarios de su organización | Consultar espacios y claves de etiqueta. El resto lo dan sus roles de espacio, incluido el de Colaborador en General. |
+| Credencial de API (`org_api`) | Integraciones | Lo mismo que un miembro, con los roles de espacio que usted le asigne. |
 
-## Las dos tablas
+## Permisos por rol
 
 <RolesMatrix locale="es" />
 
-En la primera tabla, «Nunca» marca un permiso que una credencial de API no puede recibir aunque un
-administrador quiera: son las barreras de escalada. En la segunda, Colaborador es el rol implícito
-en General y no se asigna; en los demás espacios das Lector, Auditor o Gestor desde
+En la primera tabla, «Nunca» indica un permiso reservado a las personas: una credencial de API no lo
+recibe en ningún caso. En la segunda, Colaborador es el rol de todos los miembros en General; en los
+demás espacios usted asigna Lector, Auditor o Gestor desde
 [Espacios y miembros](/sign/admin/workspaces-and-members/).
 
-## Las cinco barreras de escalada
+## Tareas reservadas a las personas
 
-Una credencial de API es un secreto que puede filtrarse. Si ese secreto pudiera administrar, una
-filtración no se cerraría al revocar la credencial: el atacante ya habría creado otras o habría
-movido el acceso a donde quisiera. Por eso `org_api` nunca recibe estos cinco permisos, y el
-servicio comprueba al arrancar que el servidor de identidad lo respeta.
+Las credenciales de API automatizan el trabajo con sobres, y la administración queda siempre en manos
+de personas. Así, si un secreto se filtra, revocar la credencial basta para cerrar el acceso: la
+credencial no pudo crear otras credenciales ni ampliar su propio alcance. bb-sign verifica esta
+regla cada vez que el servicio se inicia.
 
-1. **Crear credenciales** (`credential:manage`). Una credencial que crea credenciales es acceso
-   permanente que se renueva solo; revocar la original no lo cierra.
-2. **Gestionar webhooks** (`webhook:manage`). Una credencial que redirige su propio flujo de eventos
-   podría apuntar cada evento de cada sobre a un servidor ajeno, y nada en la credencial parecería
-   raro.
-3. **Crear, renombrar y eliminar espacios** (`workspace:manage`). Quien reorganiza los contenedores
-   que deciden el acceso puede sacarse a sí mismo de todos los límites.
-4. **Dar y quitar roles de espacio** (`workspace:manage-members`). Una credencial que concede
-   membresías puede concedérselas a sí misma: es la misma escalera con otra forma.
-5. **Acceso a todos los espacios** (`workspace:access-all`). Es lo que hace a un administrador
-   independiente de las membresías; en una máquina sería saltarse todos los espacios de una vez.
+Estos cinco permisos nunca se conceden a una credencial:
 
-Una credencial que necesita más alcance lo recibe como una persona: añadiéndola como miembro de más
-espacios. Ver [Credenciales de API](/sign/admin/api-credentials/).
+1. **Crear credenciales** (`credential:manage`), para que revocar una credencial cierre por
+   completo su acceso.
+2. **Gestionar webhooks** (`webhook:manage`), para que los eventos de sus sobres lleguen solo a los
+   destinos que usted configuró.
+3. **Crear, renombrar y eliminar espacios** (`workspace:manage`), para que la estructura de acceso
+   la decida un administrador.
+4. **Dar y quitar roles de espacio** (`workspace:manage-members`), para que una credencial no pueda
+   ampliar sus propias membresías.
+5. **Acceder a todos los espacios** (`workspace:access-all`), para que cada credencial actúe solo en
+   los espacios que usted le asignó.
 
-## 403 y 404
+Cuando una credencial necesita más alcance, se añade como miembro de otros espacios, igual que una
+persona. Ver [Credenciales de API](/sign/admin/api-credentials/).
 
-<Aside type="note" title="Dos respuestas distintas para dos preguntas distintas">
-  Una denegación de **organización** (crear una credencial sin ser administrador, abrir Usuarios
-  como miembro) responde **403**: existe, pero no puedes. Una denegación sobre un **sobre o un
-  espacio** que no puedes ver responde **404**, igual que si no existiera, para que la respuesta no
-  confirme que existe.
+## Cuando alguien no ve un sobre
+
+<Aside type="tip" title="Revise primero el espacio de trabajo">
+  Para proteger la confidencialidad, un sobre de un espacio al que la persona no pertenece se muestra
+  como si no existiera: «Sobre no encontrado» o «Ese espacio de trabajo ya no existe o no puedes
+  usarlo». Si un usuario le dice que un sobre no existe, compruebe si es miembro del espacio del sobre.
 </Aside>
 
-En la aplicación, un 403 se ve como «Acceso Denegado» o «No tienes permiso para hacer esto»; un 404
-como «Sobre no encontrado» o «Ese espacio de trabajo ya no existe o no puedes usarlo». Si un usuario
-te dice que un sobre «no existe», comprueba primero si es miembro de su espacio.
+Una acción de administración que el rol no permite, como abrir **Usuarios** siendo miembro, muestra
+«Acceso Denegado» o «No tienes permiso para hacer esto».

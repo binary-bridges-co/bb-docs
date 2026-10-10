@@ -1,6 +1,6 @@
 ---
 title: Users and invitations
-description: "How to invite a person to your organization, which roles you may give them, how long the invitation link lasts, how to resend it and what each role sees."
+description: "How to invite a person to your organization, which role to give them, how long the invitation link is valid and how to resend it."
 product: sign
 audience: admin
 ---
@@ -9,75 +9,74 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { AUTH, URLS } from '../../../../facts/sign';
 
-**Who:** organization admin (platform admins too). **Where:** Users (`/users`) in the sidebar.
+You create the account of every person who uses bb-sign in your organization. The person receives
+an email, sets a password and signs in with their email address. Only the people you invite have
+access.
 
-Every person who uses bb-sign has an account in your organization. You create it; the person
-receives an email, sets a password and signs in. There is no self-registration.
+**Who:** organization admins and platform admins. **Where:** **Users**, in the sidebar.
 
 ## Invite a person
 
 <Steps>
 
-1. Press "New User". The "Create User" form opens.
+1. Press **New User**. The **Create User** form opens.
 
-2. Enter "Username", "Email" and, if you want, "First Name" and "Last Name". The email is the
-   person's identity: the invitation goes there and they sign in with it.
+2. Enter the **Username** and **Email** and, optionally, the **First Name** and **Last Name**. The
+   email identifies the person: the invitation goes there and they sign in with it.
 
-3. Choose the "Role". The "Organization" field already holds yours and cannot be changed.
+3. Choose the **Role**. The **Organization** field already shows yours.
 
-4. Press "Create User". You see "User created successfully", and the form reminds you that "User
-   will receive an email to set their password".
+4. Press **Create User**. You see "User created successfully" and the person receives the email to
+   set their password.
 
 </Steps>
 
-If the account was created but the email did not go out, you see "User created, but the set-up
-email could not be sent. Use "Resend invitation" to try again". The account exists; do not create it
-again.
+If "User created, but the set-up email could not be sent" appears, the account already exists. Use
+**Resend invitation** in its row instead of creating it again.
 
-## Roles you may assign
+## Choose the role
 
-| Role in the list | What they can do |
+| Role | What they can do |
 | --- | --- |
-| "Org Member" (`org_member`) | Create, edit and send envelopes, upload documents and set labels in the workspaces where they are Contributor or above. In General they always are. They cannot cancel envelopes. |
-| "Org Admin" (`org_admin`) | Everything in this section: users, workspaces, labels, credentials, webhooks, certificate. They see every envelope in every workspace. |
+| **Org Member** | Create, edit and send envelopes, upload documents and set labels in the workspaces where they are Contributor or Manager. In the General workspace they are always a Contributor. Cancelling envelopes is for Managers and admins. |
+| **Org Admin** | Every task in this section: users, workspaces, labels, credentials and webhooks. They see every envelope in every workspace. |
 
-You can never create a "Platform Admin": that option appears only in a platform admin's list. Nor
-can you invite someone into another organization: the "Organization" field is fixed to yours. Each
-permission is detailed in the [Permissions matrix](/en/sign/admin/permissions/).
+The accounts you create always belong to your organization. Each permission is detailed in the
+[Permissions matrix](/en/sign/admin/permissions/).
 
-## The invitation email and its link
+## The invitation link
 
-The identity server sends the invitation from <code>{URLS.identitySenderAddress.value}</code>, with a
-link to set the password. The link is valid for <Fact of={AUTH.invitationLinkHours} unit="hours" />.
-After that the link stops working and the invitation must be resent; the account still exists.
+The invitation comes from <code>{URLS.identitySenderAddress.value}</code> with a link to set the
+password, valid for <Fact of={AUTH.invitationLinkHours} unit="hours" />. If it expires, resend the
+invitation; the account remains.
 
 ## Resend an invitation
 
-Every row in the list has a "Resend invitation" button. Pressing it sends the person a new email
-with a new link. You see "Invitation email sent" or, if it failed, "Could not send the invitation
-email": wait a moment and try again.
+Every row in the list has a **Resend invitation** button. The person receives a new email with a
+new link, and you see "Invitation email sent". Use it when the link has expired or the person cannot
+find the email.
 
-Use it when the link expired, when the email got lost or when the person cannot find it.
+If "Could not send the invitation email" appears, wait a moment and try again.
 
-## Active and disabled
+## Active and disabled accounts
 
-Every row shows "Active" or "Disabled". A disabled account cannot sign in. Today the app has no
-switch to disable or re-enable someone; ask Binary Bridges support.
+Every row shows **Active** or **Disabled**. A disabled account cannot sign in. To disable or
+re-enable an account, ask Binary Bridges support.
 
-## What a member sees and what an admin sees
+## What each role sees in the menu
 
 | Sidebar entry | Member | Organization admin | Platform admin |
 | --- | --- | --- | --- |
-| Dashboard, Envelopes, Archived, New Envelope | Yes | Yes | Yes |
-| Labels, Users, Storage, Settings | No | Yes | Yes |
-| Organizations | No | No | Yes |
+| **Dashboard**, **Envelopes**, **Archived**, **New Envelope** | Yes | Yes | Yes |
+| **Labels**, **Users**, **Storage**, **Settings** | No | Yes | Yes |
+| **Organizations** | No | No | Yes |
 
-A member who opens an admin address sees "Access Denied" and "Your role does not have permission to
-view this page". What a member can do with an envelope depends on their role in the envelope's
-workspace; see [Workspaces and members](/en/sign/admin/workspaces-and-members/).
+If a member opens an admin page, they see "Access Denied". What a member can do with an envelope
+depends on their role in the envelope's workspace; see
+[Workspaces and members](/en/sign/admin/workspaces-and-members/).
 
 <Aside type="note" title="User limit">
-  If your quota has a maximum number of users and you reached it, creating one shows "Your
-  organization has reached its user limit". Ask the platform admin to raise it; see
+  If your organization has a maximum number of users and has reached it, creating an account shows
+  "Your organization has reached its user limit". Ask Binary Bridges to raise it; see
   [Quota and usage](/en/sign/admin/quota-and-usage/).
 </Aside>

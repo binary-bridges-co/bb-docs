@@ -1,6 +1,6 @@
 ---
 title: Cuota y uso
-description: "Cómo leer el panel de cuota y uso, qué límites y periodos existen, qué pasa al llegar al límite y por qué solo un administrador de plataforma cambia la cuota."
+description: "Cómo leer la cuota de su organización: sobres por periodo, almacenamiento, usuarios y firmantes por sobre, y qué hacer al acercarse a un límite."
 product: sign
 audience: admin
 ---
@@ -9,68 +9,68 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { QUOTA } from '../../../facts/sign';
 
-**Quién:** administrador de la organización (los administradores de plataforma la configuran).
-**Dónde:** el panel «Cuota y uso» de la página de la organización (Organizaciones,
-`/organizations/id`).
+La cuota define el volumen de uso de su organización: cuántos sobres puede crear por periodo, cuánto
+almacenamiento puede usar, cuántos usuarios puede tener y cuántos firmantes admite cada sobre. Binary
+Bridges la configura según el plan acordado con su organización.
 
-Cada organización tiene una cuota: cuántos sobres puede crear por periodo, cuánto almacenamiento
-puede usar, cuántos usuarios y cuántos firmantes por sobre. Hoy la página de la organización, donde
-está el panel, solo la abren los administradores de plataforma; un administrador de organización se
-entera de su cuota por los mensajes de la aplicación o preguntando al soporte de Binary Bridges.
+**Quién:** administradores de la organización; los administradores de plataforma la configuran.
+**Dónde:** panel **Cuota y uso** de la página de la organización. Si su menú no muestra
+**Organizaciones**, solicite el detalle de su cuota al soporte de Binary Bridges; la aplicación le
+avisará además cuando se alcance un límite.
 
 ## Leer el panel de uso
 
-El panel «Cuota y uso» muestra:
+El panel **Cuota y uso** muestra:
 
-- El estado del plan: «Activo», «Suspendido» o «Expirado».
-- «Periodo: Mensual», «Anual» o «Personalizado» y, si tiene fin, «Expira: fecha».
-- La barra «Sobres» con «usados / máximo» y la barra «Almacenamiento» con el espacio usado. Una
-  barra cambia de color al llegar al umbral de aviso, por defecto
-  <Fact of={QUOTA.warningThresholdPct} unit="%" />, y a rojo al llegar al límite.
-- «Periodo: inicio - fin» del periodo de uso en curso.
-- «Máx. usuarios» y «Máx. firmantes por sobre». «Ilimitado» significa sin tope.
+- El estado del plan: **Activo**, **Suspendido** o **Expirado**.
+- El tipo de periodo (**Mensual**, **Anual** o **Personalizado**) y, si el plan tiene fecha de fin,
+  la fecha después de **Expira:**.
+- La barra **Sobres**, con los sobres usados y el máximo, y la barra **Almacenamiento**, con el
+  espacio usado. Cada barra cambia de color al llegar al umbral de aviso, por defecto
+  <Fact of={QUOTA.warningThresholdPct} unit="%" />, y se pone roja al llegar al límite.
+- Las fechas de inicio y fin del periodo de uso en curso.
+- El máximo de usuarios y de firmantes por sobre. **Ilimitado** indica que no hay tope.
 
-Si ves «No hay cuota configurada para esta organización» o «No hay un periodo de uso activo», la
-organización no puede crear sobres hasta que un administrador de plataforma la configure.
+Para crear sobres, la organización necesita una cuota y un periodo de uso activo. Si el panel
+muestra «No hay cuota configurada para esta organización» o «No hay un periodo de uso activo»,
+solicite la configuración a Binary Bridges.
 
-## Límites y periodo
+## Límites de la cuota
 
-| Campo de «Configuración de la cuota» | Qué limita |
+| Límite | Qué controla |
 | --- | --- |
-| «Tipo de periodo» | «Mensual», «Anual» o «Personalizado». Al terminar el periodo, el contador de sobres vuelve a cero. |
-| «Umbral de aviso (%)» | A partir de qué porcentaje la barra avisa. |
-| «Máx. sobres (-1 = ilimitado)» | Sobres creados en el periodo. |
-| «Máx. usuarios (-1 = ilimitado)» | Cuentas en la organización. |
-| «Máx. almacenamiento (bytes, -1 = ilimitado)» | Bytes de documentos guardados. |
-| «Máx. firmantes por sobre (-1 = ilimitado)» | Firmantes en un mismo sobre. |
-| «Expira el» | Fecha en la que el plan deja de estar activo. |
+| Tipo de periodo | **Mensual**, **Anual** o **Personalizado**. Al iniciar cada periodo, el contador de sobres vuelve a cero. |
+| Umbral de aviso | El porcentaje a partir del cual la barra avisa. |
+| Máximo de sobres | Los sobres creados en el periodo. |
+| Máximo de usuarios | Las cuentas de la organización. |
+| Máximo de almacenamiento | El espacio que ocupan los documentos guardados. |
+| Máximo de firmantes por sobre | Los firmantes de un mismo sobre. |
+| Fecha de vencimiento | El día en que el plan deja de estar activo. |
 
-## Qué pasa al llegar al límite
+## Al llegar a un límite
 
-La API responde <Fact of={QUOTA.httpStatusWhenExhausted} /> y la aplicación muestra un mensaje que
-dice qué límite se alcanzó:
+La aplicación muestra un mensaje que indica qué límite se alcanzó, y la API responde
+<Fact of={QUOTA.httpStatusWhenExhausted} />:
 
 | Mensaje | Qué hacer |
 | --- | --- |
-| «Tu organización ha alcanzado su límite de sobres de este periodo» | Espera al siguiente periodo o pide ampliar el límite. |
-| «Este sobre tiene más firmantes de los que permite tu plan» | Reduce los firmantes o pide ampliar el límite. |
-| «Tu organización se ha quedado sin almacenamiento de documentos» | Pide ampliar el límite. Eliminar sobres no está disponible. |
-| «Tu organización ha alcanzado su límite de usuarios» | Pide ampliar el límite antes de invitar a alguien más. |
-| «El plan de tu organización está suspendido» o «ha caducado» | Nadie puede crear sobres. Contacta a Binary Bridges. |
+| «Tu organización ha alcanzado su límite de sobres de este periodo» | Espere al siguiente periodo o solicite ampliar el límite. |
+| «Este sobre tiene más firmantes de los que permite tu plan» | Reduzca el número de firmantes o solicite ampliar el límite. |
+| «Tu organización se ha quedado sin almacenamiento de documentos» | Solicite ampliar el límite. |
+| «Tu organización ha alcanzado su límite de usuarios» | Solicite ampliar el límite antes de invitar a más personas. |
+| «El plan de tu organización está suspendido» o «ha caducado» | Contacte a Binary Bridges para reactivar el plan. |
 
-Los sobres ya enviados siguen su curso: los firmantes firman y los documentos se sellan aunque la
-cuota esté agotada.
+Los sobres ya enviados continúan su curso con normalidad: los firmantes firman y los documentos se
+sellan, aunque la cuota se haya agotado.
 
-## Quién cambia la cuota
+## Ampliar la cuota
 
-Solo un administrador de plataforma puede «Establecer cuota», «Actualizar cuota», «Renovar periodo»,
-«Suspender» o «Activar» un plan. Un administrador de organización no puede cambiar ningún límite.
-No hay planes de autoservicio ni facturación dentro de bb-sign: los límites se acuerdan con
-Binary Bridges.
+Binary Bridges establece, actualiza, renueva, suspende y activa la cuota de cada organización según
+el plan acordado. Para ampliar un límite, contacte al soporte de Binary Bridges.
 
-<Aside type="note" title="Pide el cambio con tiempo">
-  Si la barra de sobres se acerca al umbral de aviso, pide la ampliación antes de que el límite
-  bloquee a tus usuarios.
+<Aside type="tip" title="Solicite la ampliación con anticipación">
+  Cuando la barra de sobres se acerque al umbral de aviso, solicite la ampliación para que sus
+  usuarios puedan seguir enviando sin interrupción.
 </Aside>
 
-<LinkCard title="Cuotas" href="/sign/concepts/quotas/" description="El modelo de cuotas y periodos explicado para todos." />
+<LinkCard title="Cuotas" href="/sign/concepts/quotas/" description="El modelo de cuotas y periodos, explicado para todos los usuarios." />

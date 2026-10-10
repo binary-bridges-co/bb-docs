@@ -1,59 +1,52 @@
 ---
 title: Administer the organization
-description: "A map of everything an organization admin can do in bb-sign, with a link to each operation, and what is reserved to the platform administrator."
+description: "Everything an organization admin manages in bb-sign: people, access, integrations, certificate, data and audit, with a link to each task."
 product: sign
 audience: admin
 ---
 
 import { LinkCard } from '@astrojs/starlight/components';
 
-**Who:** organization admin (platform admins too). **Where:** the Labels, Users, Storage and Settings
-entries of the sidebar; members do not see them.
+As an organization admin, you decide who uses bb-sign, which envelopes each person sees, which
+systems connect to the API and which certificate seals your documents. This section covers each of
+those tasks.
 
-An organization admin manages the people, the access, the integrations, the seal, the data and the
-oversight of their organization. Every operation has a page in this section. What is not in these
-tables does not exist yet.
+**Who:** organization admins and platform admins. **Where:** the **Labels**, **Users**,
+**Storage** and **Settings** entries of the sidebar, which only admins see.
 
-## Everything an admin can do
+## Admin tasks
 
-| Area | Operation | Where in the app | Page |
+| Area | Task | Where in the app | Guide |
 | --- | --- | --- | --- |
-| People | Invite users with the Org Member or Org Admin role | Users (`/users`), "New User" button | [Users and invitations](/en/sign/admin/users-and-invitations/) |
-| People | Resend an invitation; see whether an account is active | Users, "Resend invitation" | [Users and invitations](/en/sign/admin/users-and-invitations/) |
-| Access | Create, rename and delete workspaces | Settings, "Workspaces" tab | [Workspaces and members](/en/sign/admin/workspaces-and-members/) |
-| Access | Add and remove members (people and API keys) as Viewer, Auditor or Manager | Settings, "Workspaces", "Members" | [Workspaces and members](/en/sign/admin/workspaces-and-members/) |
-| Access | Look up what each role allows | Not a screen; the permission catalog | [Permissions matrix](/en/sign/admin/permissions/) |
-| Integration | Create, rotate and revoke API credentials | Settings, "API credentials" tab | [API credentials](/en/sign/admin/api-credentials/) |
-| Integration | Create, test, enable, disable, rotate and delete webhooks; read their history | Settings, "Webhooks" tab | [Webhooks](/en/sign/admin/webhooks/) |
-| Seal | Upload, replace and remove the organization's certificate | The organization's "Signing Certificate" section | [Your own certificate](/en/sign/admin/own-certificate/) |
-| Data | Create, edit and delete label keys | Labels (`/labels`) | [Label keys](/en/sign/admin/labels/) |
-| Data | Read the storage lifecycle configuration | Storage (`/storage/lifecycle`) | [Storage](/en/sign/admin/storage/) |
-| Data | Read the quota and the period's usage | "Quota & Usage" panel | [Quota and usage](/en/sign/admin/quota-and-usage/) |
-| Oversight | Read every envelope's audit trail | Envelope detail, "Audit Trail" | [Audit trail](/en/sign/admin/audit-trail/) |
+| People | Invite users as members or admins | **Users**, **New User** button | [Users and invitations](/en/sign/admin/users-and-invitations/) |
+| People | Resend an invitation and see whether an account is active | **Users**, **Resend invitation** | [Users and invitations](/en/sign/admin/users-and-invitations/) |
+| Access | Create, rename and delete workspaces | **Settings**, **Workspaces** tab | [Workspaces and members](/en/sign/admin/workspaces-and-members/) |
+| Access | Give people and API keys the Viewer, Auditor or Manager role in a workspace | **Settings**, **Workspaces**, **Members** | [Workspaces and members](/en/sign/admin/workspaces-and-members/) |
+| Access | Look up what each role allows | Reference | [Permissions matrix](/en/sign/admin/permissions/) |
+| Integration | Create, rotate and revoke API credentials | **Settings**, **API credentials** tab | [API credentials](/en/sign/admin/api-credentials/) |
+| Integration | Create, test, enable, rotate and delete webhooks, and review their deliveries | **Settings**, **Webhooks** tab | [Webhooks](/en/sign/admin/webhooks/) |
+| Seal | Configure the organization's own certificate | **Signing Certificate** section, together with Binary Bridges | [Your own certificate](/en/sign/admin/own-certificate/) |
+| Data | Create, edit and delete label keys | **Labels** | [Label keys](/en/sign/admin/labels/) |
+| Data | Review the storage lifecycle | **Storage** | [Storage](/en/sign/admin/storage/) |
+| Data | Know the quota and the period's usage | **Quota & Usage** panel | [Quota and usage](/en/sign/admin/quota-and-usage/) |
+| Oversight | Review each envelope's audit trail | Envelope detail, **Audit Trail** | [Audit trail](/en/sign/admin/audit-trail/) |
 
-An admin also reaches every workspace without being a member of any: they see every envelope, can
-cancel it and download its documents. What any user does with an envelope is in
+An admin reaches every workspace without being a member: they see every envelope, can cancel it
+and download its documents. Day-to-day work with envelopes is in
 [Sending for signature](/en/sign/sending/create-an-envelope/).
 
-## Platform administrator only
+## Tasks handled by Binary Bridges
 
-A platform administrator is Binary Bridges staff. They belong to no organization and hold operations
-no organization admin can run. If you need one of them, ask Binary Bridges support.
+The platform administrator is Binary Bridges staff and handles the tasks that affect the commercial
+and service-wide configuration. Request them from Binary Bridges support.
 
-| Operation | Where |
+| Task | Where |
 | --- | --- |
-| Create organizations | Organizations (`/organizations`), "New Organization" |
-| Set the signature appearance (display name, reason, location) | Organization page, "Signature Appearance" |
-| Set, update, renew, suspend or activate the quota | Organization page, "Quota Configuration" |
-| Change the storage lifecycle | Storage, "Apply" |
-| Run the envelope archive or expiration by hand | No screen; a service operation |
-| Manage any organization's workspaces | Organization page, "Workspaces" |
-| Read any envelope's raw audit trail | No screen; a service operation |
-| Create platform administrators | Users, "Platform Admin" role |
+| Create organizations | **Organizations**, **New Organization** |
+| Set the signature appearance (display name, reason, location) | Organization page, **Signature Appearance** |
+| Set, raise, renew, suspend or activate the quota | Organization page, **Quota Configuration** |
+| Change the storage lifecycle | **Storage**, **Apply** |
+| Provide the organization's audit events | On request, through support |
+| Create platform administrators | **Users**, **Platform Admin** role |
 
-## What does not exist yet
-
-There is no per-organization branding, no self-service plans or billing, and no evidence export.
-Each page in this section says so at the point where you would expect it.
-
-<LinkCard title="Permissions matrix" href="/en/sign/admin/permissions/" description="What each organization and workspace role allows, and why an API credential can never administer." />
+<LinkCard title="Permissions matrix" href="/en/sign/admin/permissions/" description="What each organization and workspace role allows, and why an API credential never administers." />

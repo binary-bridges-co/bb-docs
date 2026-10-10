@@ -1,6 +1,6 @@
 ---
 title: Crear un sobre
-description: Cada campo del paso Detalles explicado, con lo que hace y su valor por defecto. Título, mensaje, espacio de trabajo, etiquetas, OTP, caducidad, expiración y orden.
+description: Configure el primer paso del asistente para definir dónde se guarda el sobre, cómo se identifica cada firmante y hasta cuándo se puede firmar.
 product: sign
 audience: user
 ---
@@ -9,89 +9,91 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { ENVELOPE, LABELS, OTP } from '../../../facts/sign';
 
-El primer paso del asistente "Crear Sobre", "Detalles del sobre", decide cómo se comportará el sobre
-durante toda su vida: dónde se guarda, quién lo ve, cómo se identifica cada firmante y hasta cuándo
-se puede firmar. Esta página explica cada campo en el orden en que aparece. El recorrido completo
-está en [Tu primer sobre](/sign/getting-started/first-envelope/).
+El paso **Detalles del sobre** del asistente **Crear Sobre** define cómo se comporta el sobre de
+principio a fin: quién puede verlo, cómo se identifica cada firmante y durante cuánto tiempo se
+puede firmar. Esta página describe cada campo en el orden en que aparece. Para el recorrido
+completo, consulte [Su primer sobre](/sign/getting-started/first-envelope/).
 
-## Espacio de trabajo
+## Elegir el espacio de trabajo
 
-El selector "Espacio de trabajo" muestra los espacios donde puedes crear sobres. Por defecto está
-elegido General, que la aplicación muestra como "General (todos)". El texto de ayuda lo resume:
-"Solo las personas con acceso a este espacio de trabajo verán el sobre."
+El selector **Espacio de trabajo** muestra los espacios en los que usted puede crear sobres. Por
+defecto aparece **General (todos)**. Como indica la ayuda en pantalla: "Solo las personas con
+acceso a este espacio de trabajo verán el sobre."
 
-Elige el espacio antes que nada: es lo que decide quién podrá ver, descargar y cancelar el sobre.
-Un sobre no se mueve de espacio después de creado. Ver
+Elija el espacio en primer lugar: determina quién podrá ver, descargar y cancelar el sobre, y se
+mantiene durante toda su vida. Consulte
 [Organizaciones, espacios y roles](/sign/concepts/organizations-workspaces-roles/).
 
-## Título
+## Dar un título al sobre
 
-"Título *" es obligatorio y es el nombre con el que el sobre aparece en todas partes: en la lista de
-Sobres, en la página de detalle y en el asunto de los correos al firmante, como
-`You have a document to sign: {title}`. Usa un título que el firmante reconozca.
+El campo **Título** es obligatorio. Es el nombre del sobre en la lista de Sobres, en la página de detalle
+y en el asunto de los correos al firmante, por ejemplo `You have a document to sign: {title}`.
+Use un título que el firmante reconozca de inmediato.
 
-## Etiquetas
+## Añadir etiquetas
 
-El bloque "Etiquetas" solo aparece si un administrador definió claves de etiqueta para tu
-organización. Elige una clave en "Añadir etiqueta...", escribe el valor y pulsa "Añadir". Un valor
-tiene como máximo <Fact of={LABELS.valueMaxChars} unit="caracteres" />. Las etiquetas sirven para
-filtrar la lista de Sobres y se pueden cambiar después desde la página del sobre, incluso cuando ya
-está enviado. Ver [Etiquetas](/sign/concepts/labels/).
+El bloque **Etiquetas** aparece cuando un administrador ha definido claves de etiqueta para su
+organización. Elija una clave en **Añadir etiqueta...**, escriba el valor y pulse **Añadir**. Cada
+valor admite hasta <Fact of={LABELS.valueMaxChars} unit="caracteres" />.
+
+Las etiquetas permiten filtrar la lista de Sobres y se pueden modificar más adelante desde la
+página del sobre, incluso después del envío. Consulte [Etiquetas](/sign/concepts/labels/).
 
 ## Mensaje para los firmantes
 
-Un texto opcional que se guarda con el sobre. Hoy ese texto no aparece ni en el correo de
-invitación ni en la página de firma: el firmante no lo ve. Si necesitas darle instrucciones,
-hazlo por tu cuenta o dentro del propio documento.
+**Mensaje para los firmantes** es un campo opcional para guardar una nota con el sobre. Si los
+firmantes necesitan instrucciones, inclúyalas en el propio documento.
 
-## Requerir verificación OTP a los firmantes
+## Verificar la identidad con OTP
 
-Marcada por defecto. Con esta casilla, cada firmante debe demostrar que controla su correo antes
-de firmar: bb-sign le envía por <Fact of={OTP.channel} /> un código de
-<Fact of={OTP.digits} unit="dígitos" /> que vale <Fact of={OTP.validitySeconds} unit="s" />, admite
-<Fact of={OTP.maxAttempts} unit="intentos" /> y se puede pedir de nuevo pasados
-<Fact of={OTP.resendCooldownSeconds} unit="s" />. Una vez verificado, el firmante tiene
+**Requerir verificación OTP a los firmantes** está marcada por defecto. Con esta opción, cada
+firmante confirma que controla su correo antes de firmar: bb-sign le envía por
+<Fact of={OTP.channel} /> un código de <Fact of={OTP.digits} unit="dígitos" /> válido durante
+<Fact of={OTP.validitySeconds} unit="s" />, con <Fact of={OTP.maxAttempts} unit="intentos" />
+disponibles. El firmante puede solicitar un código nuevo pasados
+<Fact of={OTP.resendCooldownSeconds} unit="s" />. Una vez verificado, dispone de
 <Fact of={OTP.verifiedValidityMinutes} unit="min" /> para enviar su firma.
 
-Sin la casilla, el enlace del correo es la única identificación del firmante. Desmárcala solo
-cuando la evidencia de control del correo no te importe. No existe verificación por SMS ni
-códigos de acceso.
+Sin esta opción, el enlace del correo es la única identificación del firmante. Manténgala marcada
+siempre que necesite evidencia de que el firmante controla su correo.
 
-## Orden de firma
+## Definir el orden de firma
 
-Dos opciones, con su explicación en pantalla:
+**Orden de firma** ofrece dos opciones:
 
-- "Todos firman a la vez": "Todos reciben el correo a la vez y pueden firmar en cualquier orden."
-- "Los firmantes firman en orden": "Los firmantes reciben el correo de uno en uno, en el orden que
-  definas en el paso de firmantes."
+| Opción | Comportamiento |
+|---|---|
+| **Todos firman a la vez** | "Todos reciben el correo a la vez y pueden firmar en cualquier orden." |
+| **Los firmantes firman en orden** | "Los firmantes reciben el correo de uno en uno, en el orden que definas en el paso de firmantes." |
 
-Con la segunda, el paso Firmantes muestra el campo "Orden". Qué recibe cada firmante y cuándo está
-en [Firmantes y orden](/sign/sending/signers-and-order/).
+Con la segunda opción, el paso **Firmantes** muestra el campo **Orden**. Consulte
+[Firmantes y orden](/sign/sending/signers-and-order/).
 
-## Caducidad del enlace (horas)
+## Fijar la caducidad del enlace
 
-Cuánto tiempo vale el enlace de firma de cada firmante, en horas enteras. Por defecto,
-<Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />. El plazo cuenta desde que se genera el
-enlace: al enviar, para todos los firmantes en paralelo; cuando llega su turno, en firma en orden.
+**Caducidad del enlace (horas)** define cuánto tiempo es válido el enlace de firma de cada
+firmante, en horas enteras. El valor por defecto es
+<Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />. El plazo empieza a contar cuando se genera
+el enlace: al enviar, si todos firman a la vez; cuando llega el turno de cada firmante, si firman en
+orden.
 
-Un enlace caducado abre la página "Enlace no disponible". Hoy no se puede reenviar ni regenerar un
-enlace de firma: si un firmante lo dejó caducar, [cancela el sobre](/sign/sending/cancel/) y crea
-uno nuevo. Pon un plazo acorde con lo que tardan tus firmantes.
+Elija un plazo acorde con el tiempo que suelen necesitar sus firmantes. Si un enlace caduca, el
+firmante verá la página **Enlace no disponible**; en ese caso,
+[cancele el sobre](/sign/sending/cancel/) y cree uno nuevo.
 
-## Expira el (opcional)
+## Fijar una fecha de expiración
 
-Una fecha y hora límite para el sobre completo. La ayuda lo dice: "Déjalo vacío para que no
-expire." Si la pones, debe estar en el futuro.
+**Expira el (opcional)** establece una fecha y hora límite para el sobre completo. Como indica la
+ayuda: "Déjalo vacío para que no expire." Si la define, debe ser una fecha futura.
 
-Cada <Fact of={ENVELOPE.expirySweepMinutes} unit="min" /> un proceso revisa los sobres en
-"Enviado" o "En Progreso" cuya fecha ya pasó y los marca "Expirado". Sus firmantes reciben el
-correo `Signing request expired: {title}` y sus enlaces dejan de funcionar. Un sobre expirado no se
-reabre.
+bb-sign revisa cada <Fact of={ENVELOPE.expirySweepMinutes} unit="min" /> los sobres en **Enviado**
+o **En Progreso** cuya fecha ya pasó y los marca como **Expirado**. Sus firmantes reciben el correo
+`Signing request expired: {title}` y los enlaces se cierran. El estado **Expirado** es definitivo.
 
-<Aside type="note" title="Caducidad del enlace y expiración del sobre no son lo mismo">
+<Aside type="note" title="Caducidad del enlace y expiración del sobre">
   La caducidad del enlace afecta a cada firmante por separado y no cambia el estado del sobre. La
-  expiración cierra el sobre entero. Sin fecha de expiración, un sobre cuyos enlaces caducaron
-  sigue en "Enviado" hasta que lo canceles.
+  expiración cierra el sobre completo. Un sobre sin fecha de expiración cuyos enlaces caducaron
+  permanece en **Enviado** hasta que usted lo cancele.
 </Aside>
 
-<LinkCard title="Adjuntar documentos" href="/sign/sending/documents/" description="El paso Documentos: formato, tamaño y qué pasa con lo que subes sin enviar." />
+<LinkCard title="Adjuntar documentos" href="/sign/sending/documents/" description="El paso Documentos: formato, tamaño y documentos que se suben sin enviar." />

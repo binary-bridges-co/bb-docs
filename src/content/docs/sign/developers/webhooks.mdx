@@ -1,6 +1,6 @@
 ---
 title: Webhooks
-description: Los seis eventos que bb-sign publica, los tres headers, cómo verificar la firma sobre el cuerpo en crudo, la entrega y los reintentos, y cómo leer el historial.
+description: Reciba en su sistema los cambios de estado de cada sobre. Eventos, encabezados, verificación de la firma, entrega, reintentos e historial.
 product: sign
 audience: developer
 source: docs/api/webhooks.md
@@ -10,36 +10,34 @@ import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { WEBHOOKS, ENVELOPE } from '../../../facts/sign';
 
-bb-sign publica un payload JSON firmado en tu URL cuando algo le ocurre a un sobre, para que no
-tengas que consultar periódicamente.
+Con los webhooks, bb-sign envía un payload JSON firmado a su URL cada vez que cambia el estado
+de un sobre, y su sistema reacciona al instante sin consultas periódicas.
 
-<Aside type="note" title="La especificación es el contrato; esta página es la guía">
-  El esquema de firma está definido de forma normativa en la
-  [especificación de firma de webhooks](/sign/developers/webhook-signature-spec/). Donde
-  discrepen, gana la especificación. Avísanos, porque no deberían discrepar.
-</Aside>
+El esquema de firma se define de forma normativa en la
+[especificación de firma de webhooks](/sign/developers/webhook-signature-spec/); esta página es la
+guía de integración.
 
-## Configurar uno
+## Registrar un webhook
 
-**Configuración**, pestaña **Webhooks**, **Nuevo webhook**.
+En **Configuración**, pestaña **Webhooks**, seleccione **Nuevo webhook**.
 
 - **URL del endpoint**: «Debe ser HTTPS y accesible desde internet. Rechazamos direcciones
-  privadas e internas». La comprobación se repite en cada entrega, no solo al registrarlo.
-- **Eventos que quieres recibir**: marca los que necesites. Hay seis:
+  privadas e internas». La validación se repite en cada entrega.
+- **Eventos que quieres recibir**: seleccione los que necesite entre los seis disponibles:
 
 | Evento | Cuándo |
 |---|---|
 | `envelope.sent` | Un sobre se envió a sus firmantes |
 | `envelope.completed` | Todos los firmantes firmaron |
 | `envelope.cancelled` | Un sobre se canceló |
-| `envelope.expired` | Un sobre pasó su fecha de vencimiento sin firmarse |
-| `signer.signed` | Un firmante firmó; puede que falten otros |
+| `envelope.expired` | Un sobre llegó a su fecha de vencimiento sin completarse |
+| `signer.signed` | Un firmante firmó; otros pueden estar pendientes |
 | `signer.viewed` | Un firmante abrió el documento |
 
-El **secreto de firma se muestra una sola vez**, al crearlo. Guárdalo donde guardes tus secretos.
-Una organización puede tener hasta <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
+El **secreto de firma se muestra una sola vez**, al crear el webhook. Guárdelo en su gestor de
+secretos. Una organización puede tener hasta <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
 
-## Qué llega
+## Contenido de la entrega
 
 ```json
 {
@@ -57,34 +55,33 @@ Una organización puede tener hasta <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
 }
 ```
 
-`data.signer` solo está presente en los eventos `signer.*`. Los esquemas completos están en la
-[referencia de la API](/sign/api/) como `WebhookEvent`, así que si generas un cliente, vienen
+`data.signer` se incluye solo en los eventos `signer.*`. Los esquemas completos figuran en la
+[referencia de la API](/sign/api/) como `WebhookEvent`, de modo que un cliente generado los recibe
 tipados.
 
-Tres headers importan:
+Cada entrega incluye tres encabezados:
 
-| Header | Uso |
+| Encabezado | Uso |
 |---|---|
-| `X-BBSign-Signature` | Lo que verificas. `t=<unix>,v1=<hex>` |
-| `X-BBSign-Event-Id` | Tu **clave de idempotencia**, estable entre reintentos |
-| `X-BBSign-Event-Type` | El nombre del evento, para enrutar antes de parsear |
+| `X-BBSign-Signature` | La firma que se verifica. `t=<unix>,v1=<hex>` |
+| `X-BBSign-Event-Id` | Su **clave de idempotencia**, estable entre reintentos |
+| `X-BBSign-Event-Type` | El nombre del evento, para enrutar antes de interpretar el cuerpo |
 
 ### Obtener el documento firmado
 
-`envelope.completed` es justo el momento en que quieres el archivo, y el payload deliberadamente
-no lo lleva: una URL prefirmada dentro de un payload sobrevive a la entrega y puede quedarse meses
-en un log. Llama en su lugar a `GET /api/v1/envelopes/{id}/documents`. Devuelve `signedUrl` cuando
-el sobre está `COMPLETED`, válido por <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />. El
+Al recibir `envelope.completed`, llame a `GET /api/v1/envelopes/{id}/documents` para obtener el
+archivo. La respuesta incluye `signedUrl` cuando el sobre está `COMPLETED`, válido durante
+<Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />. El payload no incluye enlaces de descarga a
+propósito: un enlace prefirmado dentro del payload seguiría siendo útil después de la entrega y
+podría quedar guardado en registros. El
 [recorrido completo](/sign/developers/envelope-walkthrough/) muestra toda la secuencia.
 
-## Verificar, y el error que todos cometen primero
+## Verificar la firma sobre el cuerpo original
 
-**La firma cubre los bytes exactos que viajan por la red.** Casi todos los frameworks web parsean
-el JSON antes de que tu handler lo vea, y volver a codificar ese objeto produce *bytes distintos*:
-cambian el orden de las claves y los espacios. La verificación falla entonces por una razón que no
-puedes ver, porque el objeto parseado se ve perfectamente correcto.
-
-Este es el fallo de integración más común de todos. Captura el cuerpo en crudo.
+**La firma cubre los bytes exactos recibidos.** La mayoría de los frameworks web interpretan el
+JSON antes de entregarlo al handler, y volver a serializar ese objeto produce *bytes distintos*
+(cambian el orden de las claves y los espacios), por lo que la verificación falla aunque el objeto
+sea correcto. Capture el cuerpo original antes de cualquier interpretación.
 
 <Tabs syncKey="lang">
   <TabItem label="JavaScript">
@@ -102,9 +99,9 @@ Este es el fallo de integración más común de todos. Captura el cuerpo en crud
     })
     ```
 
-    Next.js: `await request.text()`, no `.json()`. Fastify: registra un parser de content-type con
-    `parseAs: 'buffer'`. La página del [SDK de JavaScript](/sign/sdks/javascript/) tiene esos
-    ejemplos completos.
+    En Next.js, use `await request.text()` en lugar de `.json()`. En Fastify, registre un parser de
+    content-type con `parseAs: 'buffer'`. La página del [SDK de JavaScript](/sign/sdks/javascript/)
+    incluye ambos ejemplos completos.
   </TabItem>
   <TabItem label="Java">
     ```java
@@ -126,76 +123,75 @@ Este es el fallo de integración más común de todos. Captura el cuerpo en crud
   </TabItem>
 </Tabs>
 
-### Escribirlo tú mismo
+### Implementar un verificador propio
 
-Lee [la especificación](/sign/developers/webhook-signature-spec/). Es normativa y corta. Tres
-cosas que te dirá y que es fácil hacer mal:
+La [especificación](/sign/developers/webhook-signature-spec/) es normativa y breve. Tres requisitos
+merecen atención especial:
 
-1. **Compara en tiempo constante.** Un `==` sobre el digest filtra, byte a byte, cuánto de una
-   firma falsificada era correcto, lo cual basta para construir una válida.
-2. **Comprueba la marca de tiempo.** Una firma sin comprobación de frescura es válida para siempre,
-   así que cualquier entrega capturada se puede reproducir indefinidamente.
-3. **Acepta cualquier `v1` que coincida.** Durante una rotación del secreto el header lleva dos.
-   Exigir que coincida el primero inutiliza la ventana de rotación.
+1. **Comparar en tiempo constante.** Un `==` sobre el digest revela, byte a byte, qué parte de una
+   firma falsificada es correcta, y eso basta para construir una válida.
+2. **Comprobar la marca de tiempo.** Sin comprobación de vigencia, una entrega capturada podría
+   reenviarse indefinidamente.
+3. **Aceptar cualquier `v1` que coincida.** Durante una rotación del secreto, el encabezado lleva
+   dos valores; exigir que coincida el primero anula la ventana de rotación.
 
-Hay <a href="/sync/sign/webhook-signature-vectors.json">vectores de prueba</a>:
-<Fact of={WEBHOOKS.testVectorCount} /> casos, incluidos los que deben *fallar*. Los dos SDKs se
-prueban contra ese archivo exacto, y también el servidor. Si implementas tu propio verificador,
-pruébalo también contra ellos; para eso existen.
+Los <a href="/sync/sign/webhook-signature-vectors.json">vectores de prueba</a> incluyen
+<Fact of={WEBHOOKS.testVectorCount} /> casos, entre ellos los que deben *fallar*. El servidor y
+ambos SDKs se prueban contra ese mismo archivo; pruebe también su verificador contra él.
 
-## Comportamiento de la entrega
+## Entrega y reintentos
 
-**Responde 2xx rápido y luego haz el trabajo.** Confirma en cuanto la firma verifique y procesa de
-forma asíncrona.
+**Responda 2xx de inmediato y procese después.** Confirme la recepción en cuanto la firma sea
+válida y procese el evento de forma asíncrona.
 
-**Reintentos.** Una entrega fallida se reintenta con una escalera de esperas que abarca
+**Reintentos.** Una entrega fallida se reintenta con una secuencia de esperas que abarca
 aproximadamente <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="horas" />; los tiempos exactos
-están en [Límites y valores por defecto](/sign/reference/limits-and-defaults/). Cualquier 2xx
-cuenta como éxito; cualquier otra cosa es un fallo.
+figuran en [Límites y valores por defecto](/sign/reference/limits-and-defaults/). Cualquier 2xx
+cuenta como éxito; cualquier otra respuesta, como fallo.
 
-**Desactivaremos tu endpoint si sigue fallando.** Tras <Fact of={WEBHOOKS.disableAfterLadders} />
-entregas consecutivas que agotan todos sus reintentos, la suscripción se apaga y los
-administradores de tu organización reciben un correo. El panel de configuración lo muestra como
-**Desactivado automáticamente**, con la nota: «Desactivamos este endpoint después de que sus
-reintentos fallaran repetidamente. Corrígelo y vuelve a activarlo». También lo probamos por nuestra
-cuenta cada <Fact of={WEBHOOKS.probeIntervalHours} unit="horas" />, y un éxito lo vuelve a activar.
+**Desactivación automática.** Tras <Fact of={WEBHOOKS.disableAfterLadders} /> entregas
+consecutivas que agotan sus reintentos, la suscripción se desactiva y los administradores de la
+organización reciben un correo. El panel muestra el estado **Desactivado automáticamente**, con la
+nota: «Desactivamos este endpoint después de que sus reintentos fallaran repetidamente. Corrígelo
+y vuelve a activarlo». bb-sign también prueba el endpoint cada
+<Fact of={WEBHOOKS.probeIntervalHours} unit="horas" />, y una respuesta exitosa lo reactiva.
 
-**Las entregas durante ese tiempo se registran como «No enviado».** No se encolan para después: un
-atraso liberado tras una semana de caída te inundaría de eventos viejos. El historial muestra
-exactamente qué te perdiste.
+**Eventos durante la desactivación.** Se registran como **No enviado** y no se acumulan para
+después, de modo que su sistema no recibe una avalancha de eventos antiguos al reactivarse. El
+historial muestra exactamente qué eventos no se entregaron.
 
-**La entrega es al menos una vez.** El mismo evento puede llegar dos veces, tras un corte de red o
-un reinicio. `X-BBSign-Event-Id` es idéntico en esos casos, así que deduplica con él.
+**Entrega al menos una vez.** Un mismo evento puede llegar dos veces, por ejemplo tras un corte de
+red o un reinicio. `X-BBSign-Event-Id` es idéntico en ambos casos; úselo para eliminar duplicados.
 
-**El cuerpo nunca cambia entre reintentos.** Se renderiza una vez y se reenvía byte por byte, así
-que un `envelope.sent` reintentado horas después sigue describiendo el momento en que se envió.
-Solo se recalcula la firma, porque lleva la hora de envío.
+**Cuerpo estable entre reintentos.** El cuerpo se genera una sola vez y se reenvía byte por byte,
+de modo que un `envelope.sent` reintentado horas después describe el momento del envío. Solo se
+recalcula la firma, porque incluye la hora de entrega.
 
-## Diagnosticarlo tú mismo
+## Consultar el historial de entregas
 
-**Configuración**, pestaña **Webhooks**, **Historial** muestra cada evento, cada intento, el código
-de respuesta y el error. Las entradas se conservan
-<Fact of={WEBHOOKS.deliveryLogRetentionDays} unit="días" />. Es el primer lugar donde mirar, antes
-de contactar a nadie:
+En **Configuración**, pestaña **Webhooks**, **Historial** muestra cada evento, cada intento, el
+código de respuesta y el error. Las entradas se conservan durante
+<Fact of={WEBHOOKS.deliveryLogRetentionDays} unit="días" />. Es el primer lugar para diagnosticar
+una entrega:
 
-| Estado | Significado | Qué hacer |
+| Estado | Significado | Acción |
 |---|---|---|
-| Entregado | Llegó y respondiste 2xx | Nada |
-| Rechazado / Inaccesible | Tu endpoint respondió mal, o no respondió; la lista de intentos muestra cuál de los dos | Revisa tus logs para ese intento; el siguiente reintento está programado |
-| Abandonado | Se usaron todos los reintentos | Arregla el endpoint; consulta el estado con la API, porque este evento no se reenviará |
-| No enviado | El endpoint estaba desactivado en ese momento; esto explica un hueco | Activa el endpoint; reconcilia el hueco con `GET /api/v1/envelopes` |
-| No se pudo construir | Un problema de nuestro lado | No es algo que puedas arreglar; avísanos |
+| Entregado | El evento llegó y su endpoint respondió 2xx | Ninguna |
+| Rechazado / Inaccesible | Su endpoint respondió con error o no respondió; la lista de intentos indica cuál | Revise sus registros para ese intento; el siguiente reintento ya está programado |
+| Abandonado | Se agotaron los reintentos | Corrija el endpoint y consulte el estado del sobre con la API; este evento no se reenvía |
+| No enviado | El endpoint estaba desactivado en ese momento | Active el endpoint y concilie el periodo con `GET /api/v1/envelopes` |
+| No se pudo construir | Un error del lado de bb-sign | Contacte a soporte |
 
 ## Rotar el secreto
 
-**Configuración**, pestaña **Webhooks**, **Rotar secreto**. «Se aceptarán tanto el secreto antiguo
-como el nuevo durante un periodo de gracia, así que tu receptor seguirá funcionando hasta que lo
-despliegues con el nuevo». El periodo de gracia es de
+En **Configuración**, pestaña **Webhooks**, seleccione **Rotar secreto**. «Se aceptarán tanto el
+secreto antiguo como el nuevo durante un periodo de gracia, así que tu receptor seguirá
+funcionando hasta que lo despliegues con el nuevo». El periodo de gracia es de
 <Fact of={WEBHOOKS.secretRotationGraceHours} unit="horas" />. Las entregas en esa ventana llevan
-dos valores `v1`; un verificador correcto acepta cualquiera de los dos, y los dos SDKs lo hacen.
+dos valores `v1`; un verificador correcto acepta cualquiera de los dos, como hacen ambos SDKs.
 
-## Probar
+## Probar el endpoint
 
-**Enviar prueba** entrega un evento sintético a tu endpoint y te muestra el código de estado con el
-que respondió. Recorre el camino real de firma, así que es una comprobación genuina de tu
-verificador, no un simulacro.
+**Enviar prueba** entrega un evento sintético a su endpoint y muestra el código de estado de la
+respuesta. Usa el mismo proceso de firma que las entregas reales, de modo que valida su
+verificador de extremo a extremo.

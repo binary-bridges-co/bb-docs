@@ -1,6 +1,6 @@
 ---
-title: El camino del firmante
-description: Recibiste un correo para firmar un documento y no tienes cuenta. Todo el proceso, del correo a la copia firmada, en una sola página.
+title: Firmar un documento
+description: Cómo firmar un documento que recibió por correo, sin crear una cuenta, desde el enlace hasta la descarga de su copia firmada.
 product: sign
 audience: signer
 ---
@@ -9,52 +9,48 @@ import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { ENVELOPE, OTP, URLS } from '../../../facts/sign';
 
-Alguien te envió un documento para firmar con bb-sign. No necesitas cuenta ni contraseña: todo
-ocurre en el enlace que llega a tu correo, y funciona en el teléfono. Son seis pasos y la mayoría
-toma un par de minutos.
+Puede firmar el documento que le enviaron directamente desde el enlace que llegó a su correo, en el
+computador o en el teléfono. No necesita cuenta ni contraseña, y el proceso toma pocos minutos.
 
 <Steps>
 
-1. **Llega el correo.** El asunto es `You have a document to sign: {title}` y lo envía
-   <Fact of={URLS.senderAddress} />. Los correos de bb-sign están en inglés hoy; la página de
-   firma sí está en español. Si no lo encuentras, revisa la carpeta de spam.
+1. **Abra el correo.** Llega desde <Fact of={URLS.senderAddress} /> con el asunto
+   `You have a document to sign: {title}`. Si no aparece en la bandeja de entrada, revise la
+   carpeta de correo no deseado.
 
-2. **Abre el enlace.** Vale <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> por
-   defecto; quien envió el documento puede haber fijado otro plazo. El enlace es personal: no lo
-   reenvíes. Al abrirlo verás "Firmando como" con tu nombre y tu correo.
+2. **Abra el enlace.** El enlace es válido durante
+   <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> por defecto, o el plazo que haya
+   definido quien le envió el documento. Es personal: úselo solo usted. Al abrirlo verá
+   **Firmando como** con su nombre y su correo.
 
-3. **Revisa cada documento.** Bajo "Documentos para revisar", pulsa "Ver" en cada uno. La
-   aplicación no te deja continuar hasta que los hayas abierto todos; si lo intentas antes, te
-   dice "Abre cada documento antes de continuar." Cuando termines, pulsa "He revisado el
-   documento".
+3. **Revise los documentos.** En **Documentos para revisar**, pulse **Ver** en cada documento.
+   Cuando los haya abierto todos, pulse **He revisado el documento**.
 
-4. **Verifica tu identidad, si te lo piden.** En la pantalla "Verifica tu identidad" recibes por
-   correo un código de <Fact of={OTP.digits} unit="dígitos" />, válido
-   <Fact of={OTP.validityMinutes} unit="minutos" />. Escríbelo y pulsa "Verificar y continuar". Si el
-   sobre no exige este paso, pasas directo a firmar.
+4. **Verifique su identidad, si se le solicita.** Recibirá por correo un código de
+   <Fact of={OTP.digits} unit="dígitos" />, válido durante
+   <Fact of={OTP.validityMinutes} unit="minutos" />. Escríbalo en **Verifica tu identidad** y pulse
+   **Verificar y continuar**.
 
-5. **Firma.** En "Añade tu firma" eliges "Dibujar" (con el dedo o el ratón) o "Escribir" (tu
-   nombre completo). Pulsa "Enviar firma". Una firma enviada no se puede deshacer.
+5. **Firme.** En **Añade tu firma**, elija **Dibujar** para trazar su firma o **Escribir** para
+   escribir su nombre completo, y pulse **Enviar firma**. La firma enviada es definitiva.
 
-6. **Descarga tu copia.** La pantalla "¡Documento firmado correctamente!" muestra el botón
-   "Descargar tu documento firmado" en cuanto la copia está lista. Si otras personas también
-   deben firmar, la copia se prepara cuando todas hayan firmado y recibes el correo
-   `Signing complete: {title}` con un enlace para descargarla.
+6. **Descargue su copia.** Cuando la copia sellada esté lista, pulse
+   **Descargar tu documento firmado**. Si otras personas también deben firmar, recibirá el correo
+   `Signing complete: {title}` con el enlace de descarga cuando todas hayan firmado.
 
 </Steps>
 
-## Si algo no sale como aquí
+## Si necesita ayuda
 
-Cada mensaje que la aplicación puede mostrarte está en [Si algo falla](/sign/signing/troubleshooting/),
-con lo que pasó y lo que puedes hacer. Dos cosas que no existen hoy: rechazar la firma (si no
-quieres firmar, no firmes y avisa a quien te lo envió) y pedir un enlace nuevo (pídelo a quien te
-envió el documento).
+En [Si algo falla](/sign/signing/troubleshooting/) encontrará cada mensaje que puede mostrar la
+página de firma y qué hacer en cada caso. Para un enlace nuevo o si no desea firmar, comuníquese
+con quien le envió el documento.
 
-## Más detalle de cada paso
+## Cada paso en detalle
 
 <CardGrid>
-  <LinkCard title="El correo de invitación" href="/sign/signing/receiving-the-email/" description="Qué asuntos puedes recibir, quién los envía y cuándo llegan recordatorios." />
-  <LinkCard title="Revisar y verificar identidad" href="/sign/signing/review-and-identity/" description="Abrir cada documento, el código de verificación y qué significa cada mensaje." />
-  <LinkCard title="Firmar y descargar" href="/sign/signing/sign-and-download/" description="Dibujar o escribir, qué queda registrado y hasta cuándo puedes descargar la copia." />
-  <LinkCard title="Verificar un documento firmado" href="/sign/signing/verify-a-document/" description="Qué comprueba el código QR del sello y qué no." />
+  <LinkCard title="El correo de invitación" href="/sign/signing/receiving-the-email/" description="Los correos que puede recibir, quién los envía y cuándo llegan los recordatorios." />
+  <LinkCard title="Revisar y verificar identidad" href="/sign/signing/review-and-identity/" description="Abrir los documentos, usar el código de verificación y entender cada mensaje." />
+  <LinkCard title="Firmar y descargar" href="/sign/signing/sign-and-download/" description="Las formas de firmar, la información que se registra y cómo descargar la copia." />
+  <LinkCard title="Verificar un documento firmado" href="/sign/signing/verify-a-document/" description="Cómo confirmar una firma con el código QR y con el sello del certificado." />
 </CardGrid>

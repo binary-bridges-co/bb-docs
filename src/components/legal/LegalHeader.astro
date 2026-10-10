@@ -12,23 +12,21 @@ interface Props {
   source?: string;
 }
 
-const { locale, version, source } = Astro.props;
+const { locale, version } = Astro.props;
 const t = {
   es: {
     pending: 'Pendiente de revisión jurídica.',
-    canonical: 'Texto canónico en bb-sign:',
     prevails: '',
   },
   en: {
     pending: 'Pending legal review.',
-    canonical: 'Canonical text in bb-sign:',
-    prevails: 'This is a courtesy translation. The Spanish text prevails.',
+    prevails: 'This translation is provided for convenience. The Spanish version prevails.',
   },
 }[locale];
 ---
 
 <div class="bb-legal-header" data-legal-version={version}>
   <span><strong>{version}</strong> · <strong>{t.pending}</strong></span>
-  {source && <span>{t.canonical} <code>{source}</code></span>}
+  {/* `source` stays in the frontmatter for syncing with bb-sign; readers do not need the repo path. */}
   {t.prevails && <span>{t.prevails}</span>}
 </div>

@@ -33,6 +33,6 @@ test('the sidebar is translated per locale', async ({ page }) => {
 
 test('the English hub uses English copy', async ({ page }) => {
   await page.goto('/en/');
-  await expect(page.locator('h1')).toContainText('in one place');
+  await expect(page.locator('h1')).toContainText('Documentation for Binary Bridges products');
   await expect(page.locator('[data-product="sign"]')).toContainText('Open the documentation');
 });
