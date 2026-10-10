@@ -1,8 +1,77 @@
 ---
-title: "Download signed documents"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Download signed documents
+description: Original PDF and signed PDF from the envelope page, how long a download link lasts, which role cannot download, and until when the files are available.
 product: sign
 audience: user
 ---
 
-Content under construction.
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../../facts/sign';
+
+When an envelope completes, bb-sign generates a signed PDF for every document: the original with
+each signer's seal and the signature of the organization's certificate. This page explains where to
+download it, how long the link lasts, who cannot do it and until when it is available.
+
+## Original PDF and signed PDF
+
+In the "Documents (N)" section of the envelope page, each file has up to two buttons:
+
+| Button | What it downloads | When it appears |
+|---|---|---|
+| "Original PDF" | The file as you uploaded it, without seals. | Always, from the moment the envelope exists. |
+| "Signed PDF" | The document sealed by each signer and signed with the certificate. | When the envelope is "Completed" and the file has been generated. |
+
+A few moments pass between the last signer signing and the file being ready; meanwhile the button
+is replaced by "Signed PDF processing...". Reload the page. If the text stays there for a long time,
+tell your administrator.
+
+What the seal contains (name, email, date, the drawn or typed signature, a hash and a QR code to
+verify it) and what the certificate adds is in
+[Electronic signature and seal](/en/sign/concepts/signature-and-seal/). How to check a signed PDF
+that reaches you another way is in [Verify a signed document](/en/sign/signing/verify-a-document/).
+
+## Download links expire quickly
+
+Each button points to a temporary link valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />
+from the moment the page opens. If you press it later, the download fails: reload the envelope page
+and press again. Do not copy or forward the link; share the downloaded file.
+
+## Who can download
+
+Downloading requires the **auditor**, **contributor** or **manager** role in the envelope's
+workspace, or being an administrator of the organization. With the **viewer** role you see the name
+of each document but no button, and the explanation: "You can see this document's name but not
+download it. Ask an admin for auditor access."
+
+Signers do not come here: they download their copy from their own link, when they finish signing
+and from the email `Signing complete: {title}`. See
+[Sign and download](/en/sign/signing/sign-and-download/).
+
+## Until when
+
+Two different deadlines limit downloading from the application:
+
+1. **The envelope archive.** Once <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> have passed
+   since creation, a completed envelope moves to
+   [Archived envelopes](/en/sign/sending/archived-envelopes/). That view offers no downloads, and
+   the signer's link stops working.
+2. **Storage.** Today, in production, files move to cold storage
+   <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="days" /> after upload. From then on
+   they cannot be downloaded immediately. A signer who opens their link sees: "This document is no
+   longer available for download. Please contact the administrator." Restore on request does not
+   exist yet.
+
+The service policy fixes retention at <Fact of={RETENTION_POLICY.retentionDays} unit="days" />,
+non-negotiable, and after that conservation is your organization's responsibility. What the policy
+says and what the infrastructure does today are kept apart in
+[Scope and retention](/en/sign/legal/retention/).
+
+<Aside type="caution" title="Download and keep the signed PDF when the envelope completes">
+  bb-sign is not a document archive. As soon as an envelope becomes "Completed", download the
+  "Signed PDF" of every document and store it in your organization's system. If you integrate
+  systems, an administrator can automate it with the `envelope.completed` webhook; see
+  [Webhooks](/en/sign/admin/webhooks/).
+</Aside>
+
+<LinkCard title="Archived envelopes" href="/en/sign/sending/archived-envelopes/" description="Which envelopes move to the archive, when, and what stops working." />

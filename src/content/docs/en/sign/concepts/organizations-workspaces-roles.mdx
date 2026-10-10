@@ -1,8 +1,115 @@
 ---
-title: "Organizations, workspaces and roles"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Organizations, workspaces and roles
+description: How a bb-sign account is organized. The organization, the General workspace, workspace roles and organization roles, and what each one can do.
 product: sign
 audience: all
 ---
 
-Content under construction.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import RolesMatrix from '../../../../../components/facts/RolesMatrix.astro';
+import { AUTH } from '../../../../facts/sign';
+
+Everything in bb-sign belongs to an **organization**. Inside it, envelopes live in **workspaces**,
+and what each person or credential can do with an envelope depends on their **role in that
+workspace**. What they can do with the organization itself (invite users, create label keys,
+configure the certificate) depends on their **organization role**. This page explains the two layers
+and how they combine.
+
+## The organization
+
+An organization is the boundary of everything: its users, its workspaces, its envelopes, its
+documents, its label keys, its API credentials, its webhooks and its certificate. Nothing in one
+organization is visible from another. A user belongs to one organization only, and an API credential
+always acts on behalf of the organization that created it.
+
+Organizations are created by Binary Bridges (the *platform administrator*).
+
+## Workspaces
+
+A workspace is a container for envelopes inside the organization. It separates areas (Human
+Resources, Purchasing, Legal) and decides who sees what: a person only sees the envelopes of the
+workspaces they have access to.
+
+Every organization has a workspace called **General**, created with it. The application shows it as
+"General (everyone)" because every member of the organization can work in it without being granted
+access. General cannot be renamed or deleted; the application says so: "The General workspace can't
+be renamed or deleted."
+
+Administrators create the other workspaces and decide who joins each one. A workspace can only be
+deleted when it has no envelopes, archived ones included. The operational details are in
+[Workspaces and members](/en/sign/admin/workspaces-and-members/).
+
+## Workspace roles
+
+In each workspace, a person or an API credential holds one of four roles. The application calls
+them **Viewer**, **Auditor**, **Contributor** and **Manager**; the API and the tables in this
+documentation use `viewer`, `auditor`, `contributor` and `manager`. Each role includes everything
+the previous one can do:
+
+| Role | What it adds |
+| --- | --- |
+| `viewer` (Viewer) | See the list and the detail of envelopes, archived ones included. Does not download documents. |
+| `auditor` (Auditor) | Download documents and read each envelope's audit trail. |
+| `contributor` (Contributor) | Create envelopes, edit them before sending, upload documents, assign labels and send. |
+| `manager` (Manager) | Cancel envelopes. |
+
+<RolesMatrix locale="en" show="workspace" />
+
+**Contributor is implicit in General.** Every member of the organization is a Contributor in the
+General workspace, always. That role is neither granted nor revoked; if an administrator tries to
+assign it, the application answers "That role can't be granted. Choose Viewer, Auditor or Manager."
+In the other workspaces, a member has no role until an administrator grants one.
+
+## Organization roles
+
+The organization role decides which parts of the application a person sees and what they can do
+outside envelopes:
+
+| Role | Name in the application | What it can do |
+| --- | --- | --- |
+| `org_member` | Org Member | Work with envelopes according to their workspace roles. Sees the Dashboard, Envelopes and Archived. Does not see Users, Labels, Storage or Settings. |
+| `org_admin` | Org Admin | All of the above in **every** workspace, without belonging to any, plus invite users, create workspaces and grant roles, define label keys, manage API credentials and webhooks, upload the certificate and read the organization's audit trail. |
+| `org_api` | API credential | A machine. It only lists workspaces and label keys; what it can do with envelopes is decided by its workspace roles. It can never manage credentials, webhooks, workspaces or members. |
+| `platform_admin` | Platform Admin | Binary Bridges. Creates organizations, sets quotas and the seal's appearance. |
+
+An administrator sees every workspace in the organization without being a member of any. If someone
+tries to add one to a workspace, the application refuses: "Admins already see every workspace." The
+full permission matrix, including what an API credential can never hold, is in
+[Permission matrix](/en/sign/admin/permissions/).
+
+## What a member cannot do
+
+An Org Member with the Contributor role creates, edits, sends and downloads. There are two things
+they do not do:
+
+- **Cancel an envelope.** The "Cancel Envelope" button only works for a Manager of the workspace or
+  an administrator. If you need to cancel and cannot, ask your administrator to do it or to grant
+  you the Manager role in that workspace. See [Cancel an envelope](/en/sign/sending/cancel/).
+- **Administer the organization.** Users, label keys, workspaces, credentials, webhooks and the
+  certificate are administrator tasks.
+
+## The "404, not 403" rule
+
+bb-sign has two ways of saying no:
+
+- If you try an organization action your role does not hold (for example, creating a label key as
+  a member), the answer is `403` and the application says "You don't have permission to do this."
+- If you try to open an envelope or a workspace you **do not have access to**, the answer is `404`,
+  the same as if it did not exist. The application says "Envelope not found, or you don't have
+  access to it." or "That workspace no longer exists, or you can't use it." Those envelopes do not
+  appear in lists or counters either.
+
+<Aside type="note" title="A 404 does not tell you whether the envelope exists">
+  An envelope you cannot access and an envelope that does not exist answer exactly the same. This is
+  deliberate: nobody can discover what is in someone else's workspace by trying identifiers. If
+  someone shares a link with you and you see "Envelope not found", you most likely lack access to its
+  workspace. Ask an administrator for that access; do not look for a mistake in the link.
+</Aside>
+
+## Membership cap
+
+A person or an API credential can belong to at most
+<Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> workspaces. When one more is granted, the
+application answers "This person or API key already belongs to the maximum number of workspaces".
+Administrators do not count: they see every workspace without belonging to any.

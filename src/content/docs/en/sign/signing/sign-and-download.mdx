@@ -1,8 +1,80 @@
 ---
-title: "Sign and download"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Sign and download
+description: What happens when you draw or type your signature, what is recorded, how to get the signed copy and until when it is available.
 product: sign
 audience: signer
 ---
 
-Content under construction.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE } from '../../../../facts/sign';
+
+The "Add Your Signature" screen is the last step. This page explains the two ways to sign, what
+bb-sign keeps at that moment and how the signed copy reaches you.
+
+## Draw or type
+
+- **"Draw"**: trace your signature with a finger, a stylus or the mouse in the box "Draw your
+  signature here". "Clear" wipes it so you can start again.
+- **"Type"**: type your name in "Type your full name". The application turns it into an image
+  with a handwriting font.
+
+In both cases what is kept is an image of your signature. There is no way to upload an image made
+elsewhere. If you press "Submit Signature" with the box empty, you see "Please draw your
+signature." or "Please type your name.".
+
+## What is recorded
+
+When you press "Submit Signature", bb-sign keeps, next to your name and your email:
+
+- the image of your signature;
+- the date and time;
+- the IP address you signed from;
+- the browser you used.
+
+These details are part of the envelope's evidence. Your name, your email and the date also appear
+on the seal printed on the document.
+
+<Aside type="caution" title="Submitting the signature cannot be undone">
+  As soon as the signature is recorded, your link is used up and the envelope moves on. If you
+  signed by mistake or the details were not yours, tell whoever sent you the document: only that
+  person can cancel the envelope or create another one.
+</Aside>
+
+## The final screen
+
+After submitting you see "Document Signed Successfully!". The line below it is written by the
+server: "Signature recorded successfully" if other people still have to sign, or "All signers
+have signed. Envelope completed!" if you were the last. Then one of these states:
+
+| What you see | What it means |
+|---|---|
+| "Download Your Signed Document" | The sealed copy is ready. There is one button per document. |
+| "Preparing your signed copy — this can take a few moments." | Everyone has signed and bb-sign is sealing the PDFs. The page refreshes on its own. |
+| "Your signed copy is still being prepared. We have emailed you a link — you can download it from there once it is ready." | Sealing is taking longer than usual. You can close the page; the completion email carries the link. |
+| No button | Other people still have to sign. The copy will exist once everyone has signed. |
+
+## The completion email
+
+When everyone has signed you receive `Signing complete: {title}` with a link to your copy. That
+link opens the final screen with "This envelope is complete. You can download your signed copy
+below." You can come back to it as often as you like while the copy is available.
+
+## Until when you can download
+
+The copy is available from your link until the envelope is archived, which happens
+<Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after it was created (not after you signed).
+After that you see "This document is no longer available for download. Please contact the
+administrator.": ask whoever sent you the document, who still has access. Save your copy as soon
+as you download it.
+
+## What the seal shows
+
+On every signed document, where the sender placed it or at the end of the last page, there is a
+seal with: the header "Verified Signature" and the envelope identifier, your signature, your
+name, your email, the date ("Signed" and the day as year-month-day, in UTC), a QR code and a
+circular pattern generated from the signature's fingerprint. The PDF also carries the
+organization's certificate seal, visible in the PDF reader's signature panel. What the QR checks
+is in [Verify a signed document](/en/sign/signing/verify-a-document/); the difference between
+your signature and the certificate seal, in
+[Electronic signature and seal](/en/sign/concepts/signature-and-seal/).

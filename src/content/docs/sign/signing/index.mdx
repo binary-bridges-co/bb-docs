@@ -1,8 +1,60 @@
 ---
-title: "El camino del firmante"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: El camino del firmante
+description: Recibiste un correo para firmar un documento y no tienes cuenta. Todo el proceso, del correo a la copia firmada, en una sola página.
 product: sign
 audience: signer
 ---
 
-Contenido en construcción.
+import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { ENVELOPE, OTP, URLS } from '../../../facts/sign';
+
+Alguien te envió un documento para firmar con bb-sign. No necesitas cuenta ni contraseña: todo
+ocurre en el enlace que llega a tu correo, y funciona en el teléfono. Son seis pasos y la mayoría
+toma un par de minutos.
+
+<Steps>
+
+1. **Llega el correo.** El asunto es `You have a document to sign: {title}` y lo envía
+   <Fact of={URLS.senderAddress} />. Los correos de bb-sign están en inglés hoy; la página de
+   firma sí está en español. Si no lo encuentras, revisa la carpeta de spam.
+
+2. **Abre el enlace.** Vale <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> por
+   defecto; quien envió el documento puede haber fijado otro plazo. El enlace es personal: no lo
+   reenvíes. Al abrirlo verás "Firmando como" con tu nombre y tu correo.
+
+3. **Revisa cada documento.** Bajo "Documentos para revisar", pulsa "Ver" en cada uno. La
+   aplicación no te deja continuar hasta que los hayas abierto todos; si lo intentas antes, te
+   dice "Abre cada documento antes de continuar." Cuando termines, pulsa "He revisado el
+   documento".
+
+4. **Verifica tu identidad, si te lo piden.** En la pantalla "Verifica tu identidad" recibes por
+   correo un código de <Fact of={OTP.digits} unit="dígitos" />, válido
+   <Fact of={OTP.validitySeconds} unit="s" />. Escríbelo y pulsa "Verificar y continuar". Si el
+   sobre no exige este paso, pasas directo a firmar.
+
+5. **Firma.** En "Añade tu firma" eliges "Dibujar" (con el dedo o el ratón) o "Escribir" (tu
+   nombre completo). Pulsa "Enviar firma". Una firma enviada no se puede deshacer.
+
+6. **Descarga tu copia.** La pantalla "¡Documento firmado correctamente!" muestra el botón
+   "Descargar tu documento firmado" en cuanto la copia está lista. Si otras personas también
+   deben firmar, la copia se prepara cuando todas hayan firmado y recibes el correo
+   `Signing complete: {title}` con un enlace para descargarla.
+
+</Steps>
+
+## Si algo no sale como aquí
+
+Cada mensaje que la aplicación puede mostrarte está en [Si algo falla](/sign/signing/troubleshooting/),
+con lo que pasó y lo que puedes hacer. Dos cosas que no existen hoy: rechazar la firma (si no
+quieres firmar, no firmes y avisa a quien te lo envió) y pedir un enlace nuevo (pídelo a quien te
+envió el documento).
+
+## Más detalle de cada paso
+
+<CardGrid>
+  <LinkCard title="El correo de invitación" href="/sign/signing/receiving-the-email/" description="Qué asuntos puedes recibir, quién los envía y cuándo llegan recordatorios." />
+  <LinkCard title="Revisar y verificar identidad" href="/sign/signing/review-and-identity/" description="Abrir cada documento, el código de verificación y qué significa cada mensaje." />
+  <LinkCard title="Firmar y descargar" href="/sign/signing/sign-and-download/" description="Dibujar o escribir, qué queda registrado y hasta cuándo puedes descargar la copia." />
+  <LinkCard title="Verificar un documento firmado" href="/sign/signing/verify-a-document/" description="Qué comprueba el código QR del sello y qué no." />
+</CardGrid>

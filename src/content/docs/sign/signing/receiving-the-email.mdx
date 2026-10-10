@@ -1,8 +1,60 @@
 ---
-title: "El correo de invitación"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: El correo de invitación
+description: Qué correos puedes recibir de bb-sign, quién los envía, cuándo llegan recordatorios y qué hacer si el correo no aparece.
 product: sign
 audience: signer
 ---
 
-Contenido en construcción.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { ENVELOPE, REMINDERS, URLS } from '../../../facts/sign';
+
+Todo empieza con un correo. Esta página dice cómo reconocerlo, qué otros correos pueden seguirle y
+qué hacer si no lo encuentras.
+
+## Quién lo envía
+
+Todos los correos sobre documentos llegan desde <Fact of={URLS.senderAddress} />. Hoy están
+escritos en inglés; la página de firma a la que llevan está en español y en inglés, y puedes
+cambiar el idioma arriba a la derecha.
+
+## Los correos que puedes recibir
+
+| Asunto | Cuándo llega |
+|---|---|
+| `You have a document to sign: {title}` | Cuando alguien te envía un documento. Contiene tu enlace de firma. |
+| `It's your turn to sign: {title}` | Cuando el sobre tiene un orden de firma y las personas anteriores ya firmaron. También contiene tu enlace. |
+| `Your verification code for BB-Sign` | Cuando pides el código de verificación en la página de firma. |
+| `Reminder: please sign {title}` | Cuando llevas tiempo sin firmar. Trae el mismo enlace que la invitación. |
+| `Signing complete: {title}` | Cuando todas las personas firmaron. Su enlace lleva a tu copia firmada. |
+| `Signing request expired: {title}` | Cuando el sobre venció antes de que firmaras. Ya no se puede firmar. |
+
+`{title}` es el título que puso quien envió el documento.
+
+## Recordatorios
+
+Si no has firmado <Fact of={REMINDERS.thresholdHours} unit="horas" /> después de la invitación,
+bb-sign te envía un recordatorio, y luego como mucho uno cada
+<Fact of={REMINDERS.cooldownHours} unit="horas" />, hasta que firmes o el sobre se cierre.
+
+## Si no encuentras el correo
+
+1. Busca `You have a document to sign` o <Fact of={URLS.senderAddress} /> en tu buzón, incluida
+   la carpeta de spam o correo no deseado.
+2. Si está en spam, márcalo como correo seguro para que los siguientes lleguen a la bandeja de
+   entrada.
+3. Si no está, pide a quien te lo envió que compruebe en el sobre que tu dirección está bien
+   escrita. Hoy no existe un botón para reenviarte el enlace; quien envía ve el estado del sobre
+   y puede corregirlo o crear otro.
+
+## El enlace es personal
+
+<Aside type="caution" title="No reenvíes el correo">
+  El enlace identifica a una sola persona: tú. Quien lo abra firma con tu nombre y tu correo, y
+  esa firma no se puede deshacer. Si alguien más debe firmar, pide a quien envió el documento que
+  lo añada como firmante.
+</Aside>
+
+El enlace vale <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> por defecto (quien envía
+puede fijar otro plazo) y deja de servir para firmar en cuanto firmas. Si vuelves a abrirlo
+después, verás tu copia firmada, no la página de firma.

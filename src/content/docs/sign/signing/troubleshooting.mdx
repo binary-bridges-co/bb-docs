@@ -1,8 +1,44 @@
 ---
-title: "Si algo falla"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Si algo falla
+description: Cada mensaje que la página de firma puede mostrarte, qué pasó y qué hacer. Y lo que no existe todavía, como rechazar la firma o pedir otro enlace.
 product: sign
 audience: signer
 ---
 
-Contenido en construcción.
+import Fact from '../../../../components/facts/Fact.astro';
+import { ENVELOPE, OTP } from '../../../facts/sign';
+
+No tienes cuenta ni un canal de soporte, así que esta tabla recoge todo lo que la página de firma
+puede decirte. En casi todos los casos, la persona que puede ayudarte es quien te envió el
+documento: ve el estado del sobre y puede cancelarlo o crear otro.
+
+## Lo que ves, qué pasó y qué hacer
+
+| Lo que ves | Qué pasó | Qué hacer |
+|---|---|---|
+| "Enlace no disponible" y debajo "This signing link has expired" | El enlace venció. Vale <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> por defecto; quien envía puede fijar otro plazo. | Pide a quien te lo envió que compruebe el sobre; puede crear uno nuevo. |
+| "Enlace no disponible" y debajo "This signing link has already been used" | Ya se firmó con este enlace. | Si no fuiste tú, avisa a quien te lo envió de inmediato. |
+| "Enlace no disponible" y debajo "Envelope is not open for signing" o "This envelope has expired" | El sobre se canceló, venció o ya se completó. | Pregunta a quien te lo envió si debe enviarte otro. |
+| "Enlace no disponible" y debajo "No se pudo cargar la página de firma." | La página no pudo hablar con el servidor, o el enlace está incompleto. | Recarga; si sigue igual, abre el enlace desde el correo original. |
+| "Esperando a los firmantes anteriores" | El sobre tiene orden de firma y las personas anteriores no han terminado. | Espera. La página comprueba sola y puedes pulsar "Comprobar de nuevo". Recibirás `It's your turn to sign: {title}` cuando sea tu turno. |
+| "Ya firmado" | Ya has firmado este documento con este enlace. | Nada. Cuando todos firmen, llegará `Signing complete: {title}`. |
+| "Ese código no es válido. Revísalo e inténtalo de nuevo." (hoy puede aparecer en inglés) | El código no coincide o caducó. Cada fallo cuenta; hay <Fact of={OTP.maxAttempts} unit="intentos" /> por código. | Copia el código del último correo. Si no funciona, pide otro con "Reenviar código". |
+| "Ese código ya no se puede usar. Podrás pedir uno nuevo en unos instantes." | Se agotaron los intentos de ese código o ya se usó, y todavía corre la espera de <Fact of={OTP.resendCooldownSeconds} unit="s" />. | Espera a que el botón diga "Reenviar código" y pide uno nuevo. |
+| "Por favor, dibuja tu firma." o "Por favor, escribe tu nombre." | Pulsaste "Enviar firma" con el recuadro vacío. | Dibuja o escribe y vuelve a enviar. |
+| "La firma falló. Inténtalo de nuevo." | La firma no llegó al servidor. | Vuelve a pulsar "Enviar firma". Si en su lugar ves "Your identity check has expired. Please request a new code.", pasaron más de <Fact of={OTP.verifiedValidityMinutes} unit="minutos" /> desde la verificación: recarga la página y pide un código nuevo. |
+| "Este documento ya no está disponible para descarga. Por favor contacta al administrador." | El sobre se archivó: pasaron <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> desde su creación. | Pide el documento a quien te lo envió; la organización lo conserva. |
+| "Tu copia firmada aún se está preparando. Te enviamos un enlace por correo — podrás descargarla desde ahí cuando esté lista." | El sellado tarda más de lo normal. | Cierra la página y abre el enlace de `Signing complete: {title}` más tarde. |
+
+Los mensajes que aparecen bajo "Enlace no disponible" los escribe el servidor y hoy están en
+inglés.
+
+## Rechazar la firma
+
+No existe un botón para rechazar. Si no quieres firmar, no firmes y dile a quien te envió el
+documento por qué; esa persona puede cancelar el sobre. Si nadie hace nada, el enlace vence solo.
+
+## Pedir un enlace nuevo
+
+Tampoco existe hoy un "reenviar mi enlace" para firmantes. Si lo perdiste o venció, pide a quien te
+envió el documento que revise el sobre: puede comprobar tu dirección de correo y, si el sobre sigue
+abierto, los recordatorios traen el mismo enlace; si venció, puede crear otro sobre.

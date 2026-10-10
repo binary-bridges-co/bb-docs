@@ -1,8 +1,81 @@
 ---
-title: "Firmar y descargar"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Firmar y descargar
+description: Qué pasa al dibujar o escribir la firma, qué queda registrado, cómo obtener la copia firmada y hasta cuándo está disponible.
 product: sign
 audience: signer
 ---
 
-Contenido en construcción.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { ENVELOPE } from '../../../facts/sign';
+
+La pantalla "Añade tu firma" es el último paso. Esta página explica las dos formas de firmar, qué
+guarda bb-sign en ese momento y cómo llega la copia firmada.
+
+## Dibujar o escribir
+
+- **"Dibujar"**: traza tu firma con el dedo, un lápiz o el ratón en el recuadro "Dibuja tu firma
+  aquí". "Borrar" lo limpia para empezar de nuevo.
+- **"Escribir"**: escribe tu nombre en "Escribe tu nombre completo". La aplicación lo convierte
+  en una imagen con una fuente manuscrita.
+
+En ambos casos lo que se guarda es una imagen de tu firma. No hay forma de subir una imagen hecha
+aparte. Si pulsas "Enviar firma" con el recuadro vacío, verás "Por favor, dibuja tu firma." o
+"Por favor, escribe tu nombre.".
+
+## Qué queda registrado
+
+Al pulsar "Enviar firma", bb-sign guarda junto a tu nombre y tu correo:
+
+- la imagen de tu firma;
+- la fecha y la hora;
+- la dirección IP desde la que firmaste;
+- el navegador que usaste.
+
+Estos datos forman parte de la evidencia del sobre. Tu nombre, tu correo y la fecha aparecen
+además en el sello impreso en el documento.
+
+<Aside type="caution" title="Enviar la firma no se puede deshacer">
+  En cuanto la firma se registra, tu enlace queda usado y el sobre avanza. Si firmaste por error o
+  los datos no eran los tuyos, avisa a quien te envió el documento: solo esa persona puede cancelar
+  el sobre o crear otro.
+</Aside>
+
+## La pantalla final
+
+Después de enviar verás "¡Documento firmado correctamente!". La línea de debajo la escribe el
+servidor y hoy está en inglés: "Signature recorded successfully" si faltan otras personas por
+firmar, o "All signers have signed. Envelope completed!" si eras la última. Luego, uno de estos
+estados:
+
+| Lo que ves | Qué significa |
+|---|---|
+| "Descargar tu documento firmado" | La copia sellada está lista. Hay un botón por documento. |
+| "Preparando tu copia firmada — esto puede tardar unos momentos." | Ya firmaron todos y bb-sign está sellando los PDF. La página se actualiza sola. |
+| "Tu copia firmada aún se está preparando. Te enviamos un enlace por correo — podrás descargarla desde ahí cuando esté lista." | El sellado tarda más de lo normal. Puedes cerrar la página; el correo de finalización trae el enlace. |
+| Ningún botón | Faltan otras personas por firmar. La copia existirá cuando todas hayan firmado. |
+
+## El correo de finalización
+
+Cuando todas las personas firmaron recibes `Signing complete: {title}` con un enlace a tu copia.
+Ese enlace abre la pantalla final con "Este sobre está completo. Puedes descargar tu copia firmada
+abajo." Puedes volver a él las veces que quieras mientras la copia esté disponible.
+
+## Hasta cuándo puedes descargar
+
+La copia está disponible desde tu enlace hasta que el sobre se archiva, lo que ocurre
+<Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de que fue creado (no de que lo
+firmaste). Después verás "Este documento ya no está disponible para descarga. Por favor contacta al
+administrador.": pide el documento a quien te lo envió, que sigue teniendo acceso. Guarda tu copia
+en cuanto la descargues.
+
+## Qué muestra el sello
+
+En cada documento firmado, en el lugar que indicó quien lo envió o al final de la última página,
+hay un sello con: la cabecera "Verified Signature" y el identificador del sobre, tu firma, tu
+nombre, tu correo, la fecha ("Signed" y el día en formato año-mes-día, en UTC), un código QR y un
+dibujo circular generado a partir de la huella de la firma. El texto del sello está en inglés.
+Además, el PDF lleva el sello del certificado de la organización, visible en el panel de firmas
+del lector de PDF. Qué comprueba el QR está en
+[Verificar un documento firmado](/sign/signing/verify-a-document/); la diferencia entre tu firma
+y el sello del certificado, en [Firma electrónica y sello](/sign/concepts/signature-and-seal/).

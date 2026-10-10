@@ -1,8 +1,100 @@
 ---
-title: "Envelopes and signers"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Envelopes and signers
+description: What an envelope is, which statuses it goes through, how each signer's status changes, sequential or parallel signing, link validity, expiry and cancellation.
 product: sign
 audience: all
 ---
 
-Content under construction.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import StatusFlow from '../../../../../components/facts/StatusFlow.astro';
+import { ENVELOPE } from '../../../../facts/sign';
+
+An **envelope** is bb-sign's unit of work: one or more PDF documents, a list of signers and the
+rules of the sending (whether a verification code is required, how long the link lasts, whether
+there is an expiry date, whether signing happens in order). The envelope starts as a draft, is sent,
+the signers sign and the envelope completes. This page describes that path and the two shortcuts
+that interrupt it: cancellation and expiry.
+
+## Envelope statuses
+
+<StatusFlow locale="en" of="envelope" />
+
+The application shows these statuses as DRAFT, SENT, IN_PROGRESS, COMPLETED, CANCELLED and EXPIRED,
+and lets you filter the envelope list by any of them. Three things worth knowing:
+
+- `IN_PROGRESS` only exists with more than one signer: it appears with the first signature and
+  lasts until the last one. With a single signer, the envelope goes from `SENT` to `COMPLETED`
+  directly.
+- `COMPLETED`, `CANCELLED` and `EXPIRED` are final. An envelope does not go back and is not resent.
+- On completion, bb-sign seals every document with the organization's certificate. Until that
+  finishes, the detail shows "Signed PDF processing...". See
+  [Electronic signature and seal](/en/sign/concepts/signature-and-seal/).
+
+## Signer statuses
+
+<StatusFlow locale="en" of="signer" />
+
+Each signer moves on their own. In the envelope detail, the "Signers" list shows each one's status
+(Pending, Notified, Viewed, Signed) and their "Order #". A signer cannot decline to sign: that
+status does not exist today. If someone is not going to sign, the sender cancels the envelope or
+lets it expire.
+
+## Sequential or parallel
+
+When creating the envelope you choose one of two modes, and the envelope detail shows it as
+"Sequential signing" or "Parallel signing":
+
+| Mode | What happens on send | Order |
+| --- | --- | --- |
+| Parallel | "Everyone is emailed at once and can sign in any order." | Order numbers are shown but not enforced. |
+| Sequential | "Signers are emailed one at a time, in the order you set on the signers step." | Each signer gets their link only once everyone before them has signed. |
+
+In sequential mode, several signers can share the same order number: they form a group and are
+emailed at the same time. When the group finishes, the next one receives the email "It's your turn
+to sign". See [Signers and order](/en/sign/sending/signers-and-order/).
+
+## Signing link validity
+
+Each signer receives a unique link by email. The link is valid for the number of hours the sender
+set in "Link expiry (hours)" when creating the envelope; by default,
+<Fact of={ENVELOPE.linkTtlHoursDefault} unit="hours" />. The clock starts when the link is
+generated: on send or, in sequential signing, when it becomes the signer's turn.
+
+An expired link cannot be resent today. The envelope does not change status because of it: it stays
+in `SENT` or `IN_PROGRESS` until it completes, is cancelled or expires.
+
+## Optional expiry
+
+The sender can set a date in "Expires at (optional)"; the application notes "Leave empty for no
+expiration." If there is a date, a process checks it every
+<Fact of={ENVELOPE.expirySweepMinutes} unit="minutes" /> and marks as `EXPIRED` the envelopes in
+`SENT` or `IN_PROGRESS` whose date has passed. Signers who had not yet signed receive the email
+"Signing request expired". A draft never expires: the date only counts from the moment of sending.
+
+## Cancel
+
+A Manager of the workspace or an administrator can cancel an envelope in `DRAFT`, `SENT` or
+`IN_PROGRESS` with the "Cancel Envelope" button. The application asks for confirmation: "Are you
+sure you want to cancel this envelope? This action cannot be undone and all pending signatures will
+be invalidated."
+
+On cancellation, every pending signing link stops working and the envelope stays in `CANCELLED`
+for good. bb-sign **does not send** a cancellation email to signers; if one opens their link, they
+will see that it is no longer available. Tell them yourself if needed. See
+[Cancel an envelope](/en/sign/sending/cancel/).
+
+## Send is the point of no return
+
+To send, the envelope must be in `DRAFT`, have at least one signer and at least one document. On
+confirmation, the application warns: "This will generate unique signing links for each signer and
+send the envelope. This action cannot be undone."
+
+<Aside type="caution" title="Nothing changes after sending">
+  On send, the documents and the signer list are frozen. You cannot add or remove a document,
+  correct a signer's email or change the mode. If something was wrong, the only thing you can do is
+  cancel the envelope and create another. Check the summary before pressing "Send Envelope".
+</Aside>
+
+What stays alive after sending is the labels, which can be changed in any status. See
+[Labels](/en/sign/concepts/labels/).

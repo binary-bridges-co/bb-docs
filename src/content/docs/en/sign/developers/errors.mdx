@@ -1,8 +1,131 @@
 ---
-title: "Errors"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Errors
+description: Every status the bb-sign API answers, the ErrorResponse and QuotaViolation bodies, the 404-not-403 rule, and how the SDKs surface failures.
 product: sign
 audience: developer
 ---
 
-Content under construction.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { AUTH, QUOTA } from '../../../../facts/sign';
+
+The API answers a small set of statuses, and every one of them means one thing. This page lists
+them, shows the body that comes with them, and explains the one rule that surprises people: an
+envelope you cannot see is a `404`, not a `403`.
+
+## Status codes
+
+| Status | Meaning | What to do |
+|---|---|---|
+| `400` | Malformed or failed validation | Compare the body with the schema in the [API reference](/sign/api/); dates must be ISO-8601 |
+| `401` | Credentials rejected: no token, an expired one (a token lives <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />), or one the realm will not validate | Request a new token; check the `Bearer ` prefix. Both SDKs refresh and retry once before surfacing this |
+| `403` | Authenticated, but this credential lacks the organization permission | You are calling a management operation that is UI only, or the token has no `bb_sign_org_id`. See [Machine authentication](/en/sign/developers/authentication/) |
+| `404` | No such resource, or it belongs to another organization or a workspace you cannot see. Deliberately indistinguishable | Check the id; if the workspace is the issue, ask an admin to grant the credential a role there |
+| `409` | Not in a state that allows this, for example sending an already-sent envelope | Read the envelope first and act on its `status` |
+| `422` | A domain rule rejected the request, for example sending with no document or no signer | Fix the envelope, then retry |
+| <code>{QUOTA.httpStatusWhenExhausted.value}</code> | An organization quota is exhausted. The body says which one | Ask the platform administrator to raise or renew the quota; the SDKs retry this status |
+| `0` (SDKs only) | The request never got an answer: it never reached bb-sign, or the reply was lost | For a `POST`, **list before you retry**; see below |
+
+`401` and `403` are produced by the security filter chain, so they carry **no body**. Every other
+error carries an `ErrorResponse`.
+
+There are no rate limits. A <code>{QUOTA.httpStatusWhenExhausted.value}</code> always means a quota.
+
+## The error body
+
+```json
+{
+  "status": 404,
+  "error": "Not Found",
+  "code": "WORKSPACE_NOT_FOUND",
+  "message": "Workspace not found",
+  "path": "/api/v1/envelopes",
+  "timestamp": "2026-10-10T14:22:31Z",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+| Field | Type | Always present | Meaning |
+|---|---|---|---|
+| `status` | integer | yes | The HTTP status, repeated |
+| `error` | string | yes | The HTTP reason phrase |
+| `code` | string | yes | A stable machine-readable code, such as `WORKSPACE_NOT_FOUND` or `NOT_FOUND`. Branch on this, not on `message` |
+| `message` | string | yes | Human-readable, may change wording |
+| `path` | string | yes | The request path |
+| `timestamp` | date-time | yes | When the error was produced |
+| `traceId` | string | no | Quote it when you contact us; it finds the request in our logs |
+| `quota` | `QuotaViolation` | no | Only on <code>{QUOTA.httpStatusWhenExhausted.value}</code> |
+
+### `QuotaViolation`
+
+```json
+{
+  "status": 429,
+  "error": "Too Many Requests",
+  "code": "QUOTA_EXCEEDED",
+  "message": "Organization quota exhausted",
+  "path": "/api/v1/envelopes",
+  "timestamp": "2026-10-10T14:22:31Z",
+  "quota": { "dimension": "envelopes", "current": 500, "limit": 500 }
+}
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `dimension` | string | Which quota: the number of envelopes, or the storage used |
+| `current` | integer | The organization's usage when the request was refused |
+| `limit` | integer | The quota's limit |
+
+Quotas are set by the platform administrator and are visible to org admins in the UI; see
+[Quotas](/en/sign/concepts/quotas/).
+
+## 404, not 403
+
+<Aside type="note" title="Across a tenant boundary, nothing exists">
+  An envelope or workspace that belongs to another organization, or sits in a workspace your
+  credential holds no role in, answers `404`, the same answer as an id that was never issued. A `403`
+  there would confirm the id exists, which is information a tenant must not have about another.
+  Within your own organization, a workspace you cannot create in answers `404 WORKSPACE_NOT_FOUND`,
+  and envelopes in workspaces you cannot read never appear in lists.
+</Aside>
+
+`403` is reserved for organization-scope denials: the token lacks a permission the operation needs,
+or lacks the org claim altogether.
+
+## How the SDKs surface errors
+
+Both SDKs turn every non-2xx into one exception type carrying the status, and nothing else: not the
+`Response` object, not the headers, so logging the error cannot leak your `Authorization` header.
+Messages never contain your secret or access token, including when bb-sign's response does.
+
+| | JavaScript | Java |
+|---|---|---|
+| Type | `BbSignError` | `BbSignException` |
+| Status | `error.statusCode` | `e.statusCode()` |
+| No answer | `statusCode === 0` | `statusCode() == 0` |
+
+```js
+try {
+  await client.envelopes.createEnvelope({ createEnvelopeRequest: request })
+} catch (error) {
+  if (error.statusCode === 0) {
+    // Never reached bb-sign, or the answer was lost. List before you send again.
+  }
+}
+```
+
+```java
+try {
+    client.execute(client.envelopes().createEnvelope(request));
+} catch (BbSignException e) {
+    if (e.statusCode() == 0) {
+        // Never reached bb-sign, or the answer was lost. List before you send again.
+    }
+}
+```
+
+A `POST` whose response was never seen is **never retried** by either SDK: the envelope may exist,
+and these are legal agreements sent to real people. `GET` requests are retried on 5xx and transport
+failures; <code>{QUOTA.httpStatusWhenExhausted.value}</code> and `503` are retried for every method,
+because they mean the server explicitly did not process the request. The
+[walkthrough](/en/sign/developers/envelope-walkthrough/) shows the list-before-you-retry pattern.

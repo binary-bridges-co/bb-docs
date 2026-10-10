@@ -1,8 +1,82 @@
 ---
-title: "Qué es bb-sign"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Qué es bb-sign
+description: Firma electrónica para organizaciones. Qué hace bb-sign, qué no hace, para quién es cada parte de esta documentación y por dónde empezar.
 product: sign
 audience: all
 ---
 
-Contenido en construcción.
+import { Aside, Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../components/facts/Fact.astro';
+import { RETENTION_POLICY, URLS } from '../../facts/sign';
+
+bb-sign es la plataforma de firma electrónica de Binary Bridges. Una organización sube documentos
+PDF, los reúne en un **sobre**, indica quién debe firmar y lo envía. Cada firmante recibe un enlace
+por correo, revisa los documentos, verifica su identidad si la organización lo pidió y firma. Al
+completarse el sobre, bb-sign sella cada documento con un certificado digital y guarda la evidencia
+de todo el proceso.
+
+La aplicación está en <a href={URLS.app.value}>{URLS.app.value}</a>.
+
+## Qué hace bb-sign
+
+bb-sign cubre una parte del proceso de firma, y la cubre completa:
+
+- **Integridad.** Cada documento firmado queda sellado; cualquier alteración posterior es detectable.
+- **Identificación.** El firmante se identifica por su correo y, si la organización lo exige, por un
+  código de un solo uso.
+- **Cumplimiento de acuerdos.** Lo que el firmante vio y aceptó queda registrado con fecha y hora.
+- **Detección de inconsistencias.** La cadena de auditoría permite comprobar que nada se insertó ni
+  se borró después.
+- **Valor probatorio.** La evidencia (quién, qué, cuándo, desde dónde) se puede consultar y descargar.
+- **Trazabilidad.** Cada acción relevante sobre un sobre queda en su historial.
+
+## Qué no hace bb-sign
+
+<Aside type="caution" title="La conservación es responsabilidad del cliente">
+  bb-sign conserva los documentos firmados y su evidencia durante un plazo **fijo y no negociable**
+  de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. Después de ese plazo, conservarlos es
+  responsabilidad de la organización que los envió. Los detalles están en
+  [Alcance y conservación](/sign/legal/retention/).
+</Aside>
+
+- bb-sign ofrece **firma electrónica** (Decreto 2364 de 2012). No es *firma digital* en los términos
+  del artículo 28 de la Ley 527 de 1999. Cada cliente, por medio de su oficina jurídica, decide si el
+  mecanismo es apropiado para sus documentos. Ver
+  [Firma electrónica y firma digital](/sign/legal/electronic-vs-digital-signature/).
+- El sello que bb-sign pone en cada documento usa, por defecto, un **certificado de pruebas** de
+  Binary Bridges. Para que terceros confíen en el sello, la organización debe configurar su propio
+  certificado. Ver [Certificado propio](/sign/admin/own-certificate/).
+- No hay plantillas, envíos masivos ni campos arrastrables sobre el PDF. Lo que existe está en esta
+  documentación; lo que no está aquí, no existe todavía.
+
+## Para quién es esta documentación
+
+<CardGrid>
+  <Card title="Firmantes" icon="pencil">
+    Recibiste un correo para firmar un documento y no tienes cuenta. Sigue
+    [El camino del firmante](/sign/signing/): de principio a fin en una sola página.
+  </Card>
+  <Card title="Usuarios de la organización" icon="document">
+    Creas sobres, adjuntas documentos y los envías a firma. Empieza por
+    [Tu primer sobre](/sign/getting-started/first-envelope/).
+  </Card>
+  <Card title="Administradores" icon="setting">
+    Invitas usuarios, organizas espacios, configuras el certificado, las credenciales de API y los
+    webhooks. Todo está en [Administrar la organización](/sign/admin/).
+  </Card>
+  <Card title="Desarrolladores" icon="seti:json">
+    Integras bb-sign con tus sistemas. [Inicio rápido](/sign/developers/quickstart/), luego
+    [Webhooks](/sign/developers/webhooks/) y la [referencia de la API](/sign/api/).
+  </Card>
+</CardGrid>
+
+## Cómo está organizada
+
+Cada sección de esta documentación es para una audiencia, y la etiqueta al inicio de cada página lo
+indica. Los [Conceptos](/sign/concepts/organizations-workspaces-roles/) explican el modelo
+(organizaciones, espacios, roles, sobres, firmantes, sello, evidencia) y sirven a todos. La sección
+[Legal](/sign/legal/terms/) contiene los términos del servicio y el alcance de la conservación. En
+[Referencia](/sign/reference/limits-and-defaults/) están todos los límites y valores por defecto en
+una sola tabla.
+
+<LinkCard title="Límites y valores por defecto" href="/sign/reference/limits-and-defaults/" description="Cada número que aparece en esta documentación, con su origen en el código." />

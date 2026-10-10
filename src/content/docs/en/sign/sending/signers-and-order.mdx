@@ -1,8 +1,89 @@
 ---
-title: "Signers and order"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Signers and order
+description: Each signer's email and name, the order numbers, what changes between everyone signing at once or in order, who gets the link and when, and what is frozen at send.
 product: sign
 audience: user
 ---
 
-Content under construction.
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE } from '../../../../facts/sign';
+
+The Signers step of the "Create Envelope" wizard says who signs. Together with the "Signing order"
+you chose in Details, it decides who receives a link at send and who has to wait. This page explains
+each signer's details, the two ways to order the signing and what no longer changes once the
+envelope is sent.
+
+## Each signer's details
+
+The "Add Signers" screen shows one row per person with two fields:
+
+- "Email": the address that receives the signing link and, if you asked for OTP verification, the
+  code. It is the signer's identity throughout the process.
+- "Name": the full name. It appears on the signing page ("Signing as ...") and in the seal stamped
+  on the document.
+
+"Add another signer" adds a row; the trash icon ("Remove signer") deletes it. Empty rows are
+discarded when you continue. If something is missing, the application flags it: "Email is required"
+or "Name is required". With no complete signer at all, it warns "Add at least one signer with email
+and name."
+
+The same person can be a signer in several envelopes; within one envelope, each row is a separate
+link.
+
+## Everyone signs at once
+
+With "Everyone signs at once" (parallel signing), the "Order" field does not appear. At send, every
+signer receives the email `You have a document to sign: {title}` at the same time, and each signs
+whenever they want, waiting for nobody. The envelope moves to "In Progress" with the first signature
+and to "Completed" with the last.
+
+The envelope page reminds you: "Parallel signing · Everyone was emailed at once. The order numbers
+below are not enforced." The numbers you see there reflect the order in which you typed the rows,
+nothing more.
+
+## Signers sign in order
+
+With "Signers sign in order" (sequential signing), each row has an "Order" field with a number. The
+numbers define turns:
+
+- At send, only the signers with the lowest number receive the email.
+- When everyone in a turn has signed, those with the next number receive
+  `It's your turn to sign: {title}`. Their link is generated at that moment, so the link expiry (by
+  default <Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" />) starts counting then.
+- Two signers with the same number form one turn and sign at the same time.
+
+A signer who opens their link too early sees "Waiting for Previous Signers" and can "Check Again"
+later. The envelope page sums it up: "Sequential signing · Each signer is emailed only once everyone
+before them has signed."
+
+| | At once | In order |
+|---|---|---|
+| "Order" field | Not shown | One number per signer |
+| Who gets the link at send | Everyone | Only the first turn |
+| Email to the following turns | Not applicable | `It's your turn to sign: {title}` when the previous turn finishes |
+| If a signer does not sign | The others carry on | The following turns wait |
+
+Choose "in order" when one signature must condition the next (the approver signs after the
+requester). Choose "at once" otherwise: it is faster and no signer blocks another.
+
+## Adding signers to a draft
+
+The application does not let you add or remove signers on an envelope already created, even while
+it is still a "Draft". Through the API, an envelope in "Draft" does accept new signers with the
+operation `POST /envelopes/{id}/signers`; see the [API reference](/sign/api/). If you work from the
+application and someone is missing, [cancel the envelope](/en/sign/sending/cancel/) and create a
+new one.
+
+## At send, the signers are frozen
+
+Sending freezes the list: a signer cannot be added, removed or corrected, neither through the
+application nor through the API. A link cannot be resent or regenerated either, and the signer has
+no option to decline; if they do not want to sign, they simply do not, and the envelope stays open
+until you cancel it or it expires.
+
+From the envelope page you follow each signer by status: "Pending" (no link yet), "Notified"
+(received the email), "Viewed" (opened the link) and "Signed". See
+[Send and track](/en/sign/sending/send-and-track/).
+
+<LinkCard title="Send and track" href="/en/sign/sending/send-and-track/" description="Statuses, list filters, the detail page and automatic reminders." />

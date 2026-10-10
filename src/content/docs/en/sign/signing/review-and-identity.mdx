@@ -1,8 +1,59 @@
 ---
-title: "Review and verify identity"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Review and verify identity
+description: Opening every document before you continue, how the verification code by email works and what each message on that screen means.
 product: sign
 audience: signer
 ---
 
-Content under construction.
+import Fact from '../../../../../components/facts/Fact.astro';
+import { OTP } from '../../../../facts/sign';
+
+When you open your link you land on the first screen of the process. At the top, an indicator
+shows the steps: "Review", "Verify" (only if the envelope requires it) and "Sign".
+
+## Signing as
+
+The screen starts with "Signing as", your name and your email. These are the details whoever sent
+the document entered for you, and the ones that will appear on the seal. If they are not yours,
+do not continue: tell whoever sent it so they can correct the envelope.
+
+## Open every document
+
+Under "Documents to Review" each PDF appears with a "View" button that expands it on the same page
+("Hide" closes it). You have to open them all: until then the "I have reviewed the document"
+button does not respond and the screen says "Open every document before you continue."
+
+If your browser cannot display the PDF, you see "Your browser cannot display this PDF inline."
+with the link "Download the document". Opening the document that way counts too.
+
+## The verification code
+
+If the envelope requires identity verification, pressing "I have reviewed the document" makes
+bb-sign email you a code and takes you to the "Verify Your Identity" screen, which says "An OTP
+code has been sent to your email." and how long until it expires.
+
+- The code has <Fact of={OTP.digits} unit="digits" /> and is valid for <Fact of={OTP.validitySeconds} unit="s" />.
+- You have <Fact of={OTP.maxAttempts} unit="attempts" /> per code.
+- You can ask for another with "Resend code" once <Fact of={OTP.resendCooldownSeconds} unit="s" />
+  have passed since the last one; meanwhile the button shows "Resend code in" and a countdown.
+- The page only accepts the latest code we sent you.
+
+Type the code and press "Verify & Continue".
+
+## What each message means
+
+| Message | What happened | What to do |
+|---|---|---|
+| "A code was already sent to your email." | You asked for another code before the wait had passed, and the previous one is still valid. | Use the code you already have. |
+| "A new code is on its way." | A new code was sent. | Use that one and discard the previous one. |
+| "That code can no longer be used. You can request a new one shortly." | The last code is spent (it was verified, or the attempts ran out) and the wait is still running. | Wait until the button says "Resend code" and ask for another. |
+| "That code is not valid. Please check it and try again." | The code does not match, expired or is an old one. Every failure counts as an attempt. | Copy the code from the latest email. If the attempts ran out, ask for a new one. |
+| "Could not verify the code. Please try again." | The check did not complete. | Press "Verify & Continue" again. |
+| "Failed to send OTP. Please try again." | The email could not go out. | Press "I have reviewed the document" again. |
+
+## After verifying
+
+Once the code is verified, you have <Fact of={OTP.verifiedValidityMinutes} unit="minutes" /> to
+sign. If you take longer, submitting the signature shows the notice "Your identity check has
+expired. Please request a new code.": reload the page, go through the documents again and ask for
+a new code. What comes next is in [Sign and download](/en/sign/signing/sign-and-download/).

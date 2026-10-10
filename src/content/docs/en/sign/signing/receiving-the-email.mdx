@@ -1,8 +1,59 @@
 ---
-title: "The invitation email"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: The invitation email
+description: Which emails you can receive from bb-sign, who sends them, when reminders arrive and what to do if the email does not show up.
 product: sign
 audience: signer
 ---
 
-Content under construction.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE, REMINDERS, URLS } from '../../../../facts/sign';
+
+It all starts with an email. This page says how to recognize it, which other emails can follow
+and what to do if you cannot find it.
+
+## Who sends it
+
+Every email about documents comes from <Fact of={URLS.senderAddress} />. Today they are written
+in English; the signing page they lead to is in English and Spanish, and you can switch the
+language at the top right.
+
+## The emails you can receive
+
+| Subject | When it arrives |
+|---|---|
+| `You have a document to sign: {title}` | When someone sends you a document. It contains your signing link. |
+| `It's your turn to sign: {title}` | When the envelope has a signing order and the people before you have signed. It also contains your link. |
+| `Your verification code for BB-Sign` | When you request the verification code on the signing page. |
+| `Reminder: please sign {title}` | When you have gone a while without signing. It carries the same link as the invitation. |
+| `Signing complete: {title}` | When everyone has signed. Its link leads to your signed copy. |
+| `Signing request expired: {title}` | When the envelope expired before you signed. It can no longer be signed. |
+
+`{title}` is the title given by whoever sent the document.
+
+## Reminders
+
+If you have not signed <Fact of={REMINDERS.thresholdHours} unit="hours" /> after the invitation,
+bb-sign sends you a reminder, and then at most one every
+<Fact of={REMINDERS.cooldownHours} unit="hours" />, until you sign or the envelope closes.
+
+## If you cannot find the email
+
+1. Search your mailbox for `You have a document to sign` or <Fact of={URLS.senderAddress} />,
+   including the spam or junk folder.
+2. If it is in spam, mark it as safe so the next ones reach your inbox.
+3. If it is not there, ask whoever sent it to check on the envelope that your address is spelled
+   correctly. Today there is no button to resend you the link; the sender sees the state of the
+   envelope and can correct it or create another one.
+
+## The link is personal
+
+<Aside type="caution" title="Do not forward the email">
+  The link identifies one person: you. Whoever opens it signs with your name and your email, and
+  that signature cannot be undone. If someone else must sign, ask whoever sent the document to add
+  them as a signer.
+</Aside>
+
+The link is valid for <Fact of={ENVELOPE.linkTtlHoursDefault} unit="hours" /> by default (the
+sender may set a different period) and stops working for signing the moment you sign. If you open
+it again afterwards, you see your signed copy, not the signing page.

@@ -26,6 +26,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SYNC_DIR = join(ROOT, 'src', 'content', 'sync');
 const REF_PATTERN = /^[A-Za-z0-9._/-]{1,80}$/;
 
+const PUBLIC_SYNC_DIR = join(ROOT, 'public', 'sync');
+
 /** Per-product sync sources. Mirrors `src/config/products.ts` (which is TypeScript and not importable here). */
 const PRODUCTS = {
   sign: {
@@ -35,6 +37,8 @@ const PRODUCTS = {
       'openapi.json': 'docs/api/openapi.json',
       'webhook-signature-vectors.json': 'docs/api/webhook-signature-vectors.json',
     },
+    /** Also served as downloadable files at /sync/<product>/<name>. */
+    publish: ['openapi.json', 'webhook-signature-vectors.json'],
   },
 };
 
@@ -136,6 +140,12 @@ function main() {
       throw error;
     }
     rmSync(previous, { recursive: true, force: true });
+
+    // Downloadable copies: the developer pages link to the vectors and the raw contract.
+    const publicDir = join(PUBLIC_SYNC_DIR, productId);
+    mkdirSync(publicDir, { recursive: true });
+    for (const name of product.publish ?? []) cpSync(join(target, name), join(publicDir, name));
+
     console.log(`sync-product: ${productId} synced from ${product.repo}@${source.ref} (${source.commit.slice(0, 12)})`);
     for (const [name, meta] of Object.entries(files)) console.log(`  ${name}  ${meta.sha256.slice(0, 12)}  <- ${meta.source}`);
   } finally {

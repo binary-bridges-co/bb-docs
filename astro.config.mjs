@@ -58,7 +58,8 @@ export default defineConfig({
             ),
           },
         ),
-        starlightLinksValidator(),
+        // Links into public/ (the synced OpenAPI and webhook vectors) are files, not pages.
+        starlightLinksValidator({ exclude: ['/sync/**'] }),
         starlightLlmsTxt(),
       ],
       // High-contrast code themes, as on the homepage: the standard GitHub themes fail AA on comments (axe).

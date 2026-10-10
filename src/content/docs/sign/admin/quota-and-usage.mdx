@@ -1,8 +1,76 @@
 ---
-title: "Cuota y uso"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Cuota y uso
+description: "Cómo leer el panel de cuota y uso, qué límites y periodos existen, qué pasa al llegar al límite y por qué solo un administrador de plataforma cambia la cuota."
 product: sign
 audience: admin
 ---
 
-Contenido en construcción.
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { QUOTA } from '../../../facts/sign';
+
+**Quién:** administrador de la organización (los administradores de plataforma la configuran).
+**Dónde:** el panel «Cuota y uso» de la página de la organización (Organizaciones,
+`/organizations/id`).
+
+Cada organización tiene una cuota: cuántos sobres puede crear por periodo, cuánto almacenamiento
+puede usar, cuántos usuarios y cuántos firmantes por sobre. Hoy la página de la organización, donde
+está el panel, solo la abren los administradores de plataforma; un administrador de organización se
+entera de su cuota por los mensajes de la aplicación o preguntando al soporte de Binary Bridges.
+
+## Leer el panel de uso
+
+El panel «Cuota y uso» muestra:
+
+- El estado del plan: «Activo», «Suspendido» o «Expirado».
+- «Periodo: Mensual», «Anual» o «Personalizado» y, si tiene fin, «Expira: fecha».
+- La barra «Sobres» con «usados / máximo» y la barra «Almacenamiento» con el espacio usado. Una
+  barra cambia de color al llegar al umbral de aviso, por defecto
+  <Fact of={QUOTA.warningThresholdPct} unit="%" />, y a rojo al llegar al límite.
+- «Periodo: inicio - fin» del periodo de uso en curso.
+- «Máx. usuarios» y «Máx. firmantes por sobre». «Ilimitado» significa sin tope.
+
+Si ves «No hay cuota configurada para esta organización» o «No hay un periodo de uso activo», la
+organización no puede crear sobres hasta que un administrador de plataforma la configure.
+
+## Límites y periodo
+
+| Campo de «Configuración de la cuota» | Qué limita |
+| --- | --- |
+| «Tipo de periodo» | «Mensual», «Anual» o «Personalizado». Al terminar el periodo, el contador de sobres vuelve a cero. |
+| «Umbral de aviso (%)» | A partir de qué porcentaje la barra avisa. |
+| «Máx. sobres (-1 = ilimitado)» | Sobres creados en el periodo. |
+| «Máx. usuarios (-1 = ilimitado)» | Cuentas en la organización. |
+| «Máx. almacenamiento (bytes, -1 = ilimitado)» | Bytes de documentos guardados. |
+| «Máx. firmantes por sobre (-1 = ilimitado)» | Firmantes en un mismo sobre. |
+| «Expira el» | Fecha en la que el plan deja de estar activo. |
+
+## Qué pasa al llegar al límite
+
+La API responde <Fact of={QUOTA.httpStatusWhenExhausted} /> y la aplicación muestra un mensaje que
+dice qué límite se alcanzó:
+
+| Mensaje | Qué hacer |
+| --- | --- |
+| «Tu organización ha alcanzado su límite de sobres de este periodo» | Espera al siguiente periodo o pide ampliar el límite. |
+| «Este sobre tiene más firmantes de los que permite tu plan» | Reduce los firmantes o pide ampliar el límite. |
+| «Tu organización se ha quedado sin almacenamiento de documentos» | Pide ampliar el límite. Eliminar sobres no está disponible. |
+| «Tu organización ha alcanzado su límite de usuarios» | Pide ampliar el límite antes de invitar a alguien más. |
+| «El plan de tu organización está suspendido» o «ha caducado» | Nadie puede crear sobres. Contacta a Binary Bridges. |
+
+Los sobres ya enviados siguen su curso: los firmantes firman y los documentos se sellan aunque la
+cuota esté agotada.
+
+## Quién cambia la cuota
+
+Solo un administrador de plataforma puede «Establecer cuota», «Actualizar cuota», «Renovar periodo»,
+«Suspender» o «Activar» un plan. Un administrador de organización no puede cambiar ningún límite.
+No hay planes de autoservicio ni facturación dentro de bb-sign: los límites se acuerdan con
+Binary Bridges.
+
+<Aside type="note" title="Pide el cambio con tiempo">
+  Si la barra de sobres se acerca al umbral de aviso, pide la ampliación antes de que el límite
+  bloquee a tus usuarios.
+</Aside>
+
+<LinkCard title="Cuotas" href="/sign/concepts/quotas/" description="El modelo de cuotas y periodos explicado para todos." />

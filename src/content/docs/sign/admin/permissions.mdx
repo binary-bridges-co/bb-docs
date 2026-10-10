@@ -1,8 +1,70 @@
 ---
-title: "Matriz de permisos"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Matriz de permisos
+description: "Qué permite cada rol de organización y de espacio de trabajo, las cinco barreras que una credencial de API nunca cruza, y por qué unas denegaciones son 403 y otras 404."
 product: sign
 audience: admin
+source: edge-api/src/main/kotlin/co/binarybridges/sign/edge/domain/security/PermissionCatalog.kt
 ---
 
-Contenido en construcción.
+import { Aside } from '@astrojs/starlight/components';
+import RolesMatrix from '../../../../components/facts/RolesMatrix.astro';
+
+**Quién:** administrador de la organización (también los administradores de plataforma). **Dónde:**
+no es una pantalla; es el catálogo que la aplicación y la API aplican en cada petición.
+
+Un permiso es algo que el producto hace: `envelope:send` es enviar un sobre. Los roles son paquetes
+de permisos. Hay dos niveles: los roles de organización, que deciden qué se puede administrar, y los
+roles de espacio de trabajo, que deciden qué se puede hacer con los sobres de un espacio.
+
+## Roles de organización
+
+| Rol | Quién | Qué decide |
+| --- | --- | --- |
+| `platform_admin` | Personal de Binary Bridges | Todo lo de `org_admin` en cualquier organización, más crear organizaciones, cuotas y apariencia. |
+| `org_admin` | Administradores de tu organización | Administrar usuarios, espacios, etiquetas, credenciales, webhooks y auditoría. Acceso a todos los espacios sin membresía (`workspace:access-all`). |
+| `org_member` | Usuarios de tu organización | Listar espacios y claves de etiqueta. Todo lo demás viene de sus roles de espacio, incluido el Colaborador implícito en General. |
+| `org_api` | Credenciales de API | Lo mismo que un miembro, con los roles de espacio que le des. Nunca administra. |
+
+## Las dos tablas
+
+<RolesMatrix locale="es" />
+
+En la primera tabla, «Nunca» marca un permiso que una credencial de API no puede recibir aunque un
+administrador quiera: son las barreras de escalada. En la segunda, Colaborador es el rol implícito
+en General y no se asigna; en los demás espacios das Lector, Auditor o Gestor desde
+[Espacios y miembros](/sign/admin/workspaces-and-members/).
+
+## Las cinco barreras de escalada
+
+Una credencial de API es un secreto que puede filtrarse. Si ese secreto pudiera administrar, una
+filtración no se cerraría al revocar la credencial: el atacante ya habría creado otras o habría
+movido el acceso a donde quisiera. Por eso `org_api` nunca recibe estos cinco permisos, y el
+servicio comprueba al arrancar que el servidor de identidad lo respeta.
+
+1. **Crear credenciales** (`credential:manage`). Una credencial que crea credenciales es acceso
+   permanente que se renueva solo; revocar la original no lo cierra.
+2. **Gestionar webhooks** (`webhook:manage`). Una credencial que redirige su propio flujo de eventos
+   podría apuntar cada evento de cada sobre a un servidor ajeno, y nada en la credencial parecería
+   raro.
+3. **Crear, renombrar y eliminar espacios** (`workspace:manage`). Quien reorganiza los contenedores
+   que deciden el acceso puede sacarse a sí mismo de todos los límites.
+4. **Dar y quitar roles de espacio** (`workspace:manage-members`). Una credencial que concede
+   membresías puede concedérselas a sí misma: es la misma escalera con otra forma.
+5. **Acceso a todos los espacios** (`workspace:access-all`). Es lo que hace a un administrador
+   independiente de las membresías; en una máquina sería saltarse todos los espacios de una vez.
+
+Una credencial que necesita más alcance lo recibe como una persona: añadiéndola como miembro de más
+espacios. Ver [Credenciales de API](/sign/admin/api-credentials/).
+
+## 403 y 404
+
+<Aside type="note" title="Dos respuestas distintas para dos preguntas distintas">
+  Una denegación de **organización** (crear una credencial sin ser administrador, abrir Usuarios
+  como miembro) responde **403**: existe, pero no puedes. Una denegación sobre un **sobre o un
+  espacio** que no puedes ver responde **404**, igual que si no existiera, para que la respuesta no
+  confirme que existe.
+</Aside>
+
+En la aplicación, un 403 se ve como «Acceso Denegado» o «No tienes permiso para hacer esto»; un 404
+como «Sobre no encontrado» o «Ese espacio de trabajo ya no existe o no puedes usarlo». Si un usuario
+te dice que un sobre «no existe», comprueba primero si es miembro de su espacio.

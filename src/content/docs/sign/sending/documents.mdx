@@ -1,8 +1,80 @@
 ---
-title: "Adjuntar documentos"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Adjuntar documentos
+description: Subir PDF a un sobre: el paso Documentos, el formato y el tamaño admitidos, qué pasa con lo subido sin enviar y cómo colocar el sello con el marcador de firmante.
 product: sign
 audience: user
 ---
 
-Contenido en construcción.
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { DOCUMENTS } from '../../../facts/sign';
+
+El paso Documentos del asistente "Crear Sobre" adjunta los archivos que se van a firmar. Los
+documentos se suben en el momento, antes de que el sobre exista, y se congelan al enviar. Esta
+página cubre el paso, los límites y lo que ocurre con un archivo que subes y no llegas a enviar.
+
+## Subir
+
+La pantalla "Subir documentos" dice: "Adjunta los documentos PDF que se van a firmar." Pulsa
+"Haz clic para subir un PDF" y elige uno o varios archivos. Cada archivo se sube de inmediato
+("Subiendo...") y aparece en la lista con su nombre. Hasta que haya al menos uno, "Siguiente" está
+desactivado y la pantalla recuerda: "Sube al menos un documento para continuar."
+
+Si un archivo falla, la aplicación lo nombra junto con la causa. Las causas más comunes:
+
+| Mensaje | Qué pasó | Qué hacer |
+|---|---|---|
+| "Ese archivo es demasiado grande." | Supera <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />. | Reduce el PDF (imágenes comprimidas, menos páginas) y súbelo de nuevo. |
+| "Tu organización se ha quedado sin almacenamiento de documentos." | Se alcanzó el tope de documentos sin sobre de tu organización, o la cuota de almacenamiento del plan. | Envía los sobres que tengas a medias o espera a que se limpien los archivos sin sobre; si persiste, pide a tu administrador que amplíe el límite. |
+| El archivo no es PDF | Solo se admite <code>{DOCUMENTS.contentType.value}</code>. | Convierte el documento a PDF y súbelo. |
+
+## Solo PDF
+
+bb-sign firma únicamente PDF. Un documento de texto, una imagen o una hoja de cálculo deben
+convertirse antes. El PDF no necesita campos de formulario ni preparación especial: el sello de
+cada firmante se coloca sobre el documento al completarse el sobre.
+
+## Límites
+
+| Qué | Valor |
+|---|---|
+| Tamaño máximo por archivo | <Fact of={DOCUMENTS.maxUploadMb} unit="MB" /> |
+| Documentos sin sobre por organización | <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" /> |
+| Conservación de un documento sin sobre | <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> |
+
+No hay límite en el número de documentos por sobre, pero cada uno cuenta para la cuota de
+almacenamiento de tu organización cuando el sobre se crea. Ver [Cuotas](/sign/concepts/quotas/).
+
+## Antes de enviar
+
+En el asistente no hay botón para quitar un archivo ya subido. Si subiste el documento equivocado:
+
+- Si el sobre todavía no se creó, usa "Empezar de nuevo" en el aviso del borrador. El asistente se
+  vacía y el archivo queda sin sobre hasta que el sistema lo elimine (ver el apartado siguiente).
+- Si el sobre ya se creó pero no se envió, sus documentos no se pueden cambiar desde la aplicación.
+  [Cancélalo](/sign/sending/cancel/) y crea uno nuevo.
+
+Al enviar, los documentos quedan fijos. Un sobre sin documentos no se puede enviar.
+
+## Documentos subidos sin sobre
+
+Como el sobre no existe hasta que pulsas "Enviar sobre", cada PDF que subes vive un tiempo sin
+sobre. Esos archivos no gastan cuota. Un proceso diario elimina los que llevan más de
+<Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> sin adjuntarse a ningún sobre.
+
+Si vuelves al asistente después de ese plazo, el borrador se restaura sin los archivos y la
+aplicación lo avisa: "Tus documentos subidos caducaron y se eliminaron. Todo lo demás se conservó;
+vuelve a subirlos." Título, firmantes y opciones siguen ahí; solo hay que repetir el paso
+Documentos.
+
+## El marcador de firmante
+
+Si quieres que el sello de cada firmante aparezca en un lugar concreto del PDF, escribe en el
+documento el texto `{{signerN}}`, donde N es el número de orden del firmante: `{{signer1}}` para el
+primero, `{{signer2}}` para el segundo. Al completarse el sobre, el sello se coloca sobre ese texto.
+Sin marcador, los sellos se apilan en la esquina inferior derecha de la última página.
+
+Cómo se ve el sello y qué contiene está en [Documentos](/sign/concepts/documents/) y en
+[Firma electrónica y sello](/sign/concepts/signature-and-seal/).
+
+<LinkCard title="Firmantes y orden" href="/sign/sending/signers-and-order/" description="El paso Firmantes: datos de cada persona y la diferencia entre firmar a la vez o en orden." />

@@ -1,8 +1,93 @@
 ---
-title: "Workspaces and members"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Workspaces and members
+description: "What the General workspace is, how to create, rename and delete workspaces, and how to give people and API keys the Viewer, Auditor or Manager role."
 product: sign
 audience: admin
 ---
 
-Content under construction.
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { AUTH } from '../../../../facts/sign';
+
+**Who:** organization admin (platform admins too, from each organization's page). **Where:** Settings,
+"Workspaces" tab (`/settings?tab=workspaces`).
+
+Workspaces decide who can see which envelopes. Every envelope lives in one workspace; only its
+members and the admins see it. Until you create one, everything is in General.
+
+## The General workspace
+
+General exists from day one and the tab describes it as "Everyone in the organization · members are
+Contributors and can create and send here". Every member of the organization is a Contributor in
+General without anyone adding them, and that role cannot be removed or changed. General cannot be
+renamed or deleted: "The General workspace can't be renamed or deleted".
+
+Create another workspace when you want some envelopes seen by a smaller group. The tab suggests it:
+"Only General so far. Create a workspace to keep some envelopes to a smaller group".
+
+## Create, rename and delete
+
+<Steps>
+
+1. Press "New workspace", enter the "Name" and press "Create workspace". You see "Workspace "name"
+   created". If the name exists: "Another workspace already has that name".
+
+2. To change the name, press "Rename" in the row and enter the "New name".
+
+3. To delete it, press "Delete". The dialog warns: "Only empty workspaces can be deleted, including
+   their archived envelopes. This cannot be undone". Confirm with "Delete workspace".
+
+</Steps>
+
+A workspace with envelopes cannot be deleted. You see "still has envelopes, including archived ones,
+so it can't be deleted" with the link "View its envelopes". Envelopes never move between
+workspaces: a workspace that ever held an envelope stays.
+
+## Members: people and API keys
+
+Press "Members" in the workspace's row. If it is empty you see "No members yet. Only admins see this
+workspace until you add someone".
+
+<Steps>
+
+1. Under "Add member", open "Select…". People appear as "name — email" and API credentials as
+   "label (API key)".
+
+2. Choose the role and press "Add". If you choose Manager, the dialog explains: "Managers can
+   create, send and cancel envelopes, read the archive and audit trail, download documents and set
+   labels in this workspace".
+
+3. To change someone's role, use the "Role for name" selector in their row. To remove them, press
+   "Remove" and confirm.
+
+</Steps>
+
+<Aside type="note" title="Admins are not added">
+  "Admins already see every workspace, so they are not listed". An admin reaches everything with no
+  membership; trying to add one answers "Admins already see every workspace".
+</Aside>
+
+## Roles you may grant
+
+| Role | What it allows in the workspace |
+| --- | --- |
+| Viewer (`viewer`) | See the envelopes and the archive. No document download, no audit trail. |
+| Auditor (`auditor`) | Viewer, plus read the audit trail and download documents. |
+| Manager (`manager`) | Everything: create, edit, send and cancel envelopes, upload documents, set labels, download and audit. |
+
+Contributor (`contributor`) is every member's implicit role in General and cannot be granted in any
+workspace: "That role can't be granted. Choose Viewer, Auditor or Manager". If someone needs to
+create and send in a private workspace, make them Manager. The full table is in the
+[Permissions matrix](/en/sign/admin/permissions/).
+
+## Limits and timing
+
+- A person or API key can belong to at most <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} />
+  workspaces. Beyond that, the app refuses and names the maximum.
+- Changes are not instant: "Changes reach a person or integration when their session refreshes". A
+  session lasts <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />, so that is the longest wait, both
+  to grant access and to remove it.
+- If you see "Access for this workspace is still being set up. Try again in a moment" or "Another
+  change to this access is still being saved", wait a few seconds and repeat.
+- An API key needs access to at least one workspace; see
+  [API credentials](/en/sign/admin/api-credentials/).

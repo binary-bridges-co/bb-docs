@@ -1,8 +1,60 @@
 ---
-title: "Administrar la organización"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Administrar la organización
+description: "Mapa de todo lo que puede hacer un administrador de organización en bb-sign, con un enlace a cada operación, y lo que queda reservado al administrador de plataforma."
 product: sign
 audience: admin
 ---
 
-Contenido en construcción.
+import { LinkCard } from '@astrojs/starlight/components';
+
+**Quién:** administrador de la organización (también los administradores de plataforma). **Dónde:** las
+entradas Etiquetas, Usuarios, Almacenamiento y Configuración del menú lateral; los miembros no las ven.
+
+Un administrador de organización gestiona a las personas, el acceso, las integraciones, el sello, los
+datos y la supervisión de su organización. Cada operación tiene una página en esta sección. Lo que no
+aparece en estas tablas no existe todavía.
+
+## Todo lo que puede hacer un administrador
+
+| Área | Operación | Dónde en la aplicación | Página |
+| --- | --- | --- | --- |
+| Personas | Invitar usuarios con rol Miembro o Administrador de Organización | Usuarios (`/users`), botón «Nuevo Usuario» | [Usuarios e invitaciones](/sign/admin/users-and-invitations/) |
+| Personas | Reenviar una invitación; ver si una cuenta está activa | Usuarios, «Reenviar invitación» | [Usuarios e invitaciones](/sign/admin/users-and-invitations/) |
+| Acceso | Crear, renombrar y eliminar espacios de trabajo | Configuración, pestaña «Espacios de trabajo» | [Espacios y miembros](/sign/admin/workspaces-and-members/) |
+| Acceso | Añadir y quitar miembros (personas y claves de API) con rol Lector, Auditor o Gestor | Configuración, «Espacios de trabajo», «Miembros» | [Espacios y miembros](/sign/admin/workspaces-and-members/) |
+| Acceso | Consultar qué permite cada rol | No es una pantalla; es el catálogo de permisos | [Matriz de permisos](/sign/admin/permissions/) |
+| Integración | Crear, rotar y revocar credenciales de API | Configuración, pestaña «Credenciales de API» | [Credenciales de API](/sign/admin/api-credentials/) |
+| Integración | Crear, probar, activar, desactivar, rotar y eliminar webhooks; leer su historial | Configuración, pestaña «Webhooks» | [Webhooks](/sign/admin/webhooks/) |
+| Sello | Subir, reemplazar y quitar el certificado de la organización | Sección «Certificado de firma» de la organización | [Certificado propio](/sign/admin/own-certificate/) |
+| Datos | Crear, editar y eliminar claves de etiqueta | Etiquetas (`/labels`) | [Claves de etiqueta](/sign/admin/labels/) |
+| Datos | Leer la configuración del ciclo de vida del almacenamiento | Almacenamiento (`/storage/lifecycle`) | [Almacenamiento](/sign/admin/storage/) |
+| Datos | Leer la cuota y el uso del periodo | Panel «Cuota y uso» | [Cuota y uso](/sign/admin/quota-and-usage/) |
+| Supervisión | Leer el registro de auditoría de cada sobre | Detalle del sobre, «Registro de auditoría» | [Auditoría](/sign/admin/audit-trail/) |
+
+Además, un administrador tiene acceso a todos los espacios de trabajo sin ser miembro de ninguno: ve
+todos los sobres, puede cancelarlos y descargar sus documentos. Lo que cualquier usuario hace con un
+sobre está en [Enviar a firma](/sign/sending/create-an-envelope/).
+
+## Solo el administrador de plataforma
+
+Un administrador de plataforma es personal de Binary Bridges. No pertenece a ninguna organización y
+tiene operaciones que ningún administrador de organización puede ejecutar. Si necesitas una de ellas,
+pídela al soporte de Binary Bridges.
+
+| Operación | Dónde |
+| --- | --- |
+| Crear organizaciones | Organizaciones (`/organizations`), «Nueva Organización» |
+| Definir la apariencia de la firma (nombre visible, motivo, ubicación) | Página de la organización, «Apariencia de la firma» |
+| Establecer, actualizar, renovar, suspender o activar la cuota | Página de la organización, «Configuración de la cuota» |
+| Cambiar el ciclo de vida del almacenamiento | Almacenamiento, «Aplicar» |
+| Ejecutar a mano el archivado o el vencimiento de sobres | Sin pantalla; es una operación del servicio |
+| Gestionar los espacios de trabajo de cualquier organización | Página de la organización, «Espacios de trabajo» |
+| Leer la auditoría en bruto de cualquier sobre | Sin pantalla; es una operación del servicio |
+| Crear administradores de plataforma | Usuarios, rol «Administrador de Plataforma» |
+
+## Lo que no existe todavía
+
+No hay marca propia por organización, ni planes de autoservicio ni facturación, ni exportación de la
+evidencia. Cada página de esta sección lo dice en el punto donde lo esperarías.
+
+<LinkCard title="Matriz de permisos" href="/sign/admin/permissions/" description="Qué permite cada rol de organización y de espacio, y por qué una credencial de API nunca puede administrar." />

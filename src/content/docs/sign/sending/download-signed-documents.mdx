@@ -1,8 +1,75 @@
 ---
-title: "Descargar documentos firmados"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Descargar documentos firmados
+description: PDF original y PDF firmado desde la página del sobre, cuánto dura un enlace de descarga, qué rol no puede descargar y hasta cuándo están disponibles los archivos.
 product: sign
 audience: user
 ---
 
-Contenido en construcción.
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { ENVELOPE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
+
+Cuando un sobre se completa, bb-sign genera por cada documento un PDF firmado: el original con el
+sello de cada firmante y la firma del certificado de la organización. Esta página explica dónde
+descargarlo, cuánto dura el enlace, quién no puede hacerlo y hasta cuándo está disponible.
+
+## PDF original y PDF firmado
+
+En la sección "Documentos (N)" de la página del sobre, cada archivo tiene hasta dos botones:
+
+| Botón | Qué descarga | Cuándo aparece |
+|---|---|---|
+| "PDF Original" | El archivo tal como lo subiste, sin sellos. | Siempre, desde que el sobre existe. |
+| "PDF Firmado" | El documento sellado por cada firmante y firmado con el certificado. | Cuando el sobre está "Completado" y el archivo ya se generó. |
+
+Entre que el último firmante firma y el archivo está listo pasan unos instantes; mientras tanto el
+botón se sustituye por "Procesando el PDF firmado...". Vuelve a cargar la página. Si el texto sigue
+ahí mucho tiempo, avisa a tu administrador.
+
+Qué contiene el sello (nombre, correo, fecha, la firma dibujada o escrita, un hash y un código QR
+para verificarlo) y qué aporta el certificado está en
+[Firma electrónica y sello](/sign/concepts/signature-and-seal/). Cómo comprobar un PDF firmado que
+te llega por otra vía está en [Verificar un documento firmado](/sign/signing/verify-a-document/).
+
+## Los enlaces de descarga caducan pronto
+
+Cada botón apunta a un enlace temporal que vale <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />
+desde que se abre la página. Si lo pulsas más tarde, la descarga falla: vuelve a cargar la página
+del sobre y pulsa de nuevo. No copies ni reenvíes el enlace; comparte el archivo descargado.
+
+## Quién puede descargar
+
+Descargar requiere el rol de **auditor**, **colaborador** o **gestor** en el espacio de trabajo
+del sobre, o ser administrador de la organización. Con el rol de **lector** ves el nombre de cada
+documento pero ningún botón, y la explicación: "Puedes ver el nombre de este documento, pero no
+descargarlo. Pide acceso de auditor a un administrador."
+
+Los firmantes no entran aquí: descargan su copia desde su propio enlace, al terminar de firmar y
+desde el correo `Signing complete: {title}`. Ver [Firmar y descargar](/sign/signing/sign-and-download/).
+
+## Hasta cuándo
+
+Dos plazos distintos limitan la descarga desde la aplicación:
+
+1. **El archivo del sobre.** Pasados <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> desde la
+   creación, un sobre completado pasa a [Sobres archivados](/sign/sending/archived-envelopes/). Esa
+   vista no ofrece descargas, y el enlace del firmante deja de funcionar.
+2. **El almacenamiento.** Hoy, en producción, los archivos pasan a almacenamiento en frío a los
+   <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="días" /> de subirse. Desde ese
+   momento no se pueden descargar de inmediato. El firmante que abra su enlace ve: "Este documento
+   ya no está disponible para descarga. Por favor contacta al administrador." La recuperación bajo
+   petición no existe todavía.
+
+La política del servicio fija la conservación en <Fact of={RETENTION_POLICY.retentionDays} unit="días" />,
+no negociables, y después la conservación es responsabilidad de tu organización. Lo que dice la
+política y lo que hace hoy la infraestructura están separados en
+[Alcance y conservación](/sign/legal/retention/).
+
+<Aside type="caution" title="Descarga y conserva el PDF firmado al completarse el sobre">
+  bb-sign no es un archivo documental. En cuanto un sobre pase a "Completado", descarga el
+  "PDF Firmado" de cada documento y guárdalo en el sistema de tu organización. Si integras
+  sistemas, un administrador puede automatizarlo con el webhook `envelope.completed`; ver
+  [Webhooks](/sign/admin/webhooks/).
+</Aside>
+
+<LinkCard title="Sobres archivados" href="/sign/sending/archived-envelopes/" description="Qué sobres pasan al archivo, cuándo, y qué deja de funcionar." />

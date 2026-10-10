@@ -1,8 +1,117 @@
 ---
-title: "Webhooks"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Webhooks
+description: "Cómo crear, probar, activar, rotar y eliminar un webhook, cómo leer su historial de entregas, cómo reintenta bb-sign y cuándo desactiva un endpoint por su cuenta."
 product: sign
 audience: admin
+source: docs/api/webhooks.md
 ---
 
-Contenido en construcción.
+import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { WEBHOOKS } from '../../../facts/sign';
+
+**Quién:** administrador de la organización (también los administradores de plataforma, desde la
+página de cada organización). **Dónde:** Configuración, pestaña «Webhooks» (`/settings?tab=webhooks`).
+
+«bb-sign envía una carga JSON firmada a tu URL cuando ocurre un evento, para que no tengas que
+consultar los cambios periódicamente». Esta página es la del administrador que lo configura y lo
+vigila. El código que verifica la firma está en [Webhooks para desarrolladores](/sign/developers/webhooks/).
+
+## Crear un webhook
+
+<Steps>
+
+1. Pulsa «Nuevo webhook».
+
+2. Escribe la «URL del endpoint». «Debe ser HTTPS y accesible desde internet. Rechazamos
+   direcciones privadas e internas». La comprobación se repite en cada entrega, no solo al crear.
+
+3. Marca los «Eventos que quieres recibir». Hace falta al menos uno: «Selecciona al menos un evento».
+
+4. Pulsa «Nuevo webhook». Se abre «Guarda este secreto de firma ahora» con el «Secreto de firma».
+   «Esta es la única vez que se mostrará el secreto. Úsalo para verificar la firma de cada entrega:
+   un receptor que no la verifica aceptará cualquier cosa que le envíen».
+
+</Steps>
+
+| Evento | Etiqueta en la aplicación | Cuándo |
+| --- | --- | --- |
+| `envelope.sent` | «Sobre enviado» | El sobre salió a sus firmantes |
+| `envelope.completed` | «Sobre completado» | Firmaron todos |
+| `envelope.cancelled` | «Sobre cancelado» | Alguien canceló el sobre |
+| `envelope.expired` | «Sobre caducado» | El sobre venció sin completarse |
+| `signer.signed` | «Firmante firmó» | Un firmante firmó; puede que falten otros |
+| `signer.viewed` | «Firmante abrió el documento» | Un firmante abrió el documento |
+
+Tu organización puede tener hasta <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
+
+## Probar
+
+«Enviar prueba» entrega un evento sintético por el mismo camino que uno real, firma incluida, y
+muestra la respuesta: «Tu endpoint respondió código» o «Tu endpoint no aceptó la prueba: detalle».
+Un endpoint que responde un error no es un fallo de bb-sign: es el resultado de la prueba.
+
+## Activar y desactivar
+
+«Desactivar» deja de enviar sin borrar nada; «Activar» lo reanuda. Mientras un webhook está
+desactivado, los eventos que ocurren se anotan en el historial como «No enviado» y no se encolan
+para después: al reactivar no recibirás un aluvión de eventos antiguos.
+
+## Rotar el secreto
+
+«Rotar secreto» abre «¿Rotar el secreto de firma?»: «Se aceptarán tanto el secreto antiguo como el
+nuevo durante un periodo de gracia, así que tu receptor seguirá funcionando hasta que lo despliegues
+con el nuevo». La gracia dura <Fact of={WEBHOOKS.secretRotationGraceHours} unit="horas" />; durante
+ese tiempo la fila muestra «Ahora mismo se aceptan tanto el secreto de firma antiguo como el nuevo»
+y cada entrega lleva dos firmas. No hace falta ventana de mantenimiento.
+
+## Eliminar
+
+«Eliminar» abre «¿Eliminar este webhook?»: «Dejaremos de enviar eventos a este endpoint. Su
+historial de entregas se elimina con él». No se puede deshacer.
+
+## Reintentos y desactivación automática
+
+Una entrega que no recibe una respuesta 2xx se reintenta con esperas de
+<code>{WEBHOOKS.retryLadder.value.join(', ')}</code>, con una variación aleatoria de
+<Fact of={WEBHOOKS.retryJitterPct} unit="%" />: unas <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="horas" />
+en total. El cuerpo no cambia entre reintentos; solo se recalcula la firma.
+
+Tras <Fact of={WEBHOOKS.disableAfterLadders} /> entregas seguidas que agotan todos sus reintentos,
+bb-sign desactiva el webhook. La fila pasa a «Desactivado automáticamente» con el aviso
+«Desactivamos este endpoint después de que sus reintentos fallaran repetidamente. Corrígelo y
+vuelve a activarlo; también lo reintentaremos por nuestra cuenta cada cierto tiempo», y los
+administradores de la organización reciben el correo «Action required: bb-sign disabled a webhook
+endpoint» (solo en inglés). bb-sign vuelve a probar el endpoint cada
+<Fact of={WEBHOOKS.probeIntervalHours} unit="horas" />; con una respuesta correcta lo reactiva.
+
+<Aside type="caution" title="Mientras está desactivado, los eventos se pierden">
+  Cada evento de ese periodo queda como «No enviado» y no se reenvía. Arregla el endpoint y pulsa
+  «Activar»; luego usa el historial para saber qué te perdiste y recupéralo consultando esos sobres.
+</Aside>
+
+## El historial
+
+«Historial» abre la lista de entregas del webhook; «Volver a webhooks» regresa. Cada fila muestra el
+estado, el evento, la fecha y «N intentos». Al abrirla ves cada intento con su resultado, el código
+HTTP y la duración, el último error y, si hay otro reintento previsto, «Próximo intento a las hora».
+
+| Estado | Significado |
+| --- | --- |
+| «Preparando» | bb-sign está construyendo la carga. |
+| «Enviando» | Hay un intento en curso o pendiente. |
+| «Entregado» | Tu endpoint respondió 2xx. Si no lo viste, el problema está en tu lado. |
+| «Abandonado» | Se agotaron todos los reintentos y ninguno fue aceptado. |
+| «No enviado» | «No se envió nada para este evento: el endpoint estaba desactivado en ese momento. Por eso hay un hueco en lo que recibiste». |
+| «No se pudo construir» | Un problema del lado de bb-sign. No puedes arreglarlo; avisa al soporte. |
+
+| Resultado de un intento | Significado |
+| --- | --- |
+| «Aceptado» | Respuesta 2xx. |
+| «Rechazado» | Tu endpoint respondió con otro código. El código aparece al lado. |
+| «Inaccesible» | No hubo respuesta: DNS, conexión o tiempo de espera. |
+
+El historial se conserva <Fact of={WEBHOOKS.deliveryLogRetentionDays} unit="días" />. La creación,
+la rotación del secreto y la eliminación de un webhook quedan en la [auditoría](/sign/admin/audit-trail/).
+
+<LinkCard title="Webhooks para desarrolladores" href="/sign/developers/webhooks/" description="El cuerpo que llega, las cabeceras y el código que verifica la firma en JavaScript y Java." />

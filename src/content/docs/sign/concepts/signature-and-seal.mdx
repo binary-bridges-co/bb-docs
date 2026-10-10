@@ -1,8 +1,95 @@
 ---
-title: "Firma electrónica y sello"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Firma electrónica y sello
+description: La firma que dibuja o escribe el firmante y el sello que la organización pone con su certificado son dos cosas distintas. Qué contiene cada una y qué prueba.
 product: sign
 audience: all
 ---
 
-Contenido en construcción.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { CERTIFICATE } from '../../../facts/sign';
+
+En un documento firmado con bb-sign hay dos marcas que conviene no confundir. La **firma** es la del
+firmante: el trazo que dibujó o el nombre que escribió. El **sello** lo pone bb-sign en nombre de la
+organización que envió el sobre, con un certificado digital, y es lo que hace detectable cualquier
+alteración posterior del PDF. Esta página explica qué es cada una, qué contiene y qué prueba.
+
+## La firma del firmante
+
+En la pantalla "Añade tu firma", el firmante elige "Dibujar" (traza su firma con el dedo o el ratón)
+o "Escribir" (escribe su nombre completo y la aplicación lo compone con una tipografía manuscrita).
+En los dos casos, lo que bb-sign guarda es una **imagen** de esa firma, junto con la hora, la
+dirección IP y el navegador desde los que se envió. No se puede subir una imagen de firma hecha
+fuera de la aplicación.
+
+Esa imagen es una firma electrónica en el sentido del Decreto 2364 de 2012: un dato asociado al
+mensaje que identifica al firmante y expresa su voluntad. No es, por sí sola, una prueba criptográfica.
+La prueba la aporta el sello.
+
+## El sello de la organización
+
+Cuando el último firmante firma, bb-sign procesa cada documento del sobre en dos pasos.
+
+### El sello visible de cada firmante
+
+Primero estampa en el PDF una imagen de sello por cada firmante, en la posición que indica el
+marcador del documento o, si no lo hay, en la esquina inferior derecha de la última página (ver
+[Documentos](/sign/concepts/documents/)). La imagen contiene:
+
+| Elemento | Qué es |
+| --- | --- |
+| Nombre y correo | Los del firmante, tal como los escribió el remitente. |
+| Fecha | El día en que firmó, en UTC. |
+| Firma | La imagen que dibujó o escribió. |
+| Hash | Un resumen SHA-256 calculado con el nombre, el correo, la fecha, el identificador del sobre y la huella del certificado; parte de él aparece como texto alrededor del sello circular, y el patrón del sello se deriva de él. |
+| Código QR | Enlaza con la página pública de verificación de bb-sign, con el identificador del sobre y el inicio del hash. Ver [Verificar un documento firmado](/sign/signing/verify-a-document/). |
+
+### La firma con certificado
+
+Después, bb-sign firma el PDF completo con el certificado de la organización: una firma
+CMS/PKCS#7 separada, de tipo <Fact of={CERTIFICATE.signatureSubFilter} />, con el algoritmo
+<Fact of={CERTIFICATE.signatureAlgorithm} />. Es una firma de PDF estándar: Adobe Acrobat y
+cualquier lector compatible la muestran en su panel de firmas y avisan si el documento cambió
+después de firmarse.
+
+Esa firma tiene un campo visible en la esquina inferior derecha de la última página, con el texto
+"Digitally signed by" seguido del nombre de la organización que sella y la fecha. No es el sello de
+un firmante: es el de la organización, y hay uno solo por documento.
+
+<Aside type="note" title="Qué prueba el sello">
+  El sello prueba que el documento firmado es el que bb-sign produjo al completarse el sobre y que
+  **no ha cambiado desde entonces**: si alguien edita el PDF, la firma con certificado deja de
+  validar. También fija quién lo selló (la organización, a través de su certificado) y cuándo. Lo
+  que el sello no prueba por sí solo es la identidad del firmante; eso lo sostiene la evidencia del
+  proceso (correo, código de verificación, dirección IP, registro de auditoría). Ver
+  [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+</Aside>
+
+## El certificado por defecto
+
+Si la organización no ha configurado un certificado propio, bb-sign sella con el certificado de
+pruebas de Binary Bridges, cuyo sujeto es <Fact of={CERTIFICATE.defaultSubject} />. El campo
+visible dice entonces "Digitally signed by" <Fact of={CERTIFICATE.defaultDisplayName} />.
+
+Ese certificado es **autofirmado**: ninguna autoridad lo respalda, y Adobe Acrobat y otros lectores
+lo muestran como no confiable. El documento sigue estando íntegro y el sello sigue detectando
+cambios, pero un tercero no puede confiar en él sin más. bb-sign nunca bloquea un envío por esto.
+
+Para que el sello lleve el nombre de tu organización y los lectores lo acepten, un administrador
+debe subir un certificado emitido a nombre de la organización. Cómo elegirlo, dónde comprarlo y cómo
+subirlo está en [Certificado propio de la organización](/sign/admin/own-certificate/).
+
+## Limitación actual: solo el certificado hoja
+
+Hoy bb-sign incrusta en el PDF únicamente el certificado de la organización
+(<Fact of={CERTIFICATE.chainEmbedded} />), no la cadena de la autoridad que lo emitió. En la
+práctica, un lector que no tenga instalada la raíz de esa autoridad no podrá construir la cadena y
+mostrará la firma como no verificada aunque el certificado sea válido. La incrustación de la cadena
+completa está planificada, pero no existe todavía.
+
+## Firma electrónica, no firma digital
+
+Aunque el sello usa un certificado digital, bb-sign ofrece **firma electrónica** en los términos del
+Decreto 2364 de 2012, no *firma digital* según el artículo 28 de la Ley 527 de 1999. La diferencia
+y lo que implica para cada organización están en
+[Firma electrónica y firma digital](/sign/legal/electronic-vs-digital-signature/).

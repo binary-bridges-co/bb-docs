@@ -1,8 +1,90 @@
 ---
-title: "Tu cuenta"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Tu cuenta
+description: Cómo llega la invitación y cuánto dura su enlace, el primer inicio de sesión, qué ves según tu rol, y cómo cambiar el idioma y el tema de bb-sign.
 product: sign
 audience: user
 ---
 
-Contenido en construcción.
+import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { AUTH, URLS } from '../../../facts/sign';
+
+En bb-sign nadie se registra por su cuenta. Un administrador de tu organización crea tu usuario y
+tú recibes una invitación por correo. Con ella eliges una contraseña y entras en
+<a href={URLS.app.value}>{URLS.app.value}</a>. Esta página cubre ese primer día: la invitación, el
+inicio de sesión y lo que verás al entrar.
+
+## La invitación
+
+Cuando el administrador te crea, la aplicación le muestra el aviso "El usuario recibirá un correo
+para establecer su contraseña." Ese correo llega desde <code>{URLS.identitySenderAddress.value}</code>
+y contiene un enlace para definir tu contraseña. El enlace vale
+<Fact of={AUTH.invitationLinkHours} unit="horas" /> desde que se envía.
+
+Si el enlace caducó, la página te dirá que ya no es válido. Pide al administrador que use
+"Reenviar invitación" en la página Usuarios: recibirás un correo nuevo con un enlace nuevo, y el
+plazo empieza a contar otra vez.
+
+Si el correo no llega, revisa la carpeta de correo no deseado y confirma con el administrador que tu
+dirección está bien escrita. Puede reenviar la invitación tantas veces como haga falta.
+
+## Primer inicio de sesión
+
+<Steps>
+
+1. Abre el enlace de la invitación.
+
+2. Escribe una contraseña y confírmala. bb-sign no te pide nada más.
+
+3. Entra en <a href={URLS.app.value}>{URLS.app.value}</a> con tu correo y la contraseña que acabas
+   de definir. Llegarás al Panel.
+
+</Steps>
+
+A partir de entonces inicias sesión desde esa dirección. Si olvidas la contraseña, la pantalla de
+inicio de sesión ofrece restablecerla; el correo de restablecimiento llega desde la misma dirección
+que la invitación. Para salir, usa "Cerrar sesión" al final del menú lateral.
+
+## Qué ves según tu rol
+
+Tu rol aparece bajo tu nombre, al final del menú lateral: "Administrador de Organización" o
+"Miembro de Organización". El menú cambia según ese rol.
+
+| Entrada del menú | Miembro | Administrador |
+|---|---|---|
+| Panel | Sí | Sí |
+| Sobres | Sí | Sí |
+| Archivados | Sí | Sí |
+| Nuevo Sobre | Solo si puedes crear sobres en algún espacio de trabajo | Sí |
+| Etiquetas | No | Sí |
+| Usuarios | No | Sí |
+| Almacenamiento | No | Sí |
+| Configuración | No | Sí |
+
+Un miembro no ve Etiquetas, Usuarios, Almacenamiento ni Configuración. Si abres una de esas
+direcciones a mano, la aplicación responde "Acceso Denegado" y te dice que tu rol no tiene permiso
+para ver esa página. No es un error: es el límite del rol.
+
+Lo que puedes hacer con cada sobre no depende del rol de organización sino de tu rol en el
+**espacio de trabajo** donde vive el sobre: ver, descargar, crear, enviar o cancelar. Está explicado
+en [Organizaciones, espacios y roles](/sign/concepts/organizations-workspaces-roles/).
+
+## Idioma
+
+La aplicación está en español y en inglés. El selector "Idioma" está en la esquina superior derecha
+de cada página, con las opciones "Español" y "English". La elección se guarda en tu navegador. Si
+nunca eliges, bb-sign usa el idioma del navegador y, si no es ninguno de los dos, inglés.
+
+<Aside type="note" title="Los correos a los firmantes van en inglés">
+  El idioma de la aplicación es solo para ti. Los correos que bb-sign envía a los firmantes
+  (invitación, código de verificación, recordatorio, sobre completado) van siempre en inglés, sea
+  cual sea tu idioma o el del firmante. Si tus firmantes no leen inglés, avísales por tu cuenta de
+  que van a recibir ese correo y de qué deben hacer con él.
+</Aside>
+
+## Tema
+
+Junto al idioma hay un botón para alternar entre modo claro y oscuro: "Cambiar a modo oscuro" o
+"Cambiar a modo claro", según el que esté activo. También se guarda en tu navegador.
+
+<LinkCard title="Tu primer sobre" href="/sign/getting-started/first-envelope/" description="El asistente de Crear Sobre, paso a paso, hasta el envío." />

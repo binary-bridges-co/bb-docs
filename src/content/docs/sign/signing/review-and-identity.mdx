@@ -1,8 +1,60 @@
 ---
-title: "Revisar y verificar identidad"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Revisar y verificar identidad
+description: Abrir cada documento antes de continuar, cómo funciona el código de verificación por correo y qué significa cada mensaje de esa pantalla.
 product: sign
 audience: signer
 ---
 
-Contenido en construcción.
+import Fact from '../../../../components/facts/Fact.astro';
+import { OTP } from '../../../facts/sign';
+
+Al abrir tu enlace llegas a la primera pantalla del proceso. Arriba, un indicador muestra los
+pasos: "Revisar", "Verificar" (solo si el sobre lo exige) y "Firmar".
+
+## Firmando como
+
+La pantalla empieza con "Firmando como", tu nombre y tu correo. Son los datos que quien envió el
+documento escribió para ti y los que quedarán en el sello. Si no son los tuyos, no continúes: avisa
+a quien te lo envió para que corrija el sobre.
+
+## Abrir cada documento
+
+Bajo "Documentos para revisar" aparece cada PDF con un botón "Ver" que lo despliega en la misma
+página ("Ocultar" lo cierra). Tienes que abrirlos todos: hasta entonces el botón "He revisado el
+documento" no responde y la pantalla indica "Abre cada documento antes de continuar."
+
+Si tu navegador no puede mostrar el PDF, verás "Tu navegador no puede mostrar este PDF
+incrustado." con el enlace "Descargar el documento". Abrir el documento de esa forma también
+cuenta.
+
+## El código de verificación
+
+Si el sobre exige verificar tu identidad, al pulsar "He revisado el documento" bb-sign te envía
+un código por correo y pasas a la pantalla "Verifica tu identidad", que dice "Se ha enviado un
+código OTP a tu correo." y cuánto falta para que caduque.
+
+- El código tiene <Fact of={OTP.digits} unit="dígitos" /> y vale <Fact of={OTP.validitySeconds} unit="s" />.
+- Tienes <Fact of={OTP.maxAttempts} unit="intentos" /> por código.
+- Puedes pedir otro con "Reenviar código" cuando pasen <Fact of={OTP.resendCooldownSeconds} unit="s" />
+  desde el último; mientras tanto el botón muestra "Reenviar código en" y una cuenta atrás.
+- La página solo acepta el último código que te enviamos.
+
+Escribe el código y pulsa "Verificar y continuar".
+
+## Qué significa cada mensaje
+
+| Mensaje | Qué pasó | Qué hacer |
+|---|---|---|
+| "Ya te enviamos un código a tu correo." | Pediste otro código antes de que pasara la espera, y el anterior sigue siendo válido. | Usa el código que ya tienes. |
+| "Te hemos enviado un código nuevo." | Se envió un código nuevo. | Usa ese y descarta el anterior. |
+| "Ese código ya no se puede usar. Podrás pedir uno nuevo en unos instantes." | El último código se gastó (ya se verificó o se agotaron los intentos) y todavía corre la espera. | Espera a que el botón diga "Reenviar código" y pide otro. |
+| "Ese código no es válido. Revísalo e inténtalo de nuevo." (hoy puede aparecer en inglés) | El código no coincide, caducó o es uno antiguo. Cada fallo cuenta como intento. | Copia el código del último correo. Si se agotaron los intentos, pide uno nuevo. |
+| "No se pudo verificar el código. Inténtalo de nuevo." | La comprobación no se completó. | Vuelve a pulsar "Verificar y continuar". |
+| "No se pudo enviar el código OTP. Inténtalo de nuevo." | El correo no pudo salir. | Vuelve a pulsar "He revisado el documento". |
+
+## Después de verificar
+
+Una vez verificado el código, tienes <Fact of={OTP.verifiedValidityMinutes} unit="minutos" />
+para firmar. Si tardas más, al enviar la firma verás el aviso "Your identity check has expired.
+Please request a new code.": recarga la página, vuelve a pasar por los documentos y pide un código
+nuevo. Lo que viene después está en [Firmar y descargar](/sign/signing/sign-and-download/).

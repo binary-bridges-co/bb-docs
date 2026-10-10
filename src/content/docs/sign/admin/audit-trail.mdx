@@ -1,8 +1,73 @@
 ---
-title: "Auditoría"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Auditoría
+description: "Qué registra la auditoría de un sobre y quién la ve, qué eventos de la organización quedan registrados, cómo funciona la cadena de hashes y qué no se registra hoy."
 product: sign
 audience: admin
 ---
 
-Contenido en construcción.
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+**Quién:** administrador de la organización (también los administradores de plataforma). **Dónde:**
+la sección «Registro de auditoría» del detalle de cada sobre (`/envelopes/id`).
+
+bb-sign anota en un registro inalterable lo que ocurre con cada sobre mientras se firma, y también
+algunos cambios de configuración de la organización. Esta página dice qué hay en ese registro, quién
+lo ve y qué no está. El valor probatorio de la evidencia está en
+[Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+
+## El registro de un sobre
+
+En el detalle del sobre, la sección «Registro de auditoría (N eventos)» lista cada evento con su
+tipo, quién lo causó (el correo del actor o «Sistema»), la fecha y hora, y su hash («hash: …»).
+
+Lo ven los Auditores, Colaboradores y Gestores del espacio del sobre, y todos los administradores.
+Un Lector ve en su lugar «El registro de auditoría está disponible para los auditores y gestores de
+este espacio de trabajo».
+
+| Evento | Cuándo se anota |
+| --- | --- |
+| `SIGNING_LINK_CLICKED` | Un firmante abrió su enlace. |
+| `SIGNING_VIEW_OPENED`, `SIGNING_VIEW_CLOSED` | Un firmante abrió o cerró la vista de los documentos. |
+| `SIGNER_ELIGIBLE` | En firma secuencial, le tocó el turno a un firmante. |
+| `SIGNER_SIGNED` | Un firmante firmó, con su dirección IP. |
+| `ENVELOPE_COMPLETED` | Firmó el último firmante. |
+| `SIGNED_COPY_ACCESSED` | Alguien descargó la copia firmada desde el enlace del firmante. |
+| `EMAIL_SENT`, `EMAIL_DELIVERED`, `EMAIL_OPENED`, `EMAIL_BOUNCED` | Un correo del sobre se envió, se entregó, se abrió o rebotó. |
+
+## Eventos de la organización
+
+El mismo registro guarda cambios de configuración que no pertenecen a ningún sobre:
+
+| Evento | Cuándo se anota |
+| --- | --- |
+| `API_CREDENTIAL_CREATED`, `API_CREDENTIAL_REVOKED` | Se creó o se revocó una credencial de API. |
+| `WEBHOOK_SUBSCRIPTION_CREATED`, `WEBHOOK_SUBSCRIPTION_SECRET_ROTATED`, `WEBHOOK_SUBSCRIPTION_DELETED` | Se creó un webhook, se rotó su secreto o se eliminó. |
+| `WORKSPACE_CREATED`, `WORKSPACE_RENAMED`, `WORKSPACE_DELETED` | Se creó, renombró o eliminó un espacio de trabajo. |
+| `WORKSPACE_MEMBER_GRANTED`, `WORKSPACE_MEMBER_REVOKED` | Se dio o se quitó un rol de espacio a una persona o clave de API. |
+
+Hoy la aplicación no tiene una pantalla que liste estos eventos. Se conservan y pertenecen a tu
+organización; si los necesitas, pídelos al soporte de Binary Bridges.
+
+## La cadena de hashes
+
+Cada evento tiene un hash SHA-256 calculado sobre su contenido: identificador, sobre, organización,
+tipo, fecha, actor, dirección IP, metadatos y el hash del evento anterior del mismo sobre. Como cada
+hash incluye el anterior, modificar, insertar o borrar un evento rompe la cadena a partir de ese
+punto y la alteración es detectable. Los eventos de la organización llevan su hash, pero no se
+encadenan entre sí.
+
+## Lo que no se registra hoy
+
+- La creación, el envío, la cancelación y el vencimiento de un sobre. Esos cambios de estado se ven
+  en el propio sobre y llegan por [webhooks](/sign/admin/webhooks/), pero no están en el registro.
+- La verificación del código de un solo uso.
+- La rotación de una credencial, la activación o desactivación de un webhook y los cambios en las
+  claves de etiqueta.
+
+<Aside type="note" title="No hay exportación de evidencia">
+  Hoy no existe un certificado de evidencia ni una exportación del registro. Lo que puedes consultar
+  es lo que ves en pantalla. Si necesitas la evidencia de un sobre para un tercero, pídela al
+  soporte de Binary Bridges.
+</Aside>
+
+<LinkCard title="Evidencia y auditoría" href="/sign/concepts/evidence-and-audit/" description="Qué prueba cada pieza de evidencia y cómo verificar un documento firmado." />

@@ -1,8 +1,59 @@
 ---
-title: "Administer the organization"
-description: "Page under construction. This description is a placeholder that is replaced once the real content is written here."
+title: Administer the organization
+description: "A map of everything an organization admin can do in bb-sign, with a link to each operation, and what is reserved to the platform administrator."
 product: sign
 audience: admin
 ---
 
-Content under construction.
+import { LinkCard } from '@astrojs/starlight/components';
+
+**Who:** organization admin (platform admins too). **Where:** the Labels, Users, Storage and Settings
+entries of the sidebar; members do not see them.
+
+An organization admin manages the people, the access, the integrations, the seal, the data and the
+oversight of their organization. Every operation has a page in this section. What is not in these
+tables does not exist yet.
+
+## Everything an admin can do
+
+| Area | Operation | Where in the app | Page |
+| --- | --- | --- | --- |
+| People | Invite users with the Org Member or Org Admin role | Users (`/users`), "New User" button | [Users and invitations](/en/sign/admin/users-and-invitations/) |
+| People | Resend an invitation; see whether an account is active | Users, "Resend invitation" | [Users and invitations](/en/sign/admin/users-and-invitations/) |
+| Access | Create, rename and delete workspaces | Settings, "Workspaces" tab | [Workspaces and members](/en/sign/admin/workspaces-and-members/) |
+| Access | Add and remove members (people and API keys) as Viewer, Auditor or Manager | Settings, "Workspaces", "Members" | [Workspaces and members](/en/sign/admin/workspaces-and-members/) |
+| Access | Look up what each role allows | Not a screen; the permission catalog | [Permissions matrix](/en/sign/admin/permissions/) |
+| Integration | Create, rotate and revoke API credentials | Settings, "API credentials" tab | [API credentials](/en/sign/admin/api-credentials/) |
+| Integration | Create, test, enable, disable, rotate and delete webhooks; read their history | Settings, "Webhooks" tab | [Webhooks](/en/sign/admin/webhooks/) |
+| Seal | Upload, replace and remove the organization's certificate | The organization's "Signing Certificate" section | [Your own certificate](/en/sign/admin/own-certificate/) |
+| Data | Create, edit and delete label keys | Labels (`/labels`) | [Label keys](/en/sign/admin/labels/) |
+| Data | Read the storage lifecycle configuration | Storage (`/storage/lifecycle`) | [Storage](/en/sign/admin/storage/) |
+| Data | Read the quota and the period's usage | "Quota & Usage" panel | [Quota and usage](/en/sign/admin/quota-and-usage/) |
+| Oversight | Read every envelope's audit trail | Envelope detail, "Audit Trail" | [Audit trail](/en/sign/admin/audit-trail/) |
+
+An admin also reaches every workspace without being a member of any: they see every envelope, can
+cancel it and download its documents. What any user does with an envelope is in
+[Sending for signature](/en/sign/sending/create-an-envelope/).
+
+## Platform administrator only
+
+A platform administrator is Binary Bridges staff. They belong to no organization and hold operations
+no organization admin can run. If you need one of them, ask Binary Bridges support.
+
+| Operation | Where |
+| --- | --- |
+| Create organizations | Organizations (`/organizations`), "New Organization" |
+| Set the signature appearance (display name, reason, location) | Organization page, "Signature Appearance" |
+| Set, update, renew, suspend or activate the quota | Organization page, "Quota Configuration" |
+| Change the storage lifecycle | Storage, "Apply" |
+| Run the envelope archive or expiration by hand | No screen; a service operation |
+| Manage any organization's workspaces | Organization page, "Workspaces" |
+| Read any envelope's raw audit trail | No screen; a service operation |
+| Create platform administrators | Users, "Platform Admin" role |
+
+## What does not exist yet
+
+There is no per-organization branding, no self-service plans or billing, and no evidence export.
+Each page in this section says so at the point where you would expect it.
+
+<LinkCard title="Permissions matrix" href="/en/sign/admin/permissions/" description="What each organization and workspace role allows, and why an API credential can never administer." />
