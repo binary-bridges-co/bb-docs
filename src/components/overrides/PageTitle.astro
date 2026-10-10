@@ -1,0 +1,19 @@
+---
+/**
+ * Starlight `PageTitle` override: adds the audience badge declared in the
+ * page's frontmatter above the title. Admin pages read "Administradores",
+ * signer pages "Firmantes", and so on, so a reader knows at a glance whether
+ * the page is for them.
+ */
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+
+const { entry, locale } = Astro.locals.starlightRoute;
+const audience = entry.data.audience;
+const labels = {
+  es: { admin: 'Administradores', user: 'Usuarios', signer: 'Firmantes', developer: 'Desarrolladores', legal: 'Legal', all: 'Todos' },
+  en: { admin: 'Administrators', user: 'Users', signer: 'Signers', developer: 'Developers', legal: 'Legal', all: 'Everyone' },
+}[locale === 'en' ? 'en' : 'es'];
+---
+
+{audience && audience !== 'all' && <span class="bb-audience" data-audience={audience}>{labels[audience]}</span>}
+<Default><slot /></Default>

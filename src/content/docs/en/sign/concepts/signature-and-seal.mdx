@@ -1,0 +1,96 @@
+---
+title: Electronic signature and seal
+description: The signature the signer draws or types and the seal the organization applies with its certificate are two different things. What each contains and what it proves.
+product: sign
+audience: all
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { CERTIFICATE } from '../../../../facts/sign';
+
+A document signed with bb-sign carries two marks that should not be confused. The **signature** is
+the signer's: the stroke they drew or the name they typed. The **seal** is applied by bb-sign on
+behalf of the organization that sent the envelope, with a digital certificate, and it is what makes
+any later alteration of the PDF detectable. This page explains what each one is, what it contains
+and what it proves.
+
+## The signer's signature
+
+On the "Add Your Signature" screen, the signer chooses "Draw" (they trace their signature with a
+finger or the mouse) or "Type" (they type their full name and the application renders it in a
+handwriting typeface). In both cases, what bb-sign stores is an **image** of that signature, together
+with the time, the IP address and the browser it was submitted from. A signature image made outside
+the application cannot be uploaded.
+
+That image is an electronic signature in the sense of Decreto 2364 de 2012: data attached to the
+message that identifies the signer and expresses their intent. It is not, by itself, cryptographic
+proof. The proof comes from the seal.
+
+## The organization's seal
+
+When the last signer signs, bb-sign processes every document in the envelope in two steps.
+
+### Each signer's visible seal
+
+First it stamps on the PDF one seal image per signer, at the position the document's marker
+indicates or, without one, at the bottom-right corner of the last page (see
+[Documents](/en/sign/concepts/documents/)). The image contains:
+
+| Element | What it is |
+| --- | --- |
+| Name and email | The signer's, as the sender entered them. |
+| Date | The day they signed, in UTC. |
+| Signature | The image they drew or typed. |
+| Hash | A SHA-256 digest computed from the name, the email, the date, the envelope identifier and the certificate's fingerprint; part of it appears as text around the circular seal, and the seal's pattern is derived from it. |
+| QR code | Links to bb-sign's public verification page, with the envelope identifier and the start of the hash. See [Verify a signed document](/en/sign/signing/verify-a-document/). |
+
+### The certificate signature
+
+Then bb-sign signs the whole PDF with the organization's certificate: a detached CMS/PKCS#7
+signature of type <Fact of={CERTIFICATE.signatureSubFilter} />, with the
+<Fact of={CERTIFICATE.signatureAlgorithm} /> algorithm. It is a standard PDF signature: Adobe
+Acrobat and any compatible reader show it in their signature panel and warn if the document changed
+after it was signed.
+
+That signature has a visible field at the bottom-right corner of the last page, reading "Digitally
+signed by" followed by the name of the sealing organization and the date. It is not a signer's
+seal: it is the organization's, and there is only one per document.
+
+<Aside type="note" title="What the seal proves">
+  The seal proves that the signed document is the one bb-sign produced when the envelope completed
+  and that it **has not changed since**: if someone edits the PDF, the certificate signature stops
+  validating. It also fixes who sealed it (the organization, through its certificate) and when.
+  What the seal does not prove on its own is the signer's identity; that rests on the evidence of
+  the process (email, verification code, IP address, audit trail). See
+  [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
+</Aside>
+
+## The default certificate
+
+If the organization has not configured its own certificate, bb-sign seals with Binary Bridges'
+testing certificate, whose subject is <Fact of={CERTIFICATE.defaultSubject} />. The visible field
+then reads "Digitally signed by" <Fact of={CERTIFICATE.defaultDisplayName} />.
+
+That certificate is **self-signed**: no authority backs it, and Adobe Acrobat and other readers show
+it as untrusted. The document is still intact and the seal still detects changes, but a third party
+cannot simply trust it. bb-sign never blocks a sending because of this.
+
+For the seal to carry your organization's name and for readers to accept it, an administrator must
+upload a certificate issued in the organization's name. How to choose one, where to buy it and how
+to upload it is in [Your own certificate](/en/sign/admin/own-certificate/).
+
+## Current limitation: leaf certificate only
+
+Today bb-sign embeds in the PDF only the organization's certificate
+(<Fact of={CERTIFICATE.chainEmbedded} />), not the chain of the authority that issued it. In
+practice, a reader that does not have that authority's root installed cannot build the chain and
+shows the signature as unverified even though the certificate is valid. Embedding the full chain is
+planned, but does not exist yet.
+
+## Electronic signature, not digital signature
+
+Although the seal uses a digital certificate, bb-sign provides **electronic signature** in the terms
+of Decreto 2364 de 2012, not *firma digital* under article 28 of Ley 527 de 1999. The difference and
+what it means for each organization are in
+[Electronic and digital signature](/en/sign/legal/electronic-vs-digital-signature/).

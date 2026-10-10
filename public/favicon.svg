@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Binary Bridges">
+  <!-- Puente binario, sealed. Solid ink background on purpose: Safari ignores
+       prefers-color-scheme inside SVG favicons (same reason as bb-sign's). -->
+  <rect width="48" height="48" rx="11" fill="#16192B"/>
+  <path d="M9 34C9 21 15.5 13 24 13s15 8 15 21" fill="none" stroke="#8595FF" stroke-width="3.6" stroke-linecap="round"/>
+  <rect x="15.6" y="26.5" width="2.8" height="7.5" rx="1.4" fill="#F2F0EC"/>
+  <circle cx="31" cy="30.2" r="2.6" fill="none" stroke="#F2F0EC" stroke-width="2.1"/>
+</svg>

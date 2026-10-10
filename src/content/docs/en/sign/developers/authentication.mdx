@@ -1,0 +1,150 @@
+---
+title: Machine authentication
+description: How a credential gets a token, what the token carries, what it can reach through workspace roles, how long it lives, and what each failure status means.
+product: sign
+audience: developer
+source: docs/api/machine-authentication.md
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import RolesMatrix from '../../../../../components/facts/RolesMatrix.astro';
+import { URLS, AUTH, ORG_API_NEVER } from '../../../../facts/sign';
+
+This page is normative for how a machine identity authenticates to bb-sign and what it may reach.
+A credential is created by an org admin in **Settings**, tab **API credentials**; what it can do
+is decided by the **workspace roles** it holds, not by a fixed list of endpoints.
+
+## 1. The model: machines are not a second kind of caller
+
+A machine authenticates with OAuth2 **client credentials** against the `bbsign` realm. The token it
+receives is read by exactly the same code that reads a human's token, because Keycloak issues the two
+identically:
+
+- A Keycloak **service account is a real user record.** It is not a user-less principal.
+- So the **same attribute mapper** that gives a human token its `bb_sign_org_id` claim gives a
+  machine token the same claim, sourced from an attribute on the service-account user.
+- Every org-scoping decision in the API goes through one seam, which reads that claim and knows
+  nothing about grant types.
+
+The practical consequence: **org isolation is inherited, not reimplemented.** A machine token is
+scoped by the same check as a human one. There is one identity model, not two.
+
+## 2. Obtaining a token
+
+```bash
+curl -s -X POST https://auth.binarybridges.co/realms/bbsign/protocol/openid-connect/token \
+  -d grant_type=client_credentials \
+  -d client_id=<your-client-id> \
+  -d client_secret=<your-secret>
+```
+
+```json
+{ "access_token": "eyJ...", "expires_in": 300, "token_type": "Bearer" }
+```
+
+Use it as an ordinary bearer token:
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" https://sign-api.binarybridges.co/api/v1/envelopes
+```
+
+### What the token must carry
+
+| Claim | Value | Why it matters |
+|---|---|---|
+| `bb_sign_org_id` | The owning org's UUID | Every org-scoped read and write resolves from this. **Without it the API returns 403**, see section 5 |
+| `realm_access.roles` | contains `org_api` | The role the organization-scoped endpoints admit |
+| `aud` | contains `bb-sign` | The audience validator rejects the token before any authorization decision if absent |
+
+A client that is missing the audience mapper fails at validation; one missing the org attribute fails
+at authorization. Both are provisioning faults, and both fail closed. Credentials created from
+**Settings** carry all three.
+
+<Aside type="note" title="Token lifetime">
+  A token lives <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> (`expires_in`). Tokens are
+  validated against the realm's JWKS with **no introspection call**, so a token remains valid until
+  it expires even if the credential behind it is revoked. Anything that revokes access is therefore
+  bounded by that window, not immediate.
+</Aside>
+
+## 3. What a credential can reach
+
+At organization scope a credential holds only `label:read` and `workspace:read`: it can list the
+label keys and the workspaces it belongs to. Everything it can do **to envelopes** comes from the
+role it holds in each workspace. When an org admin creates the credential, the form asks for a
+workspace and a role, and "General with Manager is the default." An admin can later add the
+credential to other workspaces from **Settings**, tab **Workspaces**, under **Members**.
+
+<RolesMatrix locale="en" show="workspace" />
+
+- `GET /api/v1/workspaces` returns General plus the workspaces the credential holds a role in. Pass
+  one's `id` as `workspaceId` when creating an envelope; omit it and the envelope is filed in General.
+- A credential can belong to at most <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> workspaces.
+- A change of role reaches the credential when its next token is issued, so within
+  <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
+- The org is **always taken from the token**, never from the request. A machine does not supply an
+  `orgId` when creating an envelope; supplying one does not change where it lands.
+
+## 4. What a credential cannot do
+
+A credential can never hold these organization permissions, whatever an admin tries to grant. They
+are escalation guards in the permission catalog:
+
+<ul>
+  {ORG_API_NEVER.map((key) => (
+    <li><code>{key}</code></li>
+  ))}
+</ul>
+
+Beyond that, managing organizations, users, quotas, certificates, labels, the archive, the audit
+trail, credentials, webhooks and workspaces are **UI operations** done by an org admin. They are not
+in the public contract, so there is no endpoint to call. The signing ceremony (`/api/v1/sign/**`) is
+public by design and scoped to one signer by the token in its link; a machine has no business there.
+
+Two kinds of denial, and they look different on purpose:
+
+| You asked for | Answer |
+|---|---|
+| An operation your credential lacks the organization permission for | `403`, no body |
+| An envelope or workspace you cannot see, or one that does not exist | `404`, indistinguishable from "does not exist" |
+
+## 5. Failure modes, and what each one means
+
+| Status | Meaning | Usual cause | What to do |
+|---|---|---|---|
+| `401` | No token, expired token, or a token the realm will not validate | Missing `Authorization` header; token older than <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> | Request a new token; check the `Bearer ` prefix |
+| `403` on a workflow endpoint | Authenticated, but not permitted at organization scope | Calling a management operation that is UI only | Check the operation exists in the [API reference](/sign/api/) |
+| `403` on `GET /api/v1/envelopes` specifically | The token carries `org_api` but **no `bb_sign_org_id`** | A credential not created from **Settings** | Revoke it and create one from **Settings**, tab **API credentials** |
+| `404` on an envelope or workspace | The credential holds no role in that workspace, or the id is wrong | A workspace the credential was never granted | Ask an admin to add the credential under **Members**, or use General |
+
+That third row is worth its own line. It **fails closed**: a claim-less token is denied, not served
+every tenant's data.
+
+## 6. Token lifetime and revocation
+
+- A token lives <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> and is never introspected.
+- **Revoke** stops new tokens immediately. The confirmation warns that requests using a token the
+  credential already obtained may keep succeeding until that token expires: "revoking does not cut
+  access that is already in flight." The credential is listed as **Revoked — draining** until the
+  last token it issued expires, then as **Revoked**, and stays listed for
+  <Fact of={AUTH.revokedCredentialListedDays} unit="days" />. If you are responding to a leak, treat
+  the credential as live until the draining time has passed.
+- **Rotate** replaces the secret with no grace period: "The current secret stops working
+  immediately. Any integration using it will fail until you redeploy it with the new secret."
+- An organization can hold at most <Fact of={AUTH.maxCredentialsPerOrg} /> active credentials.
+
+## 7. Creating a credential
+
+Only an org admin can, and only from the UI:
+
+<Steps>
+1. Open **Settings**, tab **API credentials**, and choose **New credential**.
+2. Give it a label that says what will use it, and under **Access** choose the workspace and the role.
+3. Copy the **Client ID** and the **Client secret**. The secret is shown once: it is stored only in
+   Keycloak and bb-sign keeps no copy.
+4. Hand both values to the system that will use them, through its secret store, never through source
+   control or chat.
+</Steps>
+
+The admin's side is documented in [API credentials](/en/sign/admin/api-credentials/).

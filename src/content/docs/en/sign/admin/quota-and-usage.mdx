@@ -1,0 +1,74 @@
+---
+title: Quota and usage
+description: "How to read the quota and usage panel, which limits and periods exist, what happens at the limit and why only a platform admin changes the quota."
+product: sign
+audience: admin
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { QUOTA } from '../../../../facts/sign';
+
+**Who:** organization admin (platform admins configure it). **Where:** the "Quota & Usage" panel on
+the organization's page (Organizations, `/organizations/id`).
+
+Every organization has a quota: how many envelopes it can create per period, how much storage it can
+use, how many users and how many signers per envelope. Today the organization page, where the panel
+lives, can only be opened by platform admins; an organization admin learns about their quota from
+the app's messages or by asking Binary Bridges support.
+
+## Read the usage panel
+
+The "Quota & Usage" panel shows:
+
+- The plan status: "Active", "Suspended" or "Expired".
+- "Period: Monthly", "Yearly" or "Custom" and, when it has an end, "Expires: date".
+- The "Envelopes" bar with "used / maximum" and the "Storage" bar with the space used. A bar changes
+  color when it reaches the warning threshold, by default
+  <Fact of={QUOTA.warningThresholdPct} unit="%" />, and turns red at the limit.
+- "Period: start - end" of the current usage period.
+- "Max Users" and "Max Signers/Envelope". "Unlimited" means no cap.
+
+If you see "No quota configured for this organization" or "No active usage period", the organization
+cannot create envelopes until a platform admin configures it.
+
+## Limits and period
+
+| "Quota Configuration" field | What it limits |
+| --- | --- |
+| "Period Type" | "Monthly", "Yearly" or "Custom". When the period ends, the envelope counter resets to zero. |
+| "Warning Threshold (%)" | From which percentage the bar warns. |
+| "Max Envelopes (-1 = unlimited)" | Envelopes created in the period. |
+| "Max Users (-1 = unlimited)" | Accounts in the organization. |
+| "Max Storage (bytes, -1 = unlimited)" | Bytes of stored documents. |
+| "Max Signers/Envelope (-1 = unlimited)" | Signers in one envelope. |
+| "Expires At" | Date on which the plan stops being active. |
+
+## What happens at the limit
+
+The API answers <Fact of={QUOTA.httpStatusWhenExhausted} /> and the app shows a message that says
+which limit was reached:
+
+| Message | What to do |
+| --- | --- |
+| "Your organization has reached its envelope limit for this period" | Wait for the next period or ask for a higher limit. |
+| "This envelope has more signers than your plan allows" | Reduce the signers or ask for a higher limit. |
+| "Your organization has run out of document storage" | Ask for a higher limit. Deleting envelopes is not available. |
+| "Your organization has reached its user limit" | Ask for a higher limit before inviting anyone else. |
+| "Your organization's plan is suspended" or "has expired" | Nobody can create envelopes. Contact Binary Bridges. |
+
+Envelopes already sent run their course: signers sign and documents are sealed even when the quota
+is exhausted.
+
+## Who changes the quota
+
+Only a platform admin can "Set Quota", "Update Quota", "Renew Period", "Suspend" or "Activate" a
+plan. An organization admin cannot change any limit. There are no self-service plans or billing
+inside bb-sign: limits are agreed with Binary Bridges.
+
+<Aside type="note" title="Ask for the change early">
+  If the envelope bar approaches the warning threshold, ask for the increase before the limit blocks
+  your users.
+</Aside>
+
+<LinkCard title="Quotas" href="/en/sign/concepts/quotas/" description="The quota and period model, explained for everyone." />

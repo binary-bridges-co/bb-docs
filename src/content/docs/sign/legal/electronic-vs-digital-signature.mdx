@@ -1,0 +1,126 @@
+---
+title: "Firma electrónica y firma digital"
+description: Qué dice la Ley 527 de 1999 sobre la firma y la firma digital, qué regula el Decreto 2364 de 2012, qué es bb-sign y qué no afirma ser.
+product: sign
+audience: legal
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+En Colombia, *firma electrónica* y *firma digital* son dos figuras distintas con efectos distintos.
+bb-sign ofrece la primera. Esta página reúne los textos legales que importan, dice con precisión qué
+es bb-sign y qué no es, y deja claro quién decide si el mecanismo sirve para un documento concreto.
+
+<Aside type="caution" title="Pendiente de revisión jurídica">
+  Este texto describe el mecanismo de bb-sign y cita la norma aplicable. No es una opinión jurídica y
+  no ha sido revisado por un abogado. Cada cliente, por medio de su oficina jurídica, decide si el
+  mecanismo es apropiado para los documentos que envía a firma.
+</Aside>
+
+## Lo que dice la Ley 527 de 1999
+
+### Artículo 7: la firma
+
+> **Artículo 7. Firma.** Cuando cualquier norma exija la presencia de una firma o establezca ciertas
+> consecuencias en ausencia de la misma, en relación con un mensaje de datos, se entenderá
+> satisfecho dicho requerimiento si:
+>
+> a) Se ha utilizado un método que permita identificar al iniciador de un mensaje de datos y para
+> indicar que el contenido cuenta con su aprobación;
+>
+> b) Que el método sea tanto confiable como apropiado para el propósito por el cual el mensaje fue
+> generado o comunicado.
+>
+> Lo dispuesto en este artículo se aplicará tanto si el requisito establecido en cualquier norma
+> constituye una obligación, como si las normas simplemente prevén consecuencias en el caso de que
+> no exista una firma.
+
+Dos condiciones: el método identifica a quien firma y muestra su aprobación, y es confiable y
+apropiado para el propósito. La ley no exige una tecnología concreta.
+
+### Artículo 28: la firma digital
+
+> **Artículo 28. Atributos jurídicos de una firma digital.** Cuando una firma digital haya sido fijada
+> en un mensaje de datos se presume que el suscriptor de aquella tenía la intención de acreditar ese
+> mensaje de datos y de ser vinculado con el contenido del mismo.
+>
+> **Parágrafo.** El uso de una firma digital tendrá la misma fuerza y efectos que el uso de una firma
+> manuscrita, si aquélla incorpora los siguientes atributos:
+>
+> 1. Es única a la persona que la usa.
+> 2. Es susceptible de ser verificada.
+> 3. Está bajo el control exclusivo de la persona que la usa.
+> 4. Está ligada a la información o mensaje, de tal manera que si éstos son cambiados, la firma
+>    digital es invalidada.
+> 5. Está conforme a las reglamentaciones adoptadas por el Gobierno Nacional.
+
+La firma digital es un caso particular: un valor criptográfico ligado a un certificado emitido a la
+persona que firma por una Entidad de Certificación Digital. Su ventaja es la **presunción** del
+artículo 28: se presume la intención del suscriptor sin necesidad de probarla.
+
+### Decreto 2364 de 2012: la firma electrónica
+
+El Decreto 2364 de 2012, compilado en el Decreto 1074 de 2015, reglamenta el artículo 7 de la Ley
+527 y define la firma electrónica como un método (códigos, contraseñas, datos biométricos, claves
+criptográficas privadas u otros) que permite identificar a una persona en relación con un mensaje de
+datos, siempre que sea confiable y apropiado para los fines con los que se usa, atendidas todas las
+circunstancias del caso y cualquier acuerdo entre las partes. El decreto considera confiable la
+firma cuando los datos de creación corresponden exclusivamente al firmante y cualquier alteración
+posterior del mensaje es detectable. La firma electrónica tiene el valor de una firma manuscrita,
+pero sin la presunción del artículo 28: quien la invoca debe poder probar el método.
+
+## Qué es bb-sign
+
+bb-sign es un mecanismo de **firma electrónica**. El método, tal como queda registrado en la
+evidencia de cada sobre, es:
+
+- Un **enlace personal** enviado al correo del firmante. Solo quien controla ese correo puede abrirlo.
+- Opcionalmente, un **código de un solo uso** enviado al mismo correo, que el firmante debe escribir
+  antes de firmar. La organización decide, sobre por sobre, si lo exige.
+- Una **marca dibujada o escrita** por el firmante, que queda estampada en el documento junto a su
+  nombre, su correo y la fecha.
+- La **vinculación por hash**: cada firma queda ligada a la huella SHA-256 de los documentos que el
+  firmante vio. Cualquier alteración posterior es detectable.
+- Una **cadena de auditoría** con fecha y hora, dirección IP y navegador de cada acción.
+
+Esto satisface, por diseño, las dos condiciones del artículo 7: identifica al firmante y muestra su
+aprobación con un método que la organización puede explicar y probar. Ver
+[Firma electrónica y sello](/sign/concepts/signature-and-seal/) y
+[Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+
+## Qué no es bb-sign
+
+- **No es firma digital** en los términos del artículo 28. Los firmantes no usan un certificado
+  personal emitido a su nombre y no hay presunción legal sobre su intención. Si tu documento exige
+  firma digital, bb-sign no es el mecanismo.
+- **No es firma cualificada** de ningún ordenamiento. No existe el concepto de firmante con
+  certificado cualificado en bb-sign.
+
+## Lo que bb-sign no afirma
+
+Para evitar confusiones con la documentación de otros proveedores:
+
+- No afirma cumplimiento con **eIDAS** (Unión Europea) ni con ninguno de sus niveles (simple,
+  avanzada, cualificada).
+- No afirma cumplimiento con **ESIGN** ni **UETA** (Estados Unidos).
+- No afirma una certificación **ISO 27001**.
+- No ofrece **firmas cualificadas** ni certificados personales a los firmantes.
+- No incorpora sellos de tiempo de una autoridad externa (TSA), PAdES ni validación a largo plazo
+  (LTV).
+
+## El sello de la organización no es la firma del firmante
+
+Al completarse un sobre, bb-sign estampa en cada documento un **sello** con el certificado de la
+organización. Ese sello prueba dos cosas: que el documento no cambió después de sellarse y qué
+organización lo selló. No dice nada sobre la identidad de cada firmante; eso lo prueba la evidencia
+de la firma electrónica descrita arriba. Mientras la organización no configure un certificado propio,
+el sello usa un certificado de pruebas de Binary Bridges que los validadores muestran como no
+confiable. Ver [Certificado propio](/sign/admin/own-certificate/).
+
+## La decisión es de cada cliente
+
+La ley pide que el método sea "confiable y apropiado para el propósito". Qué es apropiado depende del
+documento, del riesgo y de las partes. Por eso los [Términos y condiciones](/sign/legal/terms/) lo
+dicen en su cláusula 1.2: cada cliente, por medio de su oficina jurídica, decide si el mecanismo es
+apropiado para los documentos que envía a firma. Esta documentación da los hechos para esa decisión;
+no la toma.

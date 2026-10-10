@@ -1,0 +1,2341 @@
+{
+  "components": {
+    "schemas": {
+      "AddSignerRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "signOrder": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "email",
+          "name"
+        ],
+        "type": "object"
+      },
+      "CreateEnvelopeRequest": {
+        "properties": {
+          "documentIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "linkTtlHours": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "orgId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "otpRequired": {
+            "type": "boolean"
+          },
+          "sequentialSigning": {
+            "type": "boolean"
+          },
+          "signers": {
+            "items": {
+              "$ref": "#/components/schemas/CreateSignerSpec"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          },
+          "workspaceId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "type": "object"
+      },
+      "CreateSignerSpec": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "signOrder": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "email",
+          "name"
+        ],
+        "type": "object"
+      },
+      "DocumentInfo": {
+        "properties": {
+          "downloadUrl": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "downloadUrl",
+          "filename",
+          "id"
+        ],
+        "type": "object"
+      },
+      "DocumentResponse": {
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contentType",
+          "filename",
+          "id"
+        ],
+        "type": "object"
+      },
+      "DocumentWithUrlsResponse": {
+        "properties": {
+          "downloadUrl": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "signedUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "id"
+        ],
+        "type": "object"
+      },
+      "EnvelopeResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "documentCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          },
+          "orgId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "otpRequired": {
+            "type": "boolean"
+          },
+          "sequentialSigning": {
+            "type": "boolean"
+          },
+          "signers": {
+            "items": {
+              "$ref": "#/components/schemas/SignerResponse"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "workspaceId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "workspaceName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "documentCount",
+          "id",
+          "labels",
+          "orgId",
+          "otpRequired",
+          "sequentialSigning",
+          "signers",
+          "status",
+          "title"
+        ],
+        "type": "object"
+      },
+      "EnvelopeStatsResponse": {
+        "properties": {
+          "cancelled": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "completed": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "draft": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "expired": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "inProgress": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "sent": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cancelled",
+          "completed",
+          "draft",
+          "expired",
+          "inProgress",
+          "sent",
+          "total"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "quota": {
+            "$ref": "#/components/schemas/QuotaViolation"
+          },
+          "status": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "error",
+          "message",
+          "path",
+          "status",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "OtpRequestResponse": {
+        "properties": {
+          "challengeId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "codeUnusable": {
+            "type": "boolean"
+          },
+          "expiresInSeconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "resendAvailableInSeconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "resent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "codeUnusable",
+          "expiresInSeconds",
+          "message",
+          "resendAvailableInSeconds",
+          "resent"
+        ],
+        "type": "object"
+      },
+      "PagedEnvelopeResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/EnvelopeResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalCapped": {
+            "type": "boolean"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content",
+          "page",
+          "size",
+          "totalCapped",
+          "totalElements",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "QuotaViolation": {
+        "properties": {
+          "current": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "dimension": {
+            "type": "string"
+          },
+          "limit": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "current",
+          "dimension",
+          "limit"
+        ],
+        "type": "object"
+      },
+      "SendResponse": {
+        "properties": {
+          "envelopeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "signerTokens": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "envelopeId",
+          "signerTokens"
+        ],
+        "type": "object"
+      },
+      "SignRequest": {
+        "properties": {
+          "challengeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "otpCode": {
+            "type": "string"
+          },
+          "signatureImage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "signatureImage"
+        ],
+        "type": "object"
+      },
+      "SignResponse": {
+        "properties": {
+          "completed": {
+            "type": "boolean"
+          },
+          "envelopeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "signedDocumentUrls": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "completed",
+          "envelopeId",
+          "message",
+          "signedDocumentUrls"
+        ],
+        "type": "object"
+      },
+      "SignedCopyResponse": {
+        "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/SignedDocumentInfo"
+            },
+            "type": "array"
+          },
+          "envelopeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "envelopeTitle": {
+            "type": "string"
+          },
+          "signedDocumentsReady": {
+            "type": "boolean"
+          },
+          "signerName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "archived",
+          "documents",
+          "envelopeId",
+          "envelopeTitle",
+          "signedDocumentsReady",
+          "signerName"
+        ],
+        "type": "object"
+      },
+      "SignedDocumentInfo": {
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "signedDownloadUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "id",
+          "signedDownloadUrl"
+        ],
+        "type": "object"
+      },
+      "SignerResponse": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "signOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "signedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "id",
+          "name",
+          "signOrder",
+          "status"
+        ],
+        "type": "object"
+      },
+      "SigningAccessResponse": {
+        "properties": {
+          "alreadySigned": {
+            "type": "boolean"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentInfo"
+            },
+            "type": "array"
+          },
+          "envelopeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "envelopeTitle": {
+            "type": "string"
+          },
+          "requiresOtp": {
+            "type": "boolean"
+          },
+          "signerEmail": {
+            "type": "string"
+          },
+          "signerName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "alreadySigned",
+          "documents",
+          "envelopeId",
+          "envelopeTitle",
+          "requiresOtp",
+          "signerEmail",
+          "signerName"
+        ],
+        "type": "object"
+      },
+      "UploadedDocumentResponse": {
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "contentType",
+          "createdAt",
+          "filename",
+          "id"
+        ],
+        "type": "object"
+      },
+      "VerifyOtpRequest": {
+        "properties": {
+          "challengeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "challengeId",
+          "code"
+        ],
+        "type": "object"
+      },
+      "VerifyOtpResponse": {
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "verified"
+        ],
+        "type": "object"
+      },
+      "VerifyResponse": {
+        "properties": {
+          "envelopeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "signedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "signerEmail": {
+            "type": "string"
+          },
+          "signerName": {
+            "type": "string"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message",
+          "valid"
+        ],
+        "type": "object"
+      },
+      "ViewClosedRequest": {
+        "properties": {
+          "durationMs": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "WebhookEvent": {
+        "description": "The body of a webhook delivery. Signed per RFC-style HMAC; see docs/api/webhook-signature-spec.md.",
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WebhookEventData"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "type": {
+            "description": "One of exactly six values. Asserted against DispatchableEvent.PUBLIC_NAMES.",
+            "enum": [
+              "envelope.cancelled",
+              "envelope.completed",
+              "envelope.expired",
+              "envelope.sent",
+              "signer.signed",
+              "signer.viewed"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "createdAt",
+          "data",
+          "id",
+          "type"
+        ],
+        "type": "object"
+      },
+      "WebhookEventData": {
+        "description": "Per-type payload. `envelope` is always present; `signer` only for signer.* events.",
+        "properties": {
+          "envelope": {
+            "$ref": "#/components/schemas/WebhookEventEnvelope"
+          },
+          "signer": {
+            "$ref": "#/components/schemas/WebhookEventSigner"
+          }
+        },
+        "required": [
+          "envelope"
+        ],
+        "type": "object"
+      },
+      "WebhookEventEnvelope": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "status",
+          "title"
+        ],
+        "type": "object"
+      },
+      "WebhookEventSigner": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "signOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "signedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "id",
+          "name",
+          "signOrder",
+          "status"
+        ],
+        "type": "object"
+      },
+      "WorkspaceSummary": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "groupsReady": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isGeneral": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "orgId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "groupsReady",
+          "id",
+          "isGeneral",
+          "name",
+          "orgId"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "clientCredentials": {
+        "description": "Client-credentials grant. The `bb_sign_org_id` claim is projected onto the token by an `oidc-usermodel-attribute-mapper` on the service-account user, so a machine identity is scoped exactly as a human one is.",
+        "flows": {
+          "clientCredentials": {
+            "scopes": {},
+            "tokenUrl": "http://localhost:8180/realms/bbsign/protocol/openid-connect/token"
+          }
+        },
+        "type": "oauth2"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "support@binarybridges.co",
+      "name": "Binary Bridges"
+    },
+    "description": "The endpoints a customer organisation can call directly, plus the public signing\nand verification endpoints a signer's browser uses.\n\nOrganisation-scoped operations authenticate with an OAuth2 client-credentials\ntoken carrying the `org_api` role. Credentials are issued self-service from the\nsettings panel; the token's `bb_sign_org_id` claim scopes every request, and\nthere is no request shape that names a different organisation.\n\nThe signing ceremony and verification endpoints are deliberately unauthenticated\n— a signer is a member of the public holding a link — and are marked with an\nempty `security` array.",
+    "title": "BB-Sign API",
+    "version": "2026-08-09"
+  },
+  "openapi": "3.0.1",
+  "paths": {
+    "/api/v1/documents": {
+      "post": {
+        "description": "Multipart. Uploads to organisation storage without attaching to an envelope; counts against the organisation's storage quota.",
+        "operationId": "uploadDocument",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "orgId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadedDocumentResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "summary": "Upload a document",
+        "tags": [
+          "document-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes": {
+      "get": {
+        "description": "Paginated, newest first, scoped to the calling organisation by the token's `bb_sign_org_id` claim. There is no request shape that names a different organisation. Only envelopes in workspaces the caller can read are listed; `workspaceId` narrows to one of them (an unreadable one yields an empty page). `totalElements` is capped at 10,000, with `totalCapped` set when the real count is larger.",
+        "operationId": "listEnvelopes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "labels",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fromDate",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "toDate",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "title",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspaceId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedEnvelopeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          }
+        },
+        "summary": "List envelopes",
+        "tags": [
+          "envelope-controller"
+        ]
+      },
+      "post": {
+        "description": "Creates a draft envelope with its signers. An envelope cannot be created without at least one signer. The envelope is not sent until `sendEnvelope`. It is filed in `workspaceId` (see `listWorkspaces`), or in the organisation's General workspace when omitted; the caller needs `envelope:create` there, and a workspace it cannot create in answers 404 `WORKSPACE_NOT_FOUND`.",
+        "operationId": "createEnvelope",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEnvelopeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "summary": "Create an envelope",
+        "tags": [
+          "envelope-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes/stats": {
+      "get": {
+        "description": "Counts for the calling organisation, for a dashboard tile, over the workspaces the caller can read (`workspaceId` narrows to one). Cheap: one grouped count, not a list.",
+        "operationId": "getEnvelopeStats",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspaceId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeStatsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          }
+        },
+        "summary": "Envelope counts by status",
+        "tags": [
+          "envelope-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}": {
+      "get": {
+        "description": "Returns the envelope with its signers and their current statuses.",
+        "operationId": "getEnvelope",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "summary": "Fetch one envelope",
+        "tags": [
+          "envelope-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}/cancel": {
+      "post": {
+        "description": "Invalidates every outstanding signing link and fires `envelope.cancelled`. Cannot be undone; a cancelled envelope cannot be re-sent.",
+        "operationId": "cancelEnvelope",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "summary": "Cancel a sent envelope",
+        "tags": [
+          "envelope-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}/documents": {
+      "get": {
+        "description": "Includes short-lived download URLs. Treat the URLs as secrets: they grant access to the document without a token. URLs are null unless the caller holds `document:download` in the envelope's workspace.",
+        "operationId": "listEnvelopeDocuments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentWithUrlsResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "summary": "List an envelope's documents",
+        "tags": [
+          "envelope-controller"
+        ]
+      },
+      "post": {
+        "description": "Multipart. Only valid while the envelope is a draft — documents cannot change after it is sent, or the signature would not cover what the signer saw.",
+        "operationId": "uploadEnvelopeDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "summary": "Attach a document to an envelope",
+        "tags": [
+          "envelope-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}/send": {
+      "post": {
+        "description": "Transitions the envelope to SENT, emails each signer their link, and returns the signing tokens. **This is the point of no return**: documents and signers are frozen, and the `envelope.sent` webhook fires.",
+        "operationId": "sendEnvelope",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "summary": "Send an envelope for signature",
+        "tags": [
+          "envelope-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}/signers": {
+      "post": {
+        "description": "Only valid while the envelope is a draft.",
+        "operationId": "addSigner",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSignerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignerResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "summary": "Add a signer to a draft envelope",
+        "tags": [
+          "envelope-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}": {
+      "get": {
+        "description": "The signer's entry point. Returns the envelope, its documents and whether an OTP is required. Unauthenticated — the token in the path IS the credential.",
+        "operationId": "getSigningAccess",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SigningAccessResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "security": [],
+        "summary": "Open a signing link",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}/request-otp": {
+      "post": {
+        "description": "Only for envelopes configured with `otpRequired`. Inside the resend cooldown this returns the challenge already delivered rather than issuing a new one, so a signer who reloads keeps the code they were sent.",
+        "operationId": "requestSigningOtp",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpRequestResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "security": [],
+        "summary": "Request a one-time code",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}/sign": {
+      "post": {
+        "description": "Applies the signature and fires `signer.signed`. When the last signer signs, the envelope completes and `envelope.completed` fires.",
+        "operationId": "submitSignature",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "security": [],
+        "summary": "Sign the documents",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}/signed-documents": {
+      "get": {
+        "description": "The signer's own copy of the completed documents. Requires that this link was used to sign and that the envelope is complete — the inverse of the signing gates. Returns `signedDocumentsReady=false` while the signed PDF is still being generated. Unauthenticated — the token in the path IS the credential.",
+        "operationId": "getSignedCopy",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedCopyResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "security": [],
+        "summary": "Download your signed copy",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}/verify-otp": {
+      "post": {
+        "description": "Exchanges the code for permission to sign. Fires `signer.viewed` on first successful access.",
+        "operationId": "verifySigningOtp",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyOtpResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "security": [],
+        "summary": "Verify a one-time code",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}/view-closed": {
+      "post": {
+        "description": "Completes the open/close pair in the audit trail.",
+        "operationId": "recordDocumentClosed",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewClosedRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "security": [],
+        "summary": "Record that a document was closed",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}/view-opened": {
+      "post": {
+        "description": "Telemetry for the audit trail — a signer must open each document before signing is enabled. Idempotent within a short dedup window.",
+        "operationId": "recordDocumentOpened",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "security": [],
+        "summary": "Record that a document was opened",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/verify": {
+      "get": {
+        "description": "Public. Checks a signed PDF's CMS/PKCS#7 signature and returns who signed it and when. Requires no credentials — a verifiable artefact that needed a token to verify would not be verifiable.",
+        "operationId": "verifyDocument",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "h",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          }
+        },
+        "security": [],
+        "summary": "Verify a signed document",
+        "tags": [
+          "verify-controller"
+        ]
+      }
+    },
+    "/api/v1/workspaces": {
+      "get": {
+        "description": "Admins: every workspace in the organisation. Members and API keys: General plus the workspaces they hold a role in. Pass an `id` as `workspaceId` when creating an envelope.",
+        "operationId": "listWorkspaces",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          }
+        },
+        "summary": "List the workspaces you can reach",
+        "tags": [
+          "workspace-controller"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "clientCredentials": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://sign-api.binarybridges.co",
+      "description": "Production"
+    }
+  ]
+}

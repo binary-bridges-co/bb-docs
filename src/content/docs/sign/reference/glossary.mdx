@@ -1,0 +1,79 @@
+---
+title: "Glosario"
+description: Los términos de bb-sign y de la firma electrónica en Colombia, con su equivalente en inglés y la página donde se explica cada uno.
+product: sign
+audience: all
+---
+
+Cada término aparece con su nombre en español, el nombre en inglés que usa la API y, cuando aplica,
+la etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo explica a fondo.
+
+## El modelo
+
+- **Organización (organization).** El cliente de bb-sign. Agrupa usuarios, espacios, sobres, el
+  certificado de sello, las credenciales de API y los webhooks. Una organización nunca ve los datos
+  de otra. Ver [Organizaciones, espacios y roles](/sign/concepts/organizations-workspaces-roles/).
+- **Espacio de trabajo (workspace).** Una partición dentro de la organización donde viven los sobres.
+  Cada persona o credencial tiene un rol por espacio. En la aplicación: "Espacio de trabajo".
+- **General.** El espacio que toda organización tiene desde el inicio. Todo miembro de la
+  organización participa en él como colaborador; ese rol no se puede quitar ni asignar.
+- **Rol (role).** Lo que alguien puede hacer. Hay roles de organización (administrador, miembro,
+  credencial de API) y roles de espacio (visor, auditor, colaborador, gestor). Ver
+  [Matriz de permisos](/sign/admin/permissions/).
+- **Sobre (envelope).** La unidad de trabajo: uno o más documentos PDF, uno o más firmantes y las
+  opciones de envío (orden, código de un solo uso, validez del enlace, vencimiento). Ver
+  [Sobres y firmantes](/sign/concepts/envelopes-and-signers/).
+- **Firmante (signer).** Una persona que debe firmar un sobre. Se identifica por su correo; no
+  necesita cuenta en bb-sign.
+- **Orden de firma (sign order).** El turno de cada firmante cuando el sobre usa firma secuencial.
+  Los firmantes del mismo turno firman en paralelo.
+- **Etiqueta (label).** Un par clave y valor que la organización define y asigna a sus sobres para
+  filtrarlos. Ver [Etiquetas](/sign/concepts/labels/).
+- **Archivados (archived).** La vista a la que pasan los sobres completados, cancelados o vencidos
+  después de un plazo desde su creación. Es una vista de la base de datos, no la política de
+  conservación. Ver [Sobres archivados](/sign/sending/archived-envelopes/).
+
+## Firma, sello y evidencia
+
+- **Firma electrónica.** El mecanismo legal de bb-sign (Decreto 2364 de 2012): un método que
+  identifica al firmante y muestra su aprobación, confiable y apropiado para el propósito. Ver
+  [Firma electrónica y firma digital](/sign/legal/electronic-vs-digital-signature/).
+- **Firma digital.** Una figura distinta de la Ley 527 de 1999 (artículo 28), ligada a un certificado
+  personal del firmante y con presunción legal. bb-sign **no** la ofrece.
+- **Firma (signature).** En bb-sign, la marca que el firmante dibuja o escribe, estampada en el
+  documento con su nombre, su correo y la fecha. Ver [Firma electrónica y sello](/sign/concepts/signature-and-seal/).
+- **Sello (seal).** La firma criptográfica que bb-sign pone en cada documento al completarse el
+  sobre, con el certificado de la organización. Prueba integridad y quién selló, no la identidad del
+  firmante. Ver [Certificado propio](/sign/admin/own-certificate/).
+- **Código de un solo uso (OTP, one-time password).** El código numérico que el firmante recibe por
+  correo y escribe antes de firmar, cuando la organización lo exige en el sobre. Ver
+  [Revisar y verificar identidad](/sign/signing/review-and-identity/).
+- **Cadena de auditoría (audit trail).** La lista encadenada por hash de todo lo que pasó con un
+  sobre: quién, qué, cuándo, desde dónde. Ver [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+- **Verificación (verify).** La comprobación pública, por código QR, de que un sello corresponde al
+  certificado activo de la organización. Ver [Verificar un documento firmado](/sign/signing/verify-a-document/).
+
+## Integración
+
+- **Credencial de API (API credential).** Un identificador y un secreto con los que un sistema llama a
+  la API en nombre de la organización. El secreto se muestra una sola vez. Ver
+  [Credenciales de API](/sign/admin/api-credentials/).
+- **Webhook.** Una URL HTTPS tuya a la que bb-sign envía un aviso firmado cuando ocurre un evento
+  (sobre enviado, completado, cancelado, vencido; firmante vio o firmó). Ver
+  [Webhooks](/sign/developers/webhooks/).
+- **Entrega (delivery).** Cada intento de bb-sign de avisar a un webhook sobre un evento. Ver
+  [Estados](/sign/reference/statuses/).
+
+## Certificados y entidades
+
+- **ECD (Entidad de Certificación Digital).** Una entidad acreditada en Colombia para emitir
+  certificados digitales. A una ECD se le compra el certificado de sello de la organización.
+- **ONAC (Organismo Nacional de Acreditación de Colombia).** El organismo que acredita a las ECD.
+  Su directorio dice qué entidades están acreditadas hoy.
+- **AATL (Adobe Approved Trust List).** La lista de emisores en los que Adobe Acrobat confía por
+  defecto. Fuera de Colombia, el certificado de sello se compra a uno de sus miembros.
+- **PKCS#12 (.p12, .pfx).** El formato de archivo que empaqueta un certificado, su cadena y la llave
+  privada protegida con contraseña. Es el formato que bb-sign necesita para sellar.
+- **Cadena de certificación (certificate chain).** El certificado de la organización, los
+  certificados intermedios y la raíz que lo respaldan. Hoy el sello de bb-sign incluye solo el
+  primero.

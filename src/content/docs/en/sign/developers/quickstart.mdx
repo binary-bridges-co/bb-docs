@@ -1,0 +1,252 @@
+---
+title: Quickstart
+description: Your first envelope, a 201 from POST /api/v1/envelopes, with a credential from Settings, in curl, JavaScript or Java, and what to check if it fails.
+product: sign
+audience: developer
+source: docs/api/quickstart.md
+---
+
+import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { URLS, AUTH, SDK } from '../../../../facts/sign';
+
+**Goal: a `201` from `POST /api/v1/envelopes`, in under 30 minutes, without asking anyone.**
+
+That is not a figure of speech. This page is measured: a developer who has never seen this API is
+timed following it, and if they have to ask a question, this page has a defect. If something below
+is unclear, that is worth telling us. It is the only feedback that improves it.
+
+You need: a bb-sign account with the **org admin** role (or someone who has one), and
+Java <Fact of={SDK.java.minJava} /> or newer, or Node <Fact of={SDK.js.minNode} /> or newer.
+
+## 1. Get a credential (5 minutes)
+
+An API credential lets a system call bb-sign on your organization's behalf. It is scoped to your
+organization and can see nothing outside it.
+
+1. Sign in to bb-sign and open **Settings**, tab **API credentials**.
+2. **New credential**. Give it a label describing what will use it: "Billing system", not "test".
+3. Under **Access**, leave the default workspace and role unless you know you need another one.
+   The form says it: "General with Manager is the default."
+4. Copy the **Client ID** and the **Client secret**.
+
+<Aside type="caution" title="The secret is shown once">
+  It is stored only in Keycloak; bb-sign keeps no copy and cannot show it again. If you lose it you
+  must **Rotate**, and rotation has no grace period: "The current secret stops working immediately.
+  Any integration using it will fail until you redeploy it with the new secret."
+</Aside>
+
+If you do not see **Settings** in the sidebar, you do not have the org admin role. Ask whoever
+administers your bb-sign organization to create the credential and send you the two values.
+
+You also need two URLs. In production they are:
+
+| | Value |
+|---|---|
+| API base URL | <Fact of={URLS.api} /> |
+| Token URL | <Fact of={URLS.tokenUrl} /> |
+
+Set them as environment variables, not in source:
+
+```bash
+export BBSIGN_BASE_URL="https://sign-api.binarybridges.co"
+export BBSIGN_TOKEN_URL="https://auth.binarybridges.co/realms/bbsign/protocol/openid-connect/token"
+export BBSIGN_CLIENT_ID="..."
+export BBSIGN_CLIENT_SECRET="..."
+```
+
+## 2. Check the credential works (2 minutes)
+
+Before writing any code, confirm the credential can get a token:
+
+```bash
+curl -s -X POST "$BBSIGN_TOKEN_URL" \
+  -d grant_type=client_credentials \
+  -d client_id="$BBSIGN_CLIENT_ID" \
+  -d client_secret="$BBSIGN_CLIENT_SECRET"
+```
+
+You should get JSON containing `access_token`. If you get `invalid_client`, the id or secret is
+wrong: re-copy them, or rotate and try again.
+
+**This is worth doing first.** Every later failure is easier to diagnose once you know the
+credential itself is good.
+
+## 3. Install an SDK (5 minutes)
+
+You do not have to use an SDK. The API is plain HTTP and the [reference](/sign/api/) documents it.
+But the SDKs handle token refresh, retries and webhook signature verification, which is most of what
+you would otherwise write yourself.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    Nothing to install. The examples use `curl` and `jq`.
+  </TabItem>
+  <TabItem label="JavaScript">
+    You will be given a tarball:
+
+    ```bash
+    npm install ./binarybridges-bb-sign-sdk-0.1.0.tgz
+    ```
+
+    Node <Fact of={SDK.js.minNode} /> or newer, and the package is **ESM only**: use `import`, not
+    `require`. Details in [JavaScript SDK](/en/sign/sdks/javascript/).
+  </TabItem>
+  <TabItem label="Java">
+    You will be given four files. Install the jar into your local Maven repository:
+
+    ```bash
+    shasum -a 256 -c bb-sign-sdk-java-0.1.0-SNAPSHOT.jar.sha256
+
+    mvn install:install-file \
+      -Dfile=bb-sign-sdk-java-0.1.0-SNAPSHOT.jar \
+      -DpomFile=bb-sign-sdk-java-0.1.0-SNAPSHOT.pom
+    ```
+
+    **`-DpomFile` is required.** Without it Maven writes a pom with no dependencies; the install
+    succeeds, your build succeeds, and your first API call fails at runtime with
+    `NoClassDefFoundError`.
+
+    ```xml
+    <dependency>
+      <groupId>co.binarybridges.sign</groupId>
+      <artifactId>bb-sign-sdk-java</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    ```
+
+    Details in [Java SDK](/en/sign/sdks/java/).
+  </TabItem>
+</Tabs>
+
+## 4. Create an envelope (5 minutes)
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```bash
+    TOKEN=$(curl -s -X POST "$BBSIGN_TOKEN_URL" \
+      -d grant_type=client_credentials \
+      -d client_id="$BBSIGN_CLIENT_ID" \
+      -d client_secret="$BBSIGN_CLIENT_SECRET" | jq -r .access_token)
+
+    curl -s -X POST "$BBSIGN_BASE_URL/api/v1/envelopes" \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "title": "My first envelope",
+        "otpRequired": false,
+        "expiresAt": "2026-12-01T00:00:00Z",
+        "signers": [{"email": "someone@example.com", "name": "Someone", "signOrder": 1}]
+      }'
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    import { createClient } from '@binarybridges/bb-sign-sdk'
+
+    const client = createClient({
+      baseUrl: process.env.BBSIGN_BASE_URL,
+      tokenUrl: process.env.BBSIGN_TOKEN_URL,
+      clientId: process.env.BBSIGN_CLIENT_ID,
+      clientSecret: process.env.BBSIGN_CLIENT_SECRET,
+    })
+
+    const envelope = await client.envelopes.createEnvelope({
+      createEnvelopeRequest: {
+        title: 'My first envelope',
+        otpRequired: false,
+        expiresAt: new Date(Date.now() + 72 * 3600 * 1000),
+        signers: [{ email: 'someone@example.com', name: 'Someone', signOrder: 1 }],
+      },
+    })
+
+    console.log('Created', envelope.id)
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    import co.binarybridges.sign.sdk.BbSignClient;
+    import co.binarybridges.sign.sdk.generated.model.*;
+    import java.time.OffsetDateTime;
+    import java.util.List;
+
+    try (BbSignClient client = BbSignClient.builder()
+            .baseUrl(System.getenv("BBSIGN_BASE_URL"))
+            .tokenUrl(System.getenv("BBSIGN_TOKEN_URL"))
+            .clientCredentials(System.getenv("BBSIGN_CLIENT_ID"), System.getenv("BBSIGN_CLIENT_SECRET"))
+            .build()) {
+
+        EnvelopeResponse envelope = client.execute(client.envelopes().createEnvelope(
+                new CreateEnvelopeRequest()
+                        .title("My first envelope")
+                        .otpRequired(false)
+                        .expiresAt(OffsetDateTime.now().plusHours(72))
+                        .signers(List.of(new CreateSignerSpec()
+                                .email("someone@example.com")
+                                .name("Someone")
+                                .signOrder(1)))));
+
+        System.out.println("Created " + envelope.getId());
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+**That `201` is the finish line.** An envelope now exists in `DRAFT`.
+
+### Choosing a workspace
+
+Every envelope lives in a **workspace**, and a credential reaches only the workspaces it was
+granted. A new credential is **Manager** in your organization's **General** workspace unless your
+admin chose otherwise. Without `workspaceId` the envelope is filed in General. To file it elsewhere,
+list the workspaces your credential can reach and pass one's `id`:
+
+```bash
+curl -s "$BBSIGN_BASE_URL/api/v1/workspaces" -H "Authorization: Bearer $TOKEN"
+# [{"id":"6f1c...","name":"General","isGeneral":true}, {"id":"a2d9...","name":"HR","isGeneral":false}]
+
+curl -s -X POST "$BBSIGN_BASE_URL/api/v1/envelopes" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"title": "Offer letter", "workspaceId": "a2d9...", "signers": [{"email": "someone@example.com", "name": "Someone"}]}'
+```
+
+A workspace your credential cannot create in answers `404 WORKSPACE_NOT_FOUND`, the same answer as
+one that does not exist. Envelopes in workspaces you cannot reach answer `404 NOT_FOUND` and never
+appear in lists.
+
+## 5. What comes next
+
+An envelope in `DRAFT` has not been sent to anyone. To actually get it signed:
+
+1. **Attach a document**: `POST /api/v1/envelopes/{id}/documents` (multipart), or upload first with
+   `POST /api/v1/documents` and pass the ids as `documentIds` when you create the envelope.
+2. **Send it**: `POST /api/v1/envelopes/{id}/send`. This emails each signer a link and returns
+   their signing tokens. It is the point of no return: documents and signers are frozen.
+3. **Find out what happened**: set up a [webhook](/en/sign/developers/webhooks/) rather than
+   polling.
+
+[From credential to signed document](/en/sign/developers/envelope-walkthrough/) shows every one
+of those calls in the three languages.
+
+## If something went wrong
+
+| What you saw | What it means | What to do |
+|---|---|---|
+| `invalid_client` from the token URL | Wrong client id or secret | Re-copy them; rotate if unsure |
+| `401` from the API | The token was rejected or has expired (a token lives <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />) | If you built the request by hand, check the `Bearer ` prefix; request a new token |
+| `403` | The credential is valid but the operation is not one a credential may call | Confirm you are calling an operation in the [API reference](/sign/api/); management is done in the UI, not the API |
+| `404 WORKSPACE_NOT_FOUND` | The credential has no role that allows creating in that workspace, or the workspace does not exist | Omit `workspaceId`, or ask your admin to grant the credential a role in that workspace from **Settings**, tab **Workspaces** |
+| `400` with no detail | Usually a malformed body | Compare against the example above field by field; `expiresAt` must be ISO-8601 |
+| `NoClassDefFoundError` at runtime (Java) | `-DpomFile` was omitted during install | Reinstall with it |
+| `ERR_REQUIRE_ESM` (JavaScript) | The package is ESM only | Use `import` |
+
+Nothing here mentions your problem? **Tell us what you were doing.** A question that this page cannot
+answer is a defect in this page, and that is exactly what we want to hear about.
+
+## Reference
+
+- **[API reference](/sign/api/)**: every endpoint, generated from the contract.
+- **[Webhooks](/en/sign/developers/webhooks/)**: receiving events, and verifying they came from us.
+- **[Migrating from Adobe Acrobat Sign](/en/sign/developers/migrating-from-adobe/)**: concept mapping.
+- <a href={URLS.api.value + URLS.openapiPath.value}><code>openapi.json</code></a>: the machine-readable
+  contract, if you would rather generate your own client.

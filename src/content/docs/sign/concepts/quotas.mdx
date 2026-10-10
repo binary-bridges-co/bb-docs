@@ -1,0 +1,113 @@
+---
+title: Cuotas
+description: Qué limita la cuota de una organización, cómo funcionan los periodos, cuándo avisa bb-sign, qué pasa al agotarse y quién puede cambiarla.
+product: sign
+audience: admin
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { QUOTA } from '../../../facts/sign';
+
+export const periodLabels = { MONTHLY: 'Mensual', YEARLY: 'Anual', CUSTOM: 'Personalizado' };
+export const periodMeaning = {
+  MONTHLY: 'El contador de sobres vuelve a cero cada mes.',
+  YEARLY: 'El contador de sobres vuelve a cero cada año.',
+  CUSTOM: 'El periodo dura hasta la fecha que fija el administrador de plataforma en "Expira el".',
+};
+
+Una **cuota** fija cuánto puede usar una organización de bb-sign: cuántos sobres crea por periodo,
+cuántos usuarios tiene, cuánto almacenamiento ocupa y cuántos firmantes admite cada sobre. La fija
+Binary Bridges según el acuerdo con cada cliente; un administrador de organización la consulta pero
+no la cambia. Esta página explica qué mide, cómo avisa y qué ocurre al agotarse.
+
+## Qué limita
+
+| Límite | Qué cuenta | Dónde se ve |
+| --- | --- | --- |
+| Sobres | Sobres creados en el periodo en curso. | "Sobres" en el panel "Cuota y uso". |
+| Usuarios | Usuarios de la organización. | "Máx. usuarios". |
+| Almacenamiento | Bytes de los documentos adjuntos a sobres. | "Almacenamiento". |
+| Firmantes por sobre | Firmantes que puede llevar un sobre. | "Máx. firmantes por sobre". |
+
+Cada límite puede ser **ilimitado**, y así nace toda organización nueva: la aplicación muestra
+"Ilimitado" en los cuatro. Si no hay cuota configurada, el panel lo dice: "No hay cuota configurada
+para esta organización."
+
+## Periodos
+
+El límite de sobres se cuenta por periodo. Los demás límites (usuarios, almacenamiento, firmantes
+por sobre) son totales y no se reinician. Hay tres tipos de periodo:
+
+<table>
+  <thead>
+    <tr>
+      <th scope="col">Tipo</th>
+      <th scope="col">Nombre en la aplicación</th>
+      <th scope="col">Qué significa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {QUOTA.periodTypes.value.map((p) => (
+      <tr>
+        <td><code>{p}</code></td>
+        <td>{periodLabels[p]}</td>
+        <td>{periodMeaning[p]}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+El panel "Cuota y uso" muestra el periodo en curso y, si la tiene, su fecha de fin. Un periodo
+personalizado que llega a su fecha deja a la organización sin periodo activo hasta que Binary Bridges
+lo renueve: la aplicación dice "No hay un periodo de uso activo." y, al intentar crear o enviar un
+sobre, "Tu organización no tiene un plan activo para este periodo. Contacta con tu administrador."
+
+## El aviso
+
+Cuando el uso de un límite alcanza el <Fact of={QUOTA.warningThresholdPct} unit="%" /> del máximo,
+bb-sign emite un aviso de cuota. El umbral lo fija Binary Bridges por organización ("Umbral de aviso
+(%)"); el valor anterior es el que tiene toda organización nueva. Si tu organización recibe el aviso
+con frecuencia a mitad de periodo, es el momento de pedir una ampliación, no cuando el límite ya
+está agotado.
+
+## Cuando se agota
+
+Al superar un límite, la acción falla con el estado HTTP
+<Fact of={QUOTA.httpStatusWhenExhausted} /> y la aplicación explica cuál fue el límite y qué hacer:
+
+| Límite agotado | Mensaje |
+| --- | --- |
+| Sobres | "Tu organización ha alcanzado su límite de sobres de este periodo. Pide a tu administrador que amplíe el límite." |
+| Firmantes por sobre | "Este sobre tiene más firmantes de los que permite tu plan." |
+| Almacenamiento | "Tu organización se ha quedado sin almacenamiento de documentos. Pide a tu administrador que amplíe el límite." |
+| Usuarios | "Tu organización ha alcanzado su límite de usuarios." |
+
+Un administrador de organización no puede ampliar el límite por su cuenta; "tu administrador" en
+esos mensajes termina siendo Binary Bridges. Si ves uno de ellos y eres administrador, contacta con
+tu responsable de cuenta.
+
+Si Binary Bridges **suspende** el plan, toda creación y envío de sobres se detiene con "El plan de
+tu organización está suspendido. Contacta con tu administrador." Los sobres existentes siguen
+visibles.
+
+<Aside type="caution" title="Los sobres cuentan al crearse y no se devuelven">
+  Un sobre consume cuota en el momento en que se crea, aunque nunca se envíe. Cancelarlo o dejar
+  que venza **no devuelve** ese sobre al contador, y borrar un documento no devuelve su
+  almacenamiento. Si tu organización crea muchos borradores de prueba, cuentan igual que los sobres
+  reales.
+</Aside>
+
+El almacenamiento se descuenta cuando el sobre se crea con sus documentos, no al subirlos al
+asistente: los documentos sin asignar no consumen cuota (ver
+[Documentos](/sign/concepts/documents/)).
+
+## Quién fija la cuota
+
+Solo el **administrador de plataforma** (Binary Bridges) ve el panel "Configuración de la cuota" y
+sus acciones: "Establecer cuota", "Actualizar cuota", "Renovar periodo", "Suspender" y "Activar".
+
+Un **administrador de organización** ve el panel "Cuota y uso" con el uso actual de cada límite y el
+periodo en curso, y nada más. Cómo leerlo está en [Cuota y uso](/sign/admin/quota-and-usage/). Los
+miembros de la organización no ven la cuota; solo reciben los mensajes anteriores cuando un límite
+se agota.

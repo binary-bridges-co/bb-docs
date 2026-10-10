@@ -1,0 +1,70 @@
+---
+title: Permissions matrix
+description: "What each organization and workspace role allows, the five guards an API credential never crosses, and why some denials are 403 and others 404."
+product: sign
+audience: admin
+source: edge-api/src/main/kotlin/co/binarybridges/sign/edge/domain/security/PermissionCatalog.kt
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import RolesMatrix from '../../../../../components/facts/RolesMatrix.astro';
+
+**Who:** organization admin (platform admins too). **Where:** not a screen; the catalog the app and
+the API enforce on every request.
+
+A permission is something the product does: `envelope:send` is sending an envelope. Roles are
+bundles of permissions. There are two levels: organization roles, which decide what can be
+administered, and workspace roles, which decide what can be done with the envelopes of a workspace.
+
+## Organization roles
+
+| Role | Who | What it decides |
+| --- | --- | --- |
+| `platform_admin` | Binary Bridges staff | Everything an `org_admin` can do, in any organization, plus creating organizations, quotas and appearance. |
+| `org_admin` | Your organization's admins | Manage users, workspaces, labels, credentials, webhooks and audit. Access to every workspace with no membership (`workspace:access-all`). |
+| `org_member` | Your organization's users | List workspaces and label keys. Everything else comes from their workspace roles, including the implicit Contributor in General. |
+| `org_api` | API credentials | The same as a member, with the workspace roles you grant. It never administers. |
+
+## The two tables
+
+<RolesMatrix locale="en" />
+
+In the first table, "Never" marks a permission an API credential cannot receive even if an admin
+wants it to: these are the escalation guards. In the second, Contributor is the implicit role in
+General and is not granted; in other workspaces you grant Viewer, Auditor or Manager from
+[Workspaces and members](/en/sign/admin/workspaces-and-members/).
+
+## The five escalation guards
+
+An API credential is a secret that can leak. If that secret could administer, a leak would not be
+closed by revoking the credential: the attacker would already have created others or moved the
+access wherever they wanted. That is why `org_api` never receives these five permissions, and the
+service checks at startup that the identity server respects it.
+
+1. **Create credentials** (`credential:manage`). A credential that creates credentials is permanent,
+   self-renewing access; revoking the original does not close it.
+2. **Manage webhooks** (`webhook:manage`). A credential that redirects its own event stream could
+   point every event of every envelope at someone else's server, and nothing about the credential
+   would look wrong.
+3. **Create, rename and delete workspaces** (`workspace:manage`). Whoever reshapes the containers
+   that decide access can move themselves out of every boundary.
+4. **Grant and revoke workspace roles** (`workspace:manage-members`). A credential that grants
+   memberships can grant them to itself: the same ladder in another shape.
+5. **Access to every workspace** (`workspace:access-all`). It is what makes an admin independent of
+   memberships; on a machine it would skip every workspace at once.
+
+A credential that needs more reach gets it like a person does: by being added as a member of more
+workspaces. See [API credentials](/en/sign/admin/api-credentials/).
+
+## 403 and 404
+
+<Aside type="note" title="Two different answers to two different questions">
+  An **organization** denial (creating a credential without being an admin, opening Users as a
+  member) answers **403**: it exists, but you may not. A denial about an **envelope or a workspace**
+  you cannot see answers **404**, as if it did not exist, so the answer does not confirm that it
+  does.
+</Aside>
+
+In the app, a 403 shows as "Access Denied" or "You don't have permission to do this"; a 404 as
+"Envelope not found." or "That workspace no longer exists, or you can't use it". If a user tells you
+an envelope "does not exist", first check whether they are a member of its workspace.

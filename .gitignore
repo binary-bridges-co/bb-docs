@@ -1,0 +1,25 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# environment
+.env
+.env.production
+
+# OS and editors
+.DS_Store
+*.pem
+
+# tests
+coverage/
+playwright-report/
+test-results/
+
+# sync scratch (the script writes to a temp dir and renames atomically)
+src/content/sync/**/*.tmp
+
+# agent worktrees (see CLAUDE.md)
+.claude/worktrees/

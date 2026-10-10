@@ -1,0 +1,117 @@
+---
+title: Organizaciones, espacios y roles
+description: Cómo se organiza una cuenta de bb-sign. La organización, el espacio General, los roles de espacio y de organización, y qué puede hacer cada uno.
+product: sign
+audience: all
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import RolesMatrix from '../../../../components/facts/RolesMatrix.astro';
+import { AUTH } from '../../../facts/sign';
+
+Todo en bb-sign pertenece a una **organización**. Dentro de ella, los sobres viven en **espacios de
+trabajo**, y lo que cada persona o credencial puede hacer con un sobre depende de su **rol en ese
+espacio**. Lo que puede hacer con la organización misma (invitar usuarios, crear claves de etiqueta,
+configurar el certificado) depende de su **rol de organización**. Esta página explica las dos capas y
+cómo se combinan.
+
+## La organización
+
+Una organización es el límite de todo: sus usuarios, sus espacios, sus sobres, sus documentos, sus
+claves de etiqueta, sus credenciales de API, sus webhooks y su certificado. Nada de una organización
+es visible desde otra. Un usuario pertenece a una sola organización, y una credencial de API actúa
+siempre en nombre de la organización que la creó.
+
+Las organizaciones las crea Binary Bridges (el *administrador de plataforma*).
+
+## Los espacios de trabajo
+
+Un espacio de trabajo es un contenedor de sobres dentro de la organización. Separa áreas (Recursos
+Humanos, Compras, Jurídica) y decide quién ve qué: una persona solo ve los sobres de los espacios a
+los que tiene acceso.
+
+Toda organización tiene un espacio llamado **General**, creado con ella. La aplicación lo muestra
+como "General (todos)" porque todos los miembros de la organización pueden trabajar en él sin que
+nadie les dé acceso. General no se puede renombrar ni eliminar; la aplicación lo dice así: "El espacio
+de trabajo General no se puede renombrar ni eliminar."
+
+Los administradores crean los demás espacios y deciden quién entra en cada uno. Un espacio solo se
+puede eliminar cuando no tiene sobres, incluidos los archivados. Los detalles operativos están en
+[Espacios y miembros](/sign/admin/workspaces-and-members/).
+
+## Roles de espacio
+
+En cada espacio, una persona o una credencial de API tiene uno de cuatro roles. La aplicación los
+llama **Lector**, **Auditor**, **Colaborador** y **Gestor**; la API y las tablas de esta documentación
+usan `viewer`, `auditor`, `contributor` y `manager`. Cada rol incluye todo lo que puede hacer el
+anterior:
+
+| Rol | Qué añade |
+| --- | --- |
+| `viewer` (Lector) | Ver la lista y el detalle de los sobres, incluidos los archivados. No descarga documentos. |
+| `auditor` (Auditor) | Descargar documentos y leer el registro de auditoría de cada sobre. |
+| `contributor` (Colaborador) | Crear sobres, editarlos antes de enviarlos, subir documentos, asignar etiquetas y enviar. |
+| `manager` (Gestor) | Cancelar sobres. |
+
+<RolesMatrix locale="es" show="workspace" />
+
+**Colaborador es implícito en General.** Todo miembro de la organización es Colaborador en el espacio
+General, siempre. Ese rol no se concede ni se retira; si un administrador intenta asignarlo, la
+aplicación responde "Ese rol no se puede asignar. Elige Lector, Auditor o Gestor." En los demás
+espacios, un miembro no tiene ningún rol hasta que un administrador le concede uno.
+
+## Roles de organización
+
+El rol de organización decide qué partes de la aplicación ve una persona y qué puede hacer fuera de
+los sobres:
+
+| Rol | Nombre en la aplicación | Qué puede hacer |
+| --- | --- | --- |
+| `org_member` | Miembro de Organización | Trabajar con sobres según sus roles de espacio. Ve el Panel, los Sobres y los Archivados. No ve Usuarios, Etiquetas, Almacenamiento ni Configuración. |
+| `org_admin` | Administrador de Organización | Todo lo anterior en **todos** los espacios, sin pertenecer a ninguno, más invitar usuarios, crear espacios y conceder roles, definir claves de etiqueta, administrar credenciales de API y webhooks, subir el certificado y leer la auditoría de la organización. |
+| `org_api` | Credencial de API | Una máquina. Solo lista espacios y claves de etiqueta; lo que puede hacer con los sobres lo deciden sus roles de espacio. Nunca puede administrar credenciales, webhooks, espacios ni miembros. |
+| `platform_admin` | Administrador de Plataforma | Binary Bridges. Crea organizaciones, fija cuotas y la apariencia del sello. |
+
+Un administrador ve todos los espacios de la organización sin ser miembro de ninguno. Si alguien
+intenta añadirlo a un espacio, la aplicación lo rechaza: "Los administradores ya ven todos los
+espacios de trabajo." La matriz completa de permisos, con lo que una credencial de API nunca puede
+tener, está en [Matriz de permisos](/sign/admin/permissions/).
+
+## Lo que un miembro no puede hacer
+
+Un Miembro de Organización con el rol de Colaborador crea, edita, envía y descarga. Hay dos cosas
+que no hace:
+
+- **Cancelar un sobre.** El botón "Cancelar Sobre" solo funciona para un Gestor del espacio o un
+  administrador. Si necesitas cancelar y no puedes, pide a tu administrador que lo haga o que te
+  conceda el rol de Gestor en ese espacio. Ver [Cancelar un sobre](/sign/sending/cancel/).
+- **Administrar la organización.** Usuarios, claves de etiqueta, espacios, credenciales, webhooks y
+  certificado son tareas de administrador.
+
+## La regla "404, no 403"
+
+bb-sign distingue dos formas de decir que no:
+
+- Si intentas una acción de organización que tu rol no tiene (por ejemplo, crear una clave de
+  etiqueta siendo miembro), la respuesta es `403` y la aplicación dice "No tienes permiso para hacer
+  esto."
+- Si intentas abrir un sobre o un espacio al que **no tienes acceso**, la respuesta es `404`, igual
+  que si no existiera. La aplicación dice "Sobre no encontrado, o no tienes acceso a él." o "Ese
+  espacio de trabajo ya no existe o no puedes usarlo." Esos sobres tampoco aparecen en las listas ni
+  en los contadores.
+
+<Aside type="note" title="Un 404 no te dice si el sobre existe">
+  Un sobre al que no tienes acceso y un sobre que no existe responden exactamente igual. Es
+  deliberado: así nadie puede descubrir qué hay en un espacio ajeno probando identificadores. Si
+  alguien te comparte un enlace y ves "Sobre no encontrado", lo más probable es que te falte acceso a
+  su espacio. Pide ese acceso a un administrador; no busques el error en el enlace.
+</Aside>
+
+## Límite de membresías
+
+Una persona o una credencial de API puede pertenecer como máximo a
+<Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> espacios de trabajo. Al intentar conceder
+una más, la aplicación responde "Esta persona o clave de API ya pertenece al número máximo de
+espacios de trabajo". Los administradores no cuentan: ven todos los espacios sin pertenecer a
+ninguno.

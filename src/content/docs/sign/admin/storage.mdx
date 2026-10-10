@@ -1,0 +1,66 @@
+---
+title: Almacenamiento
+description: "Qué muestra la página Almacenamiento, de dónde salen sus números, qué hace hoy el almacenamiento de producción y quién puede cambiar la configuración."
+product: sign
+audience: admin
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
+
+**Quién:** administrador de la organización, en solo lectura (los administradores de plataforma
+también pueden cambiarla). **Dónde:** Almacenamiento (`/storage/lifecycle`) en el menú lateral.
+
+La página «Ciclo de vida del almacenamiento» muestra las reglas con las que la aplicación trata los
+archivos guardados: cuándo pasan a niveles de almacenamiento más baratos y cuándo expiran. Lo que
+ves es configuración del servicio, igual para todas las organizaciones.
+
+## Qué muestra la página
+
+En «Configuración» hay tres valores:
+
+| Campo | Qué es |
+| --- | --- |
+| «Transición a Standard-IA» «(solo AWS S3)» | Días tras los cuales un archivo pasa a un nivel de acceso poco frecuente. Se lee igual. |
+| «Transición a Glacier» «(solo AWS S3)» | Días tras los cuales un archivo pasa a almacenamiento en frío. Recuperarlo ya no es inmediato. |
+| «Expiración de objetos» | Días tras los cuales la regla borra el archivo. |
+
+En «Reglas de los buckets» aparece cada bucket «gestionado» con sus reglas y, si una tiene
+expiración, «expira tras N d». El bucket de certificados aparece como «excluido»: «Sin reglas de
+ciclo de vida — los certificados no expiran».
+
+## De dónde salen esos números
+
+Los valores de «Configuración» son los valores por defecto del ciclo de vida de la aplicación, con
+una expiración de <Fact of={RETENTION_IMPLEMENTED.nonProdLifecycleDefaultDays} unit="días" />. Se
+aplican en los entornos que no son producción. En producción, el almacenamiento lo gobierna la
+infraestructura, no esta página.
+
+## Qué hace producción hoy
+
+| Qué | Hoy en producción |
+| --- | --- |
+| Paso a Standard-IA | A los <Fact of={RETENTION_IMPLEMENTED.documentsStandardIaDays} unit="días" /> |
+| Paso a Glacier (almacenamiento en frío) | A los <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="días" /> |
+| Regla de expiración | Ninguna. Hoy ningún proceso borra documentos firmados. |
+
+Esto describe lo que la infraestructura hace en este momento, no lo que el servicio promete. La
+promesa está en los términos: conservación fija de
+<Fact of={RETENTION_POLICY.retentionDays} unit="días" /> y, después, la conservación es
+responsabilidad de tu organización.
+
+<Aside type="caution" title="No confundas la página con la política">
+  Que hoy no exista una regla de expiración no significa que los documentos se conserven para
+  siempre. El plazo que cuenta es el de los términos del servicio. Guarda tus copias a tiempo; la
+  forma recomendada está en [Alcance y conservación](/sign/legal/retention/).
+</Aside>
+
+## Quién puede cambiarla
+
+Un administrador de organización ve la página en solo lectura. Solo un administrador de plataforma
+ve el campo editable de «Expiración de objetos» y el botón «Aplicar». Los pasos a Standard-IA y a
+Glacier no se editan desde la aplicación. No existe una configuración por organización: la
+conservación no es negociable.
+
+<LinkCard title="Alcance y conservación" href="/sign/legal/retention/" description="Los términos vinculantes de la conservación, qué está implementado hoy y qué debe hacer tu organización." />

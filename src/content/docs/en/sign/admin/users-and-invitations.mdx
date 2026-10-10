@@ -1,0 +1,83 @@
+---
+title: Users and invitations
+description: "How to invite a person to your organization, which roles you may give them, how long the invitation link lasts, how to resend it and what each role sees."
+product: sign
+audience: admin
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { AUTH, URLS } from '../../../../facts/sign';
+
+**Who:** organization admin (platform admins too). **Where:** Users (`/users`) in the sidebar.
+
+Every person who uses bb-sign has an account in your organization. You create it; the person
+receives an email, sets a password and signs in. There is no self-registration.
+
+## Invite a person
+
+<Steps>
+
+1. Press "New User". The "Create User" form opens.
+
+2. Enter "Username", "Email" and, if you want, "First Name" and "Last Name". The email is the
+   person's identity: the invitation goes there and they sign in with it.
+
+3. Choose the "Role". The "Organization" field already holds yours and cannot be changed.
+
+4. Press "Create User". You see "User created successfully", and the form reminds you that "User
+   will receive an email to set their password".
+
+</Steps>
+
+If the account was created but the email did not go out, you see "User created, but the set-up
+email could not be sent. Use "Resend invitation" to try again". The account exists; do not create it
+again.
+
+## Roles you may assign
+
+| Role in the list | What they can do |
+| --- | --- |
+| "Org Member" (`org_member`) | Create, edit and send envelopes, upload documents and set labels in the workspaces where they are Contributor or above. In General they always are. They cannot cancel envelopes. |
+| "Org Admin" (`org_admin`) | Everything in this section: users, workspaces, labels, credentials, webhooks, certificate. They see every envelope in every workspace. |
+
+You can never create a "Platform Admin": that option appears only in a platform admin's list. Nor
+can you invite someone into another organization: the "Organization" field is fixed to yours. Each
+permission is detailed in the [Permissions matrix](/en/sign/admin/permissions/).
+
+## The invitation email and its link
+
+The identity server sends the invitation from <code>{URLS.identitySenderAddress.value}</code>, with a
+link to set the password. The link is valid for <Fact of={AUTH.invitationLinkHours} unit="hours" />.
+After that the link stops working and the invitation must be resent; the account still exists.
+
+## Resend an invitation
+
+Every row in the list has a "Resend invitation" button. Pressing it sends the person a new email
+with a new link. You see "Invitation email sent" or, if it failed, "Could not send the invitation
+email": wait a moment and try again.
+
+Use it when the link expired, when the email got lost or when the person cannot find it.
+
+## Active and disabled
+
+Every row shows "Active" or "Disabled". A disabled account cannot sign in. Today the app has no
+switch to disable or re-enable someone; ask Binary Bridges support.
+
+## What a member sees and what an admin sees
+
+| Sidebar entry | Member | Organization admin | Platform admin |
+| --- | --- | --- | --- |
+| Dashboard, Envelopes, Archived, New Envelope | Yes | Yes | Yes |
+| Labels, Users, Storage, Settings | No | Yes | Yes |
+| Organizations | No | No | Yes |
+
+A member who opens an admin address sees "Access Denied" and "Your role does not have permission to
+view this page". What a member can do with an envelope depends on their role in the envelope's
+workspace; see [Workspaces and members](/en/sign/admin/workspaces-and-members/).
+
+<Aside type="note" title="User limit">
+  If your quota has a maximum number of users and you reached it, creating one shows "Your
+  organization has reached its user limit". Ask the platform admin to raise it; see
+  [Quota and usage](/en/sign/admin/quota-and-usage/).
+</Aside>

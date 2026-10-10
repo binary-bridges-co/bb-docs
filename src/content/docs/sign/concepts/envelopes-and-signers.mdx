@@ -1,0 +1,101 @@
+---
+title: Sobres y firmantes
+description: Qué es un sobre, por qué estados pasa, cómo cambia el estado de cada firmante, firma secuencial o en paralelo, validez del enlace, vencimiento y cancelación.
+product: sign
+audience: all
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import StatusFlow from '../../../../components/facts/StatusFlow.astro';
+import { ENVELOPE } from '../../../facts/sign';
+
+Un **sobre** es la unidad de trabajo de bb-sign: uno o más documentos PDF, una lista de firmantes y
+las reglas del envío (si se exige código de verificación, cuánto dura el enlace, si hay fecha de
+vencimiento, si se firma en orden). El sobre nace como borrador, se envía, los firmantes firman y el
+sobre se completa. Esta página describe ese recorrido y los dos atajos que lo interrumpen: la
+cancelación y el vencimiento.
+
+## Estados del sobre
+
+<StatusFlow locale="es" of="envelope" />
+
+La aplicación muestra estos estados como Borrador, Enviado, En Progreso, Completado, Cancelado y
+Expirado, y permite filtrar la lista de sobres por cualquiera de ellos. Tres cosas que conviene
+saber:
+
+- `IN_PROGRESS` solo existe con más de un firmante: aparece con la primera firma y dura hasta la
+  última. Con un único firmante, el sobre pasa de `SENT` a `COMPLETED` directamente.
+- `COMPLETED`, `CANCELLED` y `EXPIRED` son finales. Un sobre no vuelve atrás ni se reenvía.
+- Al completarse, bb-sign sella cada documento con el certificado de la organización. Hasta que
+  termina, el detalle muestra "Procesando el PDF firmado...". Ver
+  [Firma electrónica y sello](/sign/concepts/signature-and-seal/).
+
+## Estados del firmante
+
+<StatusFlow locale="es" of="signer" />
+
+Cada firmante avanza por su cuenta. En el detalle del sobre, la lista "Firmantes" muestra el estado
+de cada uno (Pendiente, Notificado, Visto, Firmado) y su "Orden n.º". Un firmante no puede
+rechazar la firma: ese estado no existe hoy. Si alguien no va a firmar, el remitente cancela el sobre
+o deja que venza.
+
+## Secuencial o en paralelo
+
+Al crear el sobre se elige una de dos modalidades, y el detalle del sobre la muestra como "Firma
+secuencial" o "Firma en paralelo":
+
+| Modalidad | Qué pasa al enviar | Orden |
+| --- | --- | --- |
+| En paralelo | "Todos reciben el correo a la vez y pueden firmar en cualquier orden." | Los números de orden se muestran pero no se aplican. |
+| Secuencial | "Los firmantes reciben el correo de uno en uno, en el orden que definas en el paso de firmantes." | Cada firmante recibe su enlace solo cuando han firmado todos los anteriores. |
+
+En la modalidad secuencial, varios firmantes pueden compartir el mismo número de orden: forman un
+grupo y reciben el correo a la vez. Cuando el grupo termina, el siguiente recibe el correo "It's your
+turn to sign". Ver [Firmantes y orden](/sign/sending/signers-and-order/).
+
+## Validez del enlace de firma
+
+Cada firmante recibe un enlace único por correo. El enlace vale el número de horas que el remitente
+fijó en "Caducidad del enlace (horas)" al crear el sobre; por defecto,
+<Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />. El plazo se cuenta desde que el enlace se
+genera: al enviar el sobre o, en la firma secuencial, cuando le llega el turno al firmante.
+
+Un enlace caducado no se puede reenviar hoy. El sobre no cambia de estado por ello: sigue en
+`SENT` o `IN_PROGRESS` hasta que se complete, se cancele o venza.
+
+## Vencimiento opcional
+
+El remitente puede fijar una fecha en "Expira el (opcional)"; la aplicación aclara "Déjalo vacío para
+que no expire." Si hay fecha, un proceso la revisa cada
+<Fact of={ENVELOPE.expirySweepMinutes} unit="minutos" /> y marca como `EXPIRED` los sobres en `SENT`
+o `IN_PROGRESS` cuya fecha ya pasó. Los firmantes que aún no habían firmado reciben el correo
+"Signing request expired". Un borrador nunca vence: solo cuenta a partir del envío.
+
+## Cancelar
+
+Un Gestor del espacio o un administrador puede cancelar un sobre en `DRAFT`, `SENT` o
+`IN_PROGRESS` con el botón "Cancelar Sobre". La aplicación pide confirmación: "¿Seguro que quieres
+cancelar este sobre? Esta acción no se puede deshacer y todas las firmas pendientes quedarán
+invalidadas."
+
+Al cancelar, todos los enlaces de firma pendientes dejan de funcionar y el sobre queda en
+`CANCELLED` para siempre. bb-sign **no envía** un correo de cancelación a los firmantes; si alguno
+abre su enlace, verá que ya no está disponible. Avísales tú si hace falta. Ver
+[Cancelar un sobre](/sign/sending/cancel/).
+
+## Enviar es el punto de no retorno
+
+Para enviar, el sobre debe estar en `DRAFT`, tener al menos un firmante y al menos un documento. Al
+confirmar, la aplicación lo advierte: "Se generarán enlaces de firma únicos para cada firmante y se
+enviará el sobre. Esta acción no se puede deshacer."
+
+<Aside type="caution" title="Después de enviar no se cambia nada">
+  Al enviar, los documentos y la lista de firmantes quedan congelados. No se puede añadir ni quitar
+  un documento, ni corregir el correo de un firmante, ni cambiar la modalidad. Si algo estaba mal, lo
+  único que puedes hacer es cancelar el sobre y crear otro. Revisa el resumen antes de pulsar "Enviar
+  sobre".
+</Aside>
+
+Lo que sí sigue vivo después del envío son las etiquetas, que se pueden cambiar en cualquier estado.
+Ver [Etiquetas](/sign/concepts/labels/).

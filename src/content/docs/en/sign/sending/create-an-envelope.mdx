@@ -1,0 +1,97 @@
+---
+title: Create an envelope
+description: Every field of the Details step explained, with what it does and its default. Title, message, workspace, labels, OTP, link expiry, expiration date and signing order.
+product: sign
+audience: user
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE, LABELS, OTP } from '../../../../facts/sign';
+
+The first step of the "Create Envelope" wizard, "Envelope Details", decides how the envelope will
+behave for its whole life: where it is kept, who sees it, how each signer is identified and until
+when it can be signed. This page explains every field in the order it appears. The full walkthrough
+is in [Your first envelope](/en/sign/getting-started/first-envelope/).
+
+## Workspace
+
+The "Workspace" selector lists the workspaces where you can create envelopes. General is selected
+by default; the application shows it as "General (everyone)". The help text sums it up: "Only
+people with access to this workspace will see the envelope."
+
+Choose the workspace first: it decides who will be able to view, download and cancel the envelope.
+An envelope does not move to another workspace after it is created. See
+[Organizations, workspaces and roles](/en/sign/concepts/organizations-workspaces-roles/).
+
+## Title
+
+"Title *" is required and is the name the envelope carries everywhere: in the Envelopes list, on
+the detail page and in the subject of the emails to the signer, such as
+`You have a document to sign: {title}`. Use a title the signer will recognize.
+
+## Labels
+
+The "Labels" block only appears if an administrator defined label keys for your organization.
+Choose a key in "Add label...", type the value and press "Add". A value has at most
+<Fact of={LABELS.valueMaxChars} unit="characters" />. Labels are used to filter the Envelopes list
+and can be changed later from the envelope page, even once it is sent. See
+[Labels](/en/sign/concepts/labels/).
+
+## Message to signers
+
+Optional text saved with the envelope. Today that text appears neither in the invitation email nor
+on the signing page: the signer does not see it. If you need to give instructions, do it on your
+own or inside the document itself.
+
+## Require OTP verification for signers
+
+Checked by default. With this box, every signer must prove they control their email before
+signing: bb-sign sends them by <Fact of={OTP.channel} /> a code of
+<Fact of={OTP.digits} unit="digits" /> that is valid for <Fact of={OTP.validitySeconds} unit="s" />,
+allows <Fact of={OTP.maxAttempts} unit="attempts" /> and can be requested again after
+<Fact of={OTP.resendCooldownSeconds} unit="s" />. Once verified, the signer has
+<Fact of={OTP.verifiedValidityMinutes} unit="min" /> to submit their signature.
+
+Without the box, the link in the email is the signer's only identification. Uncheck it only when
+evidence of control of the email does not matter to you. There is no SMS verification and there are
+no access codes.
+
+## Signing order
+
+Two options, each with its explanation on screen:
+
+- "Everyone signs at once": "Everyone is emailed at once and can sign in any order."
+- "Signers sign in order": "Signers are emailed one at a time, in the order you set on the signers
+  step."
+
+With the second, the Signers step shows the "Order" field. What each signer receives and when is in
+[Signers and order](/en/sign/sending/signers-and-order/).
+
+## Link expiry (hours)
+
+How long each signer's signing link is valid, in whole hours. By default,
+<Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" />. The clock starts when the link is generated:
+at send, for every signer in parallel mode; when their turn comes, in sequential mode.
+
+An expired link opens the "Link Unavailable" page. Today a signing link cannot be resent or
+regenerated: if a signer let it expire, [cancel the envelope](/en/sign/sending/cancel/) and create
+a new one. Set a validity that matches how long your signers take.
+
+## Expires at (optional)
+
+A date and time limit for the whole envelope. The help text says: "Leave empty for no expiration."
+If you set it, it must be in the future.
+
+Every <Fact of={ENVELOPE.expirySweepMinutes} unit="min" /> a process checks the envelopes in
+"Sent" or "In Progress" whose date has passed and marks them "Expired". Their signers receive the
+email `Signing request expired: {title}` and their links stop working. An expired envelope does not
+reopen.
+
+<Aside type="note" title="Link expiry and envelope expiration are not the same thing">
+  Link expiry affects each signer separately and does not change the envelope status. Expiration
+  closes the whole envelope. Without an expiration date, an envelope whose links have expired stays
+  "Sent" until you cancel it.
+</Aside>
+
+<LinkCard title="Attach documents" href="/en/sign/sending/documents/" description="The Documents step: format, size and what happens to what you upload without sending." />

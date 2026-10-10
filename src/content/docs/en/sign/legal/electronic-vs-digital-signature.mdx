@@ -1,0 +1,133 @@
+---
+title: "Electronic and digital signature"
+description: What Ley 527 de 1999 says about signatures and digital signatures, what Decreto 2364 de 2012 regulates, what bb-sign is and what it does not claim.
+product: sign
+audience: legal
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+In Colombia, *firma electrónica* (electronic signature) and *firma digital* (digital signature) are
+two distinct legal figures with distinct effects. bb-sign provides the first. This page gathers the
+legal texts that matter, states precisely what bb-sign is and is not, and makes clear who decides
+whether the mechanism suits a given document.
+
+<Aside type="caution" title="Pending legal review">
+  This text describes the bb-sign mechanism and cites the applicable law. It is not legal advice and
+  has not been reviewed by a lawyer. Each customer, through its legal office, decides whether the
+  mechanism is appropriate for the documents it sends for signature.
+</Aside>
+
+## What Ley 527 de 1999 says
+
+The Spanish text is the authoritative one; a short paraphrase follows each quotation.
+
+### Article 7: the signature
+
+> **Artículo 7. Firma.** Cuando cualquier norma exija la presencia de una firma o establezca ciertas
+> consecuencias en ausencia de la misma, en relación con un mensaje de datos, se entenderá
+> satisfecho dicho requerimiento si:
+>
+> a) Se ha utilizado un método que permita identificar al iniciador de un mensaje de datos y para
+> indicar que el contenido cuenta con su aprobación;
+>
+> b) Que el método sea tanto confiable como apropiado para el propósito por el cual el mensaje fue
+> generado o comunicado.
+>
+> Lo dispuesto en este artículo se aplicará tanto si el requisito establecido en cualquier norma
+> constituye una obligación, como si las normas simplemente prevén consecuencias en el caso de que
+> no exista una firma.
+
+Two conditions: the method identifies the originator and shows their approval of the content, and
+it is reliable and appropriate for the purpose. The law does not require a specific technology.
+
+### Article 28: the digital signature
+
+> **Artículo 28. Atributos jurídicos de una firma digital.** Cuando una firma digital haya sido fijada
+> en un mensaje de datos se presume que el suscriptor de aquella tenía la intención de acreditar ese
+> mensaje de datos y de ser vinculado con el contenido del mismo.
+>
+> **Parágrafo.** El uso de una firma digital tendrá la misma fuerza y efectos que el uso de una firma
+> manuscrita, si aquélla incorpora los siguientes atributos:
+>
+> 1. Es única a la persona que la usa.
+> 2. Es susceptible de ser verificada.
+> 3. Está bajo el control exclusivo de la persona que la usa.
+> 4. Está ligada a la información o mensaje, de tal manera que si éstos son cambiados, la firma
+>    digital es invalidada.
+> 5. Está conforme a las reglamentaciones adoptadas por el Gobierno Nacional.
+
+A digital signature is a particular case: a cryptographic value bound to a certificate issued to the
+signing person by a Digital Certification Entity. Its advantage is the **presumption** in article
+28: when it is affixed, the subscriber is presumed to have intended to endorse the message and be
+bound by its content, without that intent having to be proven. The paragraph lists the attributes
+(unique to the person, verifiable, under their exclusive control, bound to the message so that any
+change invalidates it, compliant with government regulation) that give it the force of a handwritten
+signature.
+
+### Decreto 2364 de 2012: the electronic signature
+
+Decreto 2364 de 2012, compiled in Decreto 1074 de 2015, regulates article 7 of Ley 527 and defines
+the electronic signature as a method (codes, passwords, biometric data, private cryptographic keys or
+others) that identifies a person in relation to a data message, provided it is reliable and
+appropriate for the purposes it is used for, considering all the circumstances of the case and any
+agreement between the parties. The decree treats the signature as reliable when the signature
+creation data corresponds exclusively to the signer and any later alteration of the message is
+detectable. An electronic signature has the value of a handwritten one, but without the presumption
+of article 28: whoever relies on it must be able to prove the method.
+
+## What bb-sign is
+
+bb-sign is an **electronic signature** mechanism. The method, as recorded in the evidence of every
+envelope, is:
+
+- A **personal link** sent to the signer's email. Only whoever controls that mailbox can open it.
+- Optionally, a **one-time code** sent to the same email, which the signer must type before signing.
+  The organization decides, envelope by envelope, whether to require it.
+- A **drawn or typed mark** by the signer, stamped into the document next to their name, email and
+  the date.
+- **Hash binding**: every signature is bound to the SHA-256 fingerprint of the documents the signer
+  saw. Any later alteration is detectable.
+- An **audit trail** with date and time, IP address and browser of every action.
+
+By design this meets the two conditions of article 7: it identifies the signer and shows their
+approval with a method the organization can explain and prove. See
+[Electronic signature and seal](/en/sign/concepts/signature-and-seal/) and
+[Evidence and audit](/en/sign/concepts/evidence-and-audit/).
+
+## What bb-sign is not
+
+- **It is not a digital signature** in the terms of article 28. Signers do not use a personal
+  certificate issued in their name and there is no legal presumption about their intent. If your
+  document requires a digital signature, bb-sign is not the mechanism.
+- **It is not a qualified signature** under any jurisdiction. There is no notion of a signer with a
+  qualified certificate in bb-sign.
+
+## What bb-sign does not claim
+
+To avoid confusion with other vendors' documentation:
+
+- It does not claim compliance with **eIDAS** (European Union) or any of its levels (simple,
+  advanced, qualified).
+- It does not claim compliance with **ESIGN** or **UETA** (United States).
+- It does not claim an **ISO 27001** certification.
+- It does not offer **qualified signatures** or personal certificates to signers.
+- It does not embed timestamps from an external authority (TSA), PAdES or long-term validation
+  (LTV).
+
+## The organization's seal is not the signer's signature
+
+When an envelope completes, bb-sign stamps a **seal** on each document with the organization's
+certificate. That seal proves two things: that the document did not change after sealing and which
+organization sealed it. It says nothing about the identity of each signer; that is proven by the
+electronic-signature evidence described above. Until the organization configures a certificate of
+its own, the seal uses a Binary Bridges testing certificate that validators show as untrusted. See
+[Your own certificate](/en/sign/admin/own-certificate/).
+
+## The decision belongs to each customer
+
+The law asks for a method that is "reliable and appropriate for the purpose". What is appropriate
+depends on the document, the risk and the parties. That is why the
+[Terms and conditions](/en/sign/legal/terms/) say so in clause 1.2: each customer, through its legal
+office, decides whether the mechanism is appropriate for the documents it sends for signature. This
+documentation gives the facts for that decision; it does not make it.

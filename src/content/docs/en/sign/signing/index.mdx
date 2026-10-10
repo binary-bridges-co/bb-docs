@@ -1,0 +1,59 @@
+---
+title: The signer's path
+description: You received an email asking you to sign a document and you have no account. The whole process, from the email to the signed copy, on one page.
+product: sign
+audience: signer
+---
+
+import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE, OTP, URLS } from '../../../../facts/sign';
+
+Someone sent you a document to sign with bb-sign. You need no account and no password: everything
+happens in the link that arrives in your email, and it works on a phone. There are six steps and
+most take a couple of minutes.
+
+<Steps>
+
+1. **The email arrives.** The subject is `You have a document to sign: {title}` and it comes from
+   <Fact of={URLS.senderAddress} />. If you cannot find it, check your spam folder.
+
+2. **Open the link.** It is valid for <Fact of={ENVELOPE.linkTtlHoursDefault} unit="hours" /> by
+   default; whoever sent the document may have set a different period. The link is personal: do
+   not forward it. When it opens you see "Signing as" with your name and your email.
+
+3. **Review every document.** Under "Documents to Review", press "View" on each one. The
+   application does not let you continue until you have opened them all; if you try earlier, it
+   says "Open every document before you continue." When you are done, press "I have reviewed the
+   document".
+
+4. **Verify your identity, if asked.** On the "Verify Your Identity" screen you receive by email
+   a code of <Fact of={OTP.digits} unit="digits" />, valid for
+   <Fact of={OTP.validityMinutes} unit="minutes" />. Type it and press "Verify & Continue". If the
+   envelope does not require this step, you go straight to signing.
+
+5. **Sign.** On "Add Your Signature" choose "Draw" (with a finger or the mouse) or "Type" (your
+   full name). Press "Submit Signature". A submitted signature cannot be undone.
+
+6. **Download your copy.** The "Document Signed Successfully!" screen shows the button "Download
+   Your Signed Document" as soon as the copy is ready. If other people must sign too, the copy is
+   prepared once everyone has signed and you receive the email `Signing complete: {title}` with a
+   link to download it.
+
+</Steps>
+
+## If something does not go as described
+
+Every message the application can show you is in
+[If something goes wrong](/en/sign/signing/troubleshooting/), with what happened and what you can
+do. Two things do not exist today: declining to sign (if you do not want to sign, do not sign and
+tell whoever sent it) and asking for a new link (ask whoever sent you the document).
+
+## More detail on each step
+
+<CardGrid>
+  <LinkCard title="The invitation email" href="/en/sign/signing/receiving-the-email/" description="Which subjects you can receive, who sends them and when reminders arrive." />
+  <LinkCard title="Review and verify identity" href="/en/sign/signing/review-and-identity/" description="Opening every document, the verification code and what each message means." />
+  <LinkCard title="Sign and download" href="/en/sign/signing/sign-and-download/" description="Draw or type, what is recorded and until when you can download the copy." />
+  <LinkCard title="Verify a signed document" href="/en/sign/signing/verify-a-document/" description="What the QR code on the seal checks, and what it does not." />
+</CardGrid>

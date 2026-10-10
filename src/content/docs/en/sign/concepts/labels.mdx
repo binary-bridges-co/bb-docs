@@ -1,0 +1,76 @@
+---
+title: Labels
+description: Label keys defined by administrators and per-envelope values assigned by users. Limits, filtering the list and who does what.
+product: sign
+audience: user
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { LABELS } from '../../../../facts/sign';
+
+Labels classify envelopes so you can find them later: the contractor they belong to, the project,
+the department. Each label is a **key: value** pair. Keys are defined by an administrator for the
+whole organization; the value is set by whoever works with the envelope. That way everyone uses the
+same categories and nobody writes "Project", "project" and "PROJECT" as three different things.
+
+## Keys and values
+
+A **key** is a category with a name, a color and a description: `contractor`, `project`,
+`department`. A **value** is what one specific envelope has in that category: `Acme Inc.`,
+`Renewal 2026`, `Purchasing`. An envelope carries at most one value per key, and only for keys that
+exist in the organization. The envelope list shows each row's labels and lets you filter by them.
+
+## Keys are defined by an administrator
+
+On the "Label Keys" page ("Labels" in the menu), an Org Admin presses "New Key" and fills in:
+
+| Field | Rule |
+| --- | --- |
+| "Name *" | Required, unique in the organization, up to <Fact of={LABELS.keyNameMaxChars} /> characters. The application suggests "e.g. contractor, project, department". |
+| "Color" | A color to tell the label apart in lists. |
+| "Description" | Optional, up to <Fact of={LABELS.keyDescriptionMaxChars} /> characters. Use it to say which values are expected. |
+
+The administrator also edits a key's description and deletes it. Deleting a key removes it from
+every envelope that used it, and the application warns first: "Delete label key "name"? This will
+remove it from all envelopes." Organization members do not see the "Labels" page: if you need a new
+key, ask your administrator. The steps are in [Label keys](/en/sign/admin/labels/).
+
+## Values are set by whoever works with the envelope
+
+A Contributor assigns values in two ways:
+
+- **When creating the envelope**, in the wizard, before sending it.
+- **In the envelope detail**, with "+ Add label": choose a key and type its value in the "*key*
+  value..." field. This works in any envelope status, including after sending or completing it.
+  Labels are the only thing about an envelope that stays editable after sending.
+
+A value cannot be empty and has at most <Fact of={LABELS.valueMaxChars} /> characters. If a key no
+longer exists (because an administrator deleted it), the value disappears with it. If the
+application cannot save, it says so: "Could not update the labels".
+
+<Aside type="tip" title="Agree on values before you start">
+  bb-sign does not restrict a label's value to a closed list: any text is accepted. If several users
+  label envelopes of the same project, agree on an exact value (and write it in the key's
+  description), or the filter will not bring them together.
+</Aside>
+
+## Filtering the list by label
+
+In the "Envelopes" list, the "Filter by label..." control lets you pick a key and type the value in
+"*key* value...". Several label filters can be added at once; an envelope appears only if it matches
+all of them. The filter combines with the others (status, title, dates, workspace) and shows as a
+chip you can remove with "Remove filter" or clear with the rest using "Clear filters". Each row's
+labels are listed under the envelope title.
+
+## Who does what
+
+| Action | Who | Permission |
+| --- | --- | --- |
+| See the keys and filter by label | Every user and API credential in the organization. | `label:read` |
+| Assign or change values on an envelope | Contributors and Managers of the envelope's workspace, and administrators. | `label:assign` |
+| Create, edit and delete keys | Org Admins. | `label:manage` |
+
+A Viewer or an Auditor sees envelope labels and filters by them, but does not change them. An API
+credential assigns values in the workspaces where it is a Contributor or Manager, but never creates
+keys. See [Organizations, workspaces and roles](/en/sign/concepts/organizations-workspaces-roles/).

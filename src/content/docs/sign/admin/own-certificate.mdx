@@ -1,0 +1,174 @@
+---
+title: "Certificado propio de la organización"
+description: Por qué configurar un certificado propio, qué comprar, dónde comprarlo, cómo exportarlo con la cadena completa, cómo subirlo y cómo renovarlo.
+product: sign
+audience: admin
+source: docs/guias/certificado-propio.md
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { CERTIFICATE } from '../../../facts/sign';
+
+Mientras su organización no configure un certificado propio, bb-sign sella los documentos firmados con
+un certificado de pruebas. Sirve para probar el servicio, pero los validadores lo muestran como no
+confiable. Esta guía acompaña a los [Términos y condiciones del servicio](/sign/legal/terms/) y
+explica qué comprar, dónde, cómo prepararlo y cómo subirlo.
+
+<Aside type="caution" title="Hoy sus documentos se sellan con un certificado de pruebas">
+  Sin certificado propio, cada documento se sella con el certificado de Binary Bridges
+  <code><Fact of={CERTIFICATE.defaultSubject} /></code>. Es autofirmado: Adobe Acrobat y los demás
+  validadores lo muestran como no confiable. El envío de sobres nunca se bloquea por esto, así que
+  nadie se lo va a recordar. Configure el suyo.
+</Aside>
+
+## 1. Para qué sirve el certificado de la organización
+
+El certificado sella cada documento firmado: garantiza que el documento no cambió después de firmarse
+y permite a un tercero confiar en quién lo selló. No es la firma digital de las personas que firman;
+ellas firman con el mecanismo de firma electrónica de bb-sign. Ver
+[Firma electrónica y firma digital](/sign/legal/electronic-vs-digital-signature/).
+
+Con un certificado propio, además, el nombre visible y el motivo que aparecen en el recuadro de firma
+del PDF se pueden personalizar (sección "Apariencia de la firma", que configura un administrador de
+plataforma). Con el certificado de pruebas siempre se muestra la marca de Binary Bridges.
+
+## 2. Qué comprar
+
+- Un certificado **a nombre de la organización** (de persona jurídica o de función pública; el nombre
+  comercial varía según la entidad), no a nombre de una persona.
+- Entregado como **archivo PKCS#12 (.p12 o .pfx) con la llave privada exportable**. Este es el
+  requisito que más compras arruina: no sirve una llave en un token USB ni una llave que solo exista
+  en la nube (HSM del proveedor). bb-sign necesita el archivo.
+- Llave **RSA de <Fact of={CERTIFICATE.minKeyBits} unit="bits" /> o más**. Las llaves de curva
+  elíptica (EC) no se admiten.
+- Uso de la llave **firma digital** (`digitalSignature`) y, de preferencia, **no repudio**
+  (`nonRepudiation`).
+- Con la **cadena de certificación completa**: el certificado de la organización, los intermedios y la
+  raíz.
+
+Recomendamos un certificado de documento o de persona jurídica; lo que es obligatorio es el formato
+de entrega. Pregunte a la entidad, antes de pagar, si entrega un PKCS#12 con llave exportable.
+
+## 3. Dónde comprar en Colombia
+
+Compre a una **Entidad de Certificación Digital (ECD) acreditada por el ONAC**. Verifique la
+acreditación vigente en el directorio del ONAC ([onac.org.co](https://onac.org.co/)) antes de
+comprar; las acreditaciones cambian.
+
+Entidades que figuran en fuentes públicas como ECD acreditadas:
+
+| Entidad | Sitio oficial |
+|---|---|
+| Certicámara | [certicamara.com](https://www.certicamara.com/) |
+| GSE (Gestión de Seguridad Electrónica) | [gse.com.co](https://www.gse.com.co/) |
+| Andes SCD | [andesscd.com.co](https://www.andesscd.com.co/) |
+| Camerfirma Colombia | [camerfirma.co](https://www.camerfirma.co/) |
+| Olimpia IT | [olimpiait.com](https://www.olimpiait.com/) |
+| Thomas Signe | [thomas-signe.com](https://www.thomas-signe.com/) |
+| Viafirma Colombia | [viafirma.com.co](https://www.viafirma.com.co/) |
+
+Lista verificada el 2026-10-07; confirme antes de comprar que la entidad entrega el certificado como
+archivo PKCS#12 con llave exportable.
+
+## 4. Dónde comprar en otros países
+
+Si su organización está fuera de Colombia, compre a un miembro de la **Adobe Approved Trust List
+(AATL)**, para que Adobe Acrobat confíe en el sello sin instalar nada: DigiCert, GlobalSign, Sectigo,
+Entrust o SSL.com emiten certificados de firma de documentos a nombre de organizaciones.
+
+Muchos de estos productos se entregan por defecto en un token USB o en un HSM en la nube. Pida
+expresamente un **certificado en software con llave exportable**; sin él, no podrá subirlo a bb-sign.
+
+Lista verificada el 2026-10-07; confirme antes de comprar que la entidad entrega el certificado como
+archivo PKCS#12 con llave exportable.
+
+## 5. Exportar con la cadena completa
+
+El archivo debe incluir el certificado de la organización, los certificados intermedios y la raíz.
+
+- En Windows: `certmgr.msc`, seleccione el certificado, Exportar, indique que sí exporta la llave
+  privada, formato PKCS#12 y marque "Incluir todos los certificados en la ruta de certificación si es
+  posible".
+- Con OpenSSL:
+
+```bash
+openssl pkcs12 -export -inkey clave.key -in certificado.crt -certfile cadena.pem -out organizacion.p12
+```
+
+Si bb-sign informa que no pudo subir el certificado y la contraseña es correcta, vuelva a exportar con
+la opción `-legacy` de OpenSSL 3.
+
+## 6. Verificar antes de subir
+
+```bash
+openssl pkcs12 -in organizacion.p12 -nokeys -info
+```
+
+Debe listar el certificado de la organización, el o los intermedios y la raíz. Hoy esta es la única
+forma de comprobar la cadena: bb-sign no la revisa al subir el archivo (ver sección 9).
+
+## 7. Subir el certificado
+
+La sección **Certificado de firma** está en la página de detalle de la organización, a la que se llega
+desde **Organizaciones** en el menú. Hoy esa página solo la ven los administradores de plataforma. Si
+usted administra la organización y no ve **Organizaciones** en su menú, coordine la carga con Binary
+Bridges; nunca envíe el archivo ni su contraseña por correo.
+
+<Steps>
+
+1. Abra **Organizaciones**, entre a su organización y busque la sección **Certificado de firma**. Sin
+   certificado propio verá "No hay certificado configurado — se usará el certificado global de
+   reserva".
+2. Pulse **Subir certificado** (o **Reemplazar certificado** si ya hay uno).
+3. Escriba una **Etiqueta** (por ejemplo "Acme Corp 2025"), elija el **Archivo de certificado (.p12,
+   .pfx, .pem)** y escriba la **Contraseña (si está protegido)**.
+4. Pulse **Subir certificado**. Mientras carga, el botón dice "Subiendo…". Al terminar, la sección
+   muestra la etiqueta y "Expira:" seguido de la fecha de vencimiento.
+
+</Steps>
+
+Si aparece "No se pudo subir el certificado", el archivo no pasó alguna de las reglas siguientes o la
+contraseña no es la correcta. Revise el archivo con el comando de la sección 6 y vuelva a intentarlo.
+
+| Regla | Qué hace bb-sign |
+|---|---|
+| Extensiones aceptadas | {CERTIFICATE.allowedExtensions.value.map((ext) => `.${ext}`).join(', ')} |
+| Tamaño máximo del archivo | <Fact of={CERTIFICATE.maxFileMb} unit="MB" /> |
+| Certificado vencido | Lo rechaza. |
+| Llave menor de <Fact of={CERTIFICATE.minKeyBits} unit="bits" /> | La rechaza. |
+| Uso de la llave | Exige <code><Fact of={CERTIFICATE.requiredKeyUsage} /></code>. |
+| Una carga nueva | Reemplaza al certificado anterior. |
+| Contraseña | Se guarda cifrada y solo se usa para sellar. |
+| Archivos PEM | Se aceptan al subir, pero **no sellan**. Suba un PKCS#12. |
+
+## 8. Renovación
+
+Suba el certificado renovado antes de que venza el actual. El cambio tarda como máximo
+<Fact of={CERTIFICATE.cacheMinutes} unit="minutos" /> en aplicarse a los sellos nuevos. bb-sign no
+envía hoy correos de aviso de vencimiento; anote la fecha que muestra la sección **Certificado de
+firma**.
+
+Tenga en cuenta que la verificación por código QR compara el sello con el certificado **activo** de la
+organización. Después de cambiar el certificado, los sellos hechos con el anterior dejan de dar
+"válido" en esa verificación; el PDF sigue intacto y su panel de firmas en Acrobat sigue siendo
+válido. Ver [Verificar un documento firmado](/sign/signing/verify-a-document/).
+
+## 9. Limitación actual: solo el certificado hoja
+
+Hoy bb-sign incrusta en el sello **solo el certificado de la organización**
+(<Fact of={CERTIFICATE.chainEmbedded} />), no los intermedios ni la raíz. Un validador que no tenga
+instalada la raíz de su entidad no podrá construir la ruta y mostrará el sello como no confiable,
+aunque el certificado sea bueno. Para comprobar un PDF, importe la raíz de su entidad como confiable
+en Acrobat (sección 10). Incluir la cadena completa en el sello y revisarla al subir el archivo está
+previsto, pero no existe todavía.
+
+## 10. Comprobar un PDF sellado
+
+Abra el PDF firmado en Adobe Acrobat y revise el panel de firmas. Si importó la raíz de su entidad de
+certificación como confiable, verá la ruta completa y que la identidad es válida.
+
+## 11. Seguridad
+
+Nunca envíe el archivo `.p12` ni su contraseña por correo electrónico. Guárdelos en el gestor de
+secretos de su organización y súbalos desde la aplicación.

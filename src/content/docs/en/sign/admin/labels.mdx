@@ -1,0 +1,73 @@
+---
+title: Label keys
+description: "How to create, edit and delete the organization's label keys, which limits apply and what happens to the values set on envelopes when a key is deleted."
+product: sign
+audience: admin
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { LABELS } from '../../../../facts/sign';
+
+**Who:** organization admin (platform admins too). **Where:** Labels (`/labels`) in the sidebar.
+
+A label is a key and value pair on an envelope: `department: sales`, `project: alpha`. The admin
+defines the keys for the whole organization; whoever works on each envelope sets the values. This
+page covers the keys. Using labels is in [Labels](/en/sign/concepts/labels/).
+
+## Create a key
+
+<Steps>
+
+1. Press "New Key". "Create Label Key" opens.
+
+2. Enter the "Name", up to <Fact of={LABELS.keyNameMaxChars} unit="characters" />. The form
+   suggests "e.g. contractor, project, department". The name is saved in lowercase.
+
+3. Pick a "Color" from the presets or with the picker. It is the color of the badge users see in
+   the envelope list.
+
+4. Enter an optional "Description", up to <Fact of={LABELS.keyDescriptionMaxChars} unit="characters" />,
+   so users know which values to set.
+
+5. Press "Create". You see "Label key created".
+
+</Steps>
+
+The header shows how many keys exist and the maximum. Once reached, the "New Key" button disappears
+until you delete one.
+
+## Edit a key
+
+Press the pencil ("Edit name") in the row. You can change the name, the color and the description;
+confirm with "Save" or discard with "Cancel". Envelopes that already use the key show the new name
+and color; their values do not change.
+
+## Delete a key and what happens to the values
+
+Press the bin ("Delete name"). The "Delete Label Key" dialog asks: "Delete label key "name"? This
+will remove it from all envelopes". Confirm with "Delete".
+
+<Aside type="caution" title="The values are lost">
+  When you delete a key, the value every envelope held under that key disappears with it, and
+  there is no way to get it back. If you only want to stop using it, edit it and say so in the
+  description, or rename it; do not delete it.
+</Aside>
+
+## Who sets the values
+
+Values are set by the Contributors and Managers of the envelope's workspace, from the envelope detail
+with "+ Add label"; admins too, on any envelope. A value holds up to
+<Fact of={LABELS.valueMaxChars} unit="characters" />. Viewers and Auditors see labels but do not
+change them. Anyone who sees the envelope list can filter with "Filter by label...".
+
+API credentials read the keys and set values with the same role as a person; they cannot create or
+delete keys.
+
+## If something goes wrong
+
+| Message | What happened and what to do |
+| --- | --- |
+| "Failed to create label key" | The name already exists or the maximum number of keys was reached. Change the name or delete a key you do not use. |
+| "Failed to update label key" | The new name already exists or is empty. Choose another. |
+| "Failed to delete label key" | A temporary problem. Wait a moment and try again. |

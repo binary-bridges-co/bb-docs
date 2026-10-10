@@ -1,0 +1,349 @@
+---
+title: From credential to signed document
+description: Every call from a token to the signed PDF, in curl, JavaScript and Java, with the list-before-you-retry rule for a POST that timed out.
+product: sign
+audience: developer
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS } from '../../../../facts/sign';
+
+The [quickstart](/en/sign/developers/quickstart/) ends at a `201`. This page goes the whole way:
+upload a PDF, create the envelope around it, add a second signer, send, learn from a webhook that
+everyone signed, and download the sealed PDF. Each step shows the same call in `curl`, JavaScript
+and Java; pick one tab and it stays picked.
+
+You need the four environment variables from the quickstart (`BBSIGN_BASE_URL`,
+`BBSIGN_TOKEN_URL`, `BBSIGN_CLIENT_ID`, `BBSIGN_CLIENT_SECRET`), a PDF named `contract.pdf`, and,
+for the JavaScript and Java tabs, a `client` built as in the quickstart.
+
+## 1. Get a token
+
+Both SDKs fetch and refresh tokens on their own. You still need a raw token for `curl` and for the
+upload in step 2, which is a plain HTTP request without the SDK. A token lives
+<Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```bash
+    TOKEN=$(curl -s -X POST "$BBSIGN_TOKEN_URL" \
+      -d grant_type=client_credentials \
+      -d client_id="$BBSIGN_CLIENT_ID" \
+      -d client_secret="$BBSIGN_CLIENT_SECRET" | jq -r .access_token)
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    const tokenResponse = await fetch(process.env.BBSIGN_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: process.env.BBSIGN_CLIENT_ID,
+        client_secret: process.env.BBSIGN_CLIENT_SECRET,
+      }),
+    })
+    const { access_token: token } = await tokenResponse.json()
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    HttpClient http = HttpClient.newHttpClient();
+    String form = "grant_type=client_credentials"
+            + "&client_id=" + URLEncoder.encode(System.getenv("BBSIGN_CLIENT_ID"), StandardCharsets.UTF_8)
+            + "&client_secret=" + URLEncoder.encode(System.getenv("BBSIGN_CLIENT_SECRET"), StandardCharsets.UTF_8);
+    HttpRequest tokenRequest = HttpRequest.newBuilder(URI.create(System.getenv("BBSIGN_TOKEN_URL")))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString(form))
+            .build();
+    String tokenJson = http.send(tokenRequest, HttpResponse.BodyHandlers.ofString()).body();
+    String token = new ObjectMapper().readTree(tokenJson).get("access_token").asText();
+    ```
+  </TabItem>
+</Tabs>
+
+## 2. Upload the document
+
+`POST /api/v1/documents` is multipart with one part, `file`. Only
+<Fact of={DOCUMENTS.contentType} /> is accepted, up to <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />.
+The answer is an `UploadedDocumentResponse`; keep its `id`. A document that is not attached to an
+envelope within <Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> is deleted.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```bash
+    DOCUMENT_ID=$(curl -s -X POST "$BBSIGN_BASE_URL/api/v1/documents" \
+      -H "Authorization: Bearer $TOKEN" \
+      -F "file=@contract.pdf;type=application/pdf" | jq -r .id)
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    import { openAsBlob } from 'node:fs'
+
+    const form = new FormData()
+    form.set('file', await openAsBlob('contract.pdf', { type: 'application/pdf' }), 'contract.pdf')
+
+    const upload = await fetch(`${process.env.BBSIGN_BASE_URL}/api/v1/documents`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    })
+    const { id: documentId } = await upload.json()
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    OkHttpClient okHttp = new OkHttpClient();
+    RequestBody multipart = new MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", "contract.pdf",
+                    RequestBody.create(new File("contract.pdf"), MediaType.get("application/pdf")))
+            .build();
+    Request upload = new Request.Builder()
+            .url(System.getenv("BBSIGN_BASE_URL") + "/api/v1/documents")
+            .header("Authorization", "Bearer " + token)
+            .post(multipart)
+            .build();
+    UUID documentId;
+    try (Response response = okHttp.newCall(upload).execute()) {
+        documentId = UUID.fromString(new ObjectMapper().readTree(response.body().string()).get("id").asText());
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+The generated SDK methods for uploads send JSON, not multipart, so the JavaScript and Java tabs use
+the platform HTTP client (okhttp is already a dependency of the Java SDK). You can also attach a
+file to an existing draft with `POST /api/v1/envelopes/{id}/documents`, same part name.
+
+## 3. Create the envelope
+
+Pass the uploaded id in `documentIds`. `title` is the only required field; an envelope cannot be
+sent without at least one signer and one document.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```bash
+    ENVELOPE_ID=$(curl -s -X POST "$BBSIGN_BASE_URL/api/v1/envelopes" \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"title\": \"Service agreement\",
+        \"documentIds\": [\"$DOCUMENT_ID\"],
+        \"otpRequired\": true,
+        \"signers\": [{\"email\": \"ana@example.com\", \"name\": \"Ana Perez\", \"signOrder\": 1}]
+      }" | jq -r .id)
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    const envelope = await client.envelopes.createEnvelope({
+      createEnvelopeRequest: {
+        title: 'Service agreement',
+        documentIds: [documentId],
+        otpRequired: true,
+        signers: [{ email: 'ana@example.com', name: 'Ana Perez', signOrder: 1 }],
+      },
+    })
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    EnvelopeResponse envelope = client.execute(client.envelopes().createEnvelope(
+            new CreateEnvelopeRequest()
+                    .title("Service agreement")
+                    .documentIds(List.of(documentId))
+                    .otpRequired(true)
+                    .signers(List.of(new CreateSignerSpec()
+                            .email("ana@example.com")
+                            .name("Ana Perez")
+                            .signOrder(1)))));
+    ```
+  </TabItem>
+</Tabs>
+
+## 4. Add a signer
+
+Signers can be added while the envelope is a `DRAFT`. `signOrder` only matters when
+`sequentialSigning` is true; otherwise every signer gets a link at once.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```bash
+    curl -s -X POST "$BBSIGN_BASE_URL/api/v1/envelopes/$ENVELOPE_ID/signers" \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"email": "luis@example.com", "name": "Luis Gomez", "signOrder": 2}'
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    await client.envelopes.addSigner({
+      id: envelope.id,
+      addSignerRequest: { email: 'luis@example.com', name: 'Luis Gomez', signOrder: 2 },
+    })
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    client.execute(client.envelopes().addSigner(envelope.getId(),
+            new AddSignerRequest().email("luis@example.com").name("Luis Gomez").signOrder(2)));
+    ```
+  </TabItem>
+</Tabs>
+
+## 5. Send
+
+This is the point of no return: documents and signers freeze, each signer is emailed a link valid
+for <Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" /> by default, and `envelope.sent` fires. The
+answer is a `SendResponse` with the signing tokens by signer.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```bash
+    curl -s -X POST "$BBSIGN_BASE_URL/api/v1/envelopes/$ENVELOPE_ID/send" \
+      -H "Authorization: Bearer $TOKEN"
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    const sent = await client.envelopes.sendEnvelope({ id: envelope.id })
+    console.log('Sent', sent.envelopeId)
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    SendResponse sent = client.execute(client.envelopes().sendEnvelope(envelope.getId()));
+    System.out.println("Sent " + sent.getEnvelopeId());
+    ```
+  </TabItem>
+</Tabs>
+
+## 6. Receive `envelope.completed`
+
+Register a webhook in **Settings**, tab **Webhooks**, subscribed to `envelope.completed`. When the
+last signer signs, bb-sign posts a signed event to your URL. Verify the signature over the raw body,
+answer `2xx`, then do the work. The payload carries the envelope id and status, not the document:
+you fetch that in step 7. [Webhooks](/en/sign/developers/webhooks/) covers delivery and retries.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```http
+    POST /webhooks/bb-sign HTTP/1.1
+    Content-Type: application/json
+    X-BBSign-Event-Id: 3f8c1e2a-7d44-4b1a-9c0e-5a6b7c8d9e0f
+    X-BBSign-Event-Type: envelope.completed
+    X-BBSign-Signature: t=1760000000,v1=5f1a...
+
+    {"id":"3f8c1e2a-7d44-4b1a-9c0e-5a6b7c8d9e0f","type":"envelope.completed","apiVersion":"2026-08-09",
+     "createdAt":"2026-10-10T14:22:31Z","data":{"envelope":{"id":"...","title":"Service agreement",
+     "status":"COMPLETED","createdAt":"...","expiresAt":null}}}
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    import express from 'express'
+    import { verifyWebhookSignature } from '@binarybridges/bb-sign-sdk/webhooks'
+
+    const app = express()
+    app.use(express.json({ verify: (req, _res, buf) => { req.rawBody = buf } }))
+
+    app.post('/webhooks/bb-sign', (req, res) => {
+      if (!verifyWebhookSignature(req.get('X-BBSign-Signature'), req.rawBody, process.env.BBSIGN_WEBHOOK_SECRET)) {
+        return res.sendStatus(401)
+      }
+      const event = JSON.parse(req.rawBody.toString('utf8'))
+      res.sendStatus(200)
+      if (event.type === 'envelope.completed') void downloadSigned(event.data.envelope.id)
+    })
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    @PostMapping("/webhooks/bb-sign")
+    public ResponseEntity<Void> receive(
+            @RequestHeader("X-BBSign-Signature") String signature,
+            @RequestBody byte[] rawBody) throws IOException {
+
+        if (!Webhooks.verify(signature, rawBody, System.getenv("BBSIGN_WEBHOOK_SECRET"))) {
+            return ResponseEntity.status(401).build();
+        }
+        WebhookEvent event = new ObjectMapper().readValue(rawBody, WebhookEvent.class);
+        if ("envelope.completed".equals(event.getType())) {
+            executor.submit(() -> downloadSigned(event.getData().getEnvelope().getId()));
+        }
+        return ResponseEntity.ok().build();
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## 7. List the documents and download the signed PDF
+
+`GET /api/v1/envelopes/{id}/documents` returns each document with a `downloadUrl` (the original)
+and, once the envelope is `COMPLETED`, a `signedUrl` (the sealed copy). Both are presigned links
+valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />, and they are `null` unless the
+credential holds `document:download` in the envelope's workspace. Treat them as secrets: they grant
+the file without a token.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```bash
+    SIGNED_URL=$(curl -s "$BBSIGN_BASE_URL/api/v1/envelopes/$ENVELOPE_ID/documents" \
+      -H "Authorization: Bearer $TOKEN" | jq -r '.[0].signedUrl')
+
+    curl -s -o contract-signed.pdf "$SIGNED_URL"
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    import { writeFile } from 'node:fs/promises'
+
+    async function downloadSigned(envelopeId) {
+      const documents = await client.envelopes.listEnvelopeDocuments({ id: envelopeId })
+      for (const document of documents) {
+        const pdf = await fetch(document.signedUrl)
+        await writeFile(`${document.id}-signed.pdf`, Buffer.from(await pdf.arrayBuffer()))
+      }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    void downloadSigned(UUID envelopeId) throws Exception {
+        List<DocumentWithUrlsResponse> documents =
+                client.execute(client.envelopes().listEnvelopeDocuments(envelopeId));
+        HttpClient http = HttpClient.newHttpClient();
+        for (DocumentWithUrlsResponse document : documents) {
+            HttpRequest download = HttpRequest.newBuilder(URI.create(document.getSignedUrl())).build();
+            http.send(download, HttpResponse.BodyHandlers.ofFile(Path.of(document.getId() + "-signed.pdf")));
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+Archive what you download: bb-sign keeps signed documents for a fixed period, and conservation after
+that is the organization's responsibility. See [Scope and retention](/en/sign/legal/retention/).
+
+## If a POST timed out: list before you retry
+
+<Aside type="caution" title="A write with an unknown outcome is never retried">
+  If `POST /api/v1/envelopes` or `/send` times out, the outcome is unknown: the envelope may exist
+  or may already have been emailed to real people. Neither SDK retries it, and the API has no
+  idempotency key. **List before you retry.** Search by title with
+  `GET /api/v1/envelopes?title=...` (or `getEnvelope` if you kept the id); only when nothing is
+  there do you send again. The SDKs report this case as status `0` (`BbSignError.statusCode` in
+  JavaScript, `BbSignException.statusCode()` in Java).
+</Aside>
+
+`429` and `503` are retried, including for `POST`: those mean the server explicitly did not process
+the request.
+
+## Every envelope lives in a workspace
+
+The envelope above was filed in **General** because no `workspaceId` was passed. A credential
+reaches only the workspaces an admin granted it; `GET /api/v1/workspaces` lists them, and an
+`EnvelopeResponse` carries `workspaceId` and `workspaceName`. Envelopes in workspaces the
+credential cannot read answer `404` and never appear in lists.

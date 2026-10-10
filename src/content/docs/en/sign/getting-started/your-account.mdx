@@ -1,0 +1,91 @@
+---
+title: Your account
+description: How the invitation arrives and how long its link lasts, your first login, what you see depending on your role, and how to change the language and theme of bb-sign.
+product: sign
+audience: user
+---
+
+import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { AUTH, URLS } from '../../../../facts/sign';
+
+Nobody signs up for bb-sign on their own. An administrator of your organization creates your user
+and you receive an invitation by email. With it you choose a password and enter
+<a href={URLS.app.value}>{URLS.app.value}</a>. This page covers that first day: the invitation, the
+login and what you will see once inside.
+
+## The invitation
+
+When the administrator creates you, the application shows them the notice "User will receive an
+email to set their password." That email comes from <code>{URLS.identitySenderAddress.value}</code>
+and contains a link to define your password. The link is valid for
+<Fact of={AUTH.invitationLinkHours} unit="h" /> from the moment it is sent.
+
+If the link has expired, the page tells you it is no longer valid. Ask the administrator to use
+"Resend invitation" on the Users page: you receive a new email with a new link, and the clock
+starts again.
+
+If the email never arrives, check your spam folder and confirm with the administrator that your
+address is spelled correctly. They can resend the invitation as many times as needed.
+
+## First login
+
+<Steps>
+
+1. Open the link in the invitation.
+
+2. Type a password and confirm it. bb-sign asks for nothing else.
+
+3. Go to <a href={URLS.app.value}>{URLS.app.value}</a> and sign in with your email and the password
+   you just set. You land on the Dashboard.
+
+</Steps>
+
+From then on you sign in from that address. If you forget the password, the login screen offers to
+reset it; the reset email comes from the same address as the invitation. To leave, use "Logout" at
+the bottom of the side menu.
+
+## What you see depending on your role
+
+Your role shows under your name at the bottom of the side menu: "Org Admin" or "Org Member". The
+menu changes with that role.
+
+| Menu entry | Member | Administrator |
+|---|---|---|
+| Dashboard | Yes | Yes |
+| Envelopes | Yes | Yes |
+| Archived | Yes | Yes |
+| New Envelope | Only if you can create envelopes in some workspace | Yes |
+| Labels | No | Yes |
+| Users | No | Yes |
+| Storage | No | Yes |
+| Settings | No | Yes |
+
+A member does not see Labels, Users, Storage or Settings. If you open one of those addresses by
+hand, the application answers "Access Denied" and says your role does not have permission to view
+that page. It is not an error: it is the limit of the role.
+
+What you can do with each envelope does not depend on the organization role but on your role in the
+**workspace** where the envelope lives: view, download, create, send or cancel. It is explained in
+[Organizations, workspaces and roles](/en/sign/concepts/organizations-workspaces-roles/).
+
+## Language
+
+The application is available in Spanish and English. The "Language" selector sits in the top right
+corner of every page, with the options "Español" and "English". The choice is saved in your
+browser. If you never choose, bb-sign uses the browser language and, if it is neither of the two,
+English.
+
+<Aside type="note" title="Emails to signers are in English">
+  The application language is for you only. The emails bb-sign sends to signers (invitation,
+  verification code, reminder, envelope completed) are always in English, whatever your language or
+  the signer's. If your signers do not read English, tell them yourself that the email is coming
+  and what to do with it.
+</Aside>
+
+## Theme
+
+Next to the language there is a button to switch between light and dark mode: "Switch to dark
+mode" or "Switch to light mode", depending on which is active. It is saved in your browser too.
+
+<LinkCard title="Your first envelope" href="/en/sign/getting-started/first-envelope/" description="The Create Envelope wizard, step by step, up to sending." />

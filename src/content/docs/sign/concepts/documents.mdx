@@ -1,0 +1,93 @@
+---
+title: Documentos
+description: Qué archivos acepta bb-sign, qué pasa con los documentos subidos antes de crear el sobre, y cómo decidir dónde queda el sello de cada firmante.
+product: sign
+audience: user
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { DOCUMENTS } from '../../../facts/sign';
+
+Un sobre lleva uno o más documentos, y cada firmante firma todos. Esta página explica qué archivos
+acepta bb-sign, qué ocurre con los documentos mientras el sobre todavía no existe, y cómo indicar
+en el PDF el lugar exacto donde debe aparecer el sello de cada firmante.
+
+## Solo PDF
+
+bb-sign acepta un único tipo de archivo: <Fact of={DOCUMENTS.contentType} />. El paso "Subir
+documentos" del asistente lo dice en su propio texto: "Adjunta los documentos PDF que se van a
+firmar." y "Haz clic para subir un PDF". Si tienes un documento en Word, en imagen o en otro
+formato, conviértelo a PDF antes de subirlo.
+
+Cada archivo puede pesar como máximo <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />. Si un archivo
+supera ese tamaño, la aplicación responde "Ese archivo es demasiado grande." Reduce el PDF (por
+ejemplo, bajando la resolución de las imágenes) y vuelve a subirlo.
+
+Un sobre necesita al menos un documento para enviarse: "Sube al menos un documento para continuar."
+
+## Subir antes de que exista el sobre
+
+El asistente de creación sube los documentos en su segundo paso, antes de crear el sobre. Hasta que
+pulsas "Enviar sobre", esos archivos están **sin asignar**: pertenecen a tu organización, pero a
+ningún sobre. Esto tiene tres consecuencias:
+
+- **No consumen cuota.** La cuota de almacenamiento se descuenta cuando el sobre se crea, no al
+  subir. Ver [Cuotas](/sign/concepts/quotas/).
+- **Hay un tope por organización.** Entre todos los usuarios, los documentos sin asignar no pueden
+  sumar más de <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" />. Si se alcanza, la subida
+  falla con "Tu organización se ha quedado sin almacenamiento de documentos. Pide a tu
+  administrador que amplíe el límite." En la práctica, eso significa que alguien dejó asistentes a
+  medias; espera a que el recolector los limpie o termina los tuyos.
+- **Un recolector los borra.** Un documento sin asignar se elimina pasadas
+  <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" />. Si retomas un asistente después
+  de ese plazo, la aplicación avisa "Tus documentos subidos caducaron y se eliminaron. Todo lo demás
+  se conservó; vuelve a subirlos." El título, los firmantes y las opciones siguen ahí; solo hay que
+  subir los PDF de nuevo.
+
+Un documento solo puede pertenecer a un sobre. Si el asistente intenta reutilizar uno que ya se
+asignó, responde "Uno de estos documentos ya forma parte de otro sobre. Quítalo y súbelo de nuevo."
+
+## Dónde queda el sello de cada firmante
+
+Cuando el sobre se completa, bb-sign estampa en cada documento una imagen de sello por firmante
+(nombre, correo, fecha, firma, hash y código QR; ver
+[Firma electrónica y sello](/sign/concepts/signature-and-seal/)). Tú decides dónde.
+
+### Con marcador
+
+Escribe en el PDF, donde quieras el sello, el texto <Fact of={DOCUMENTS.placementMarker} />,
+sustituyendo `N` por el número de orden del firmante: `{{signer1}}` para el primero, `{{signer2}}`
+para el segundo, y así. Es texto normal del documento, con cualquier fuente; lo único que importa es
+que el PDF lo contenga como texto, no como imagen. Al sellar, bb-sign borra el marcador y coloca el
+sello en esa posición, con la esquina superior izquierda del sello donde empezaba el marcador.
+
+Cada marcador se busca en todas las páginas. Si un firmante tiene marcador y otro no, el primero va
+a su marcador y el segundo a la posición por defecto.
+
+<Aside type="tip" title="Deja espacio bajo el marcador">
+  El sello se dibuja hacia abajo desde la línea del marcador y ocupa el ancho de una firma con sus
+  datos. Pon el marcador en una línea propia, con varias líneas en blanco debajo, para que no tape
+  texto del documento. Haz una prueba con un sobre de un solo firmante antes de usar la plantilla
+  con clientes.
+</Aside>
+
+### Sin marcador
+
+Si el documento no tiene marcador para un firmante, su sello va a la **esquina inferior derecha de
+la última página**. Con varios firmantes sin marcador, los sellos se apilan hacia arriba en esa
+esquina, en el orden de los firmantes. Si no caben en la última página, bb-sign añade una página al
+final del documento y sigue apilando ahí.
+
+## Original y firmado
+
+En el detalle del sobre, cada documento ofrece dos descargas: "PDF Original", el archivo tal como se
+subió, y "PDF Firmado", el mismo archivo con los sellos estampados y la firma del certificado de la
+organización. El segundo solo existe cuando el sobre está `COMPLETED`; mientras se genera, el
+detalle muestra "Procesando el PDF firmado...". Un Lector del espacio ve los nombres de los
+documentos pero no los descarga: "Puedes ver el nombre de este documento, pero no descargarlo. Pide
+acceso de auditor a un administrador." Ver
+[Descargar documentos firmados](/sign/sending/download-signed-documents/).
+
+Una vez enviado el sobre, los documentos no se cambian. Lo que no exista en el PDF al pulsar "Enviar
+sobre" no existirá en el PDF firmado.

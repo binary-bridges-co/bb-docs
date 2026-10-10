@@ -1,0 +1,55 @@
+---
+title: "bb-sign terms and conditions of service"
+description: Courtesy translation of the current terms of service (Version 1) and of the draft retention clause planned for Version 2. The Spanish text prevails.
+product: sign
+audience: legal
+source: docs/legal/terminos-y-condiciones.md
+legalVersion: "Versión 1 · 2026-10-07"
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import LegalHeader from '../../../../../components/legal/LegalHeader.astro';
+import { RETENTION_POLICY } from '../../../../facts/sign';
+
+<LegalHeader locale="en" version={frontmatter.legalVersion} source={frontmatter.source} />
+
+These terms form part of the service agreement signed between Binary Bridges S.A.S. and each customer. They are published in the application for reference; they do not require online acceptance. Every change increments the version and is recorded in the history at the end of this document.
+
+## 1. Nature of the service
+
+**1.1** bb-sign provides an electronic signature mechanism in the terms of Decreto 2364 de 2012 (compiled in Decreto 1074 de 2015). It is not a digital signature (*firma digital*) in the terms of article 28 of Ley 527 de 1999.
+
+**1.2** Each customer, through its legal office, decides whether the mechanism is appropriate for the documents it sends for signature.
+
+## 2. Seal certificate
+
+**2.1** When an envelope completes, bb-sign seals each signed document with a digital certificate; any later alteration of the document is detectable.
+
+**2.2** Until the customer configures a certificate of its own, bb-sign seals with a Binary Bridges **testing certificate**. It is self-signed, it does not give third-party trust, and validators (for example Adobe Acrobat or the European Commission's validator) will show it as untrusted.
+
+**2.3** The customer is responsible for obtaining a certificate issued by a Digital Certification Entity accredited by ONAC, configuring it in bb-sign with its full certification chain, and renewing it before it expires. The guide is at [Your own certificate](/en/sign/admin/own-certificate/).
+
+**2.4** The lack of a certificate of its own does not prevent sending envelopes; in that case the documents are sealed with the testing certificate.
+
+**2.5** bb-sign stores the certificate file and its password encrypted, and uses them exclusively to seal that organization's documents.
+
+## Version history
+
+- Version 1 (2026-10-07): sections 1 and 2.
+
+## Retention (draft for Version 2)
+
+<Aside type="caution" title="Draft">
+  Draft. It is not part of the published Version 1. The clauses below will be added to the terms when
+  bb-sign publishes Version 2. Until then they describe the agreed policy, not a text in force. The
+  numbering is provisional.
+</Aside>
+
+**3.1** The signed documents and the evidence of each envelope are kept for a **fixed, non-configurable** period of <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. When that period ends, they are deleted.
+
+**3.2** Files older than <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> move to archive storage and **cannot be downloaded immediately**. They are restored at the customer's request and sent to the requester when available, usually within hours and without a guaranteed time.
+
+**3.3** Conservation beyond the period in clause 3.1 is the customer's responsibility, under article 12 of Ley 527 de 1999 and the customer's own archiving rules. Binary Bridges recommends archiving each envelope on completion, through the `envelope.completed` webhook event and the API. The procedure is in [Scope and retention](/en/sign/legal/retention/).
+
+**3.4** Each customer is the data controller for the personal data of its signers and must keep an active data-processing authorization published in bb-sign.

@@ -1,0 +1,81 @@
+---
+title: What bb-sign is
+description: Electronic signature for organizations. What bb-sign does, what it does not do, who each part of this documentation is for and where to start.
+product: sign
+audience: all
+---
+
+import { Aside, Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { RETENTION_POLICY, URLS } from '../../../facts/sign';
+
+bb-sign is Binary Bridges' electronic signature platform. An organization uploads PDF documents,
+gathers them in an **envelope**, says who must sign and sends it. Each signer receives a link by
+email, reviews the documents, verifies their identity if the organization asked for it, and signs.
+When the envelope completes, bb-sign seals every document with a digital certificate and keeps the
+evidence of the whole process.
+
+The application lives at <a href={URLS.app.value}>{URLS.app.value}</a>.
+
+## What bb-sign does
+
+bb-sign covers one part of the signing process, and covers it completely:
+
+- **Integrity.** Every signed document is sealed; any later alteration is detectable.
+- **Identification.** The signer is identified by their email and, when the organization requires
+  it, by a one-time code.
+- **Compliance with agreements.** What the signer saw and accepted is recorded with date and time.
+- **Inconsistency detection.** The audit chain lets you check that nothing was inserted or deleted
+  afterwards.
+- **Probative value.** The evidence (who, what, when, from where) can be consulted and downloaded.
+- **Traceability.** Every relevant action on an envelope is in its history.
+
+## What bb-sign does not do
+
+<Aside type="caution" title="Conservation is the customer's responsibility">
+  bb-sign keeps signed documents and their evidence for a **fixed, non-negotiable** period of
+  <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. After that, keeping them is the
+  responsibility of the organization that sent them. The details are in
+  [Scope and retention](/en/sign/legal/retention/).
+</Aside>
+
+- bb-sign provides **electronic signature** (*firma electrónica*, Decreto 2364 de 2012). It is not
+  *firma digital* in the terms of article 28 of Ley 527 de 1999. Each customer, through its legal
+  office, decides whether the mechanism suits its documents. See
+  [Electronic and digital signature](/en/sign/legal/electronic-vs-digital-signature/).
+- The seal bb-sign places on each document uses, by default, a Binary Bridges **testing
+  certificate**. For third parties to trust the seal, the organization must configure its own
+  certificate. See [Your own certificate](/en/sign/admin/own-certificate/).
+- There are no templates, no bulk sending and no drag-and-drop fields on the PDF. What exists is in
+  this documentation; what is not here does not exist yet.
+
+## Who this documentation is for
+
+<CardGrid>
+  <Card title="Signers" icon="pencil">
+    You received an email asking you to sign a document and you have no account. Follow
+    [The signer's path](/en/sign/signing/): start to finish on one page.
+  </Card>
+  <Card title="Organization users" icon="document">
+    You create envelopes, attach documents and send them for signature. Start with
+    [Your first envelope](/en/sign/getting-started/first-envelope/).
+  </Card>
+  <Card title="Administrators" icon="setting">
+    You invite users, organize workspaces, configure the certificate, API credentials and webhooks.
+    It is all in [Administer the organization](/en/sign/admin/).
+  </Card>
+  <Card title="Developers" icon="seti:json">
+    You integrate bb-sign with your systems. [Quickstart](/en/sign/developers/quickstart/), then
+    [Webhooks](/en/sign/developers/webhooks/) and the [API reference](/sign/api/).
+  </Card>
+</CardGrid>
+
+## How it is organized
+
+Each section of this documentation is for one audience, and the badge at the top of every page says
+which. The [Concepts](/en/sign/concepts/organizations-workspaces-roles/) explain the model
+(organizations, workspaces, roles, envelopes, signers, seal, evidence) and serve everyone. The
+[Legal](/en/sign/legal/terms/) section holds the terms of service and the scope of retention. In
+[Reference](/en/sign/reference/limits-and-defaults/) every limit and default is in one table.
+
+<LinkCard title="Limits and defaults" href="/en/sign/reference/limits-and-defaults/" description="Every number in this documentation, with where it comes from in the code." />

@@ -1,0 +1,69 @@
+---
+title: Archived envelopes
+description: "The Archived Envelopes view: which envelopes move to it and when, what stays visible, why they are read-only and what stops working for signers."
+product: sign
+audience: user
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE } from '../../../../facts/sign';
+
+Closed envelopes do not stay in the Envelopes list forever. Some time after their creation, bb-sign
+moves them to a separate view, "Archived Envelopes", where they remain visible but nothing can be
+done with them any more. This page explains which ones, when and what changes.
+
+## What is archived and when
+
+Every night at <Fact of={ENVELOPE.archiveCron} />, a process looks for envelopes in the
+"Completed", "Cancelled" or "Expired" status created more than
+<Fact of={ENVELOPE.archiveAfterDays} unit="days" /> ago and moves them to the archive. Two details
+matter:
+
+- The period counts from the envelope's **creation**, not from its completion. An envelope that
+  took long to complete is archived shortly after completing.
+- An envelope in "Draft", "Sent" or "In Progress" is never archived, however old it is.
+  [Cancel it](/en/sign/sending/cancel/) if it is not going to complete.
+
+There is no way to archive an envelope by hand or to keep one from being archived.
+
+## The view
+
+The "Archived" entry in the menu opens "Archived Envelopes". A notice heads the list: "These
+envelopes have been archived. They are read-only and data retrieval may take longer than usual."
+Next to the title is the total ("N archived envelopes", with a plus sign when it exceeds the
+counter cap) and the link "Back to active envelopes".
+
+You can narrow by "Workspace", just as in Envelopes; the total narrows with the filter. Each row
+shows the title, its labels, the number of signers, the creation and archive dates ("N signers ·
+Created ... · Archived ..."), the workspace and the status it was archived with. Rows do not open:
+there is no detail page for an archived envelope.
+
+## Read-only
+
+On an archived envelope you cannot:
+
+- change the labels or cancel it (it was already closed);
+- see its audit trail from the application;
+- download the original or the signed PDF from the application.
+
+Nothing is deleted when archiving: the envelope, its signers, its documents and its evidence are
+kept according to [Scope and retention](/en/sign/legal/retention/). But from the application, what
+remains is the row in the list. That is why it pays to download the signed PDFs as soon as the
+envelope completes; see
+[Download signed documents](/en/sign/sending/download-signed-documents/).
+
+<Aside type="caution" title="The signer's download link stops working once archived">
+  While the envelope is in Envelopes, each signer can return to their link and download their signed
+  copy. As soon as the envelope is archived, that link opens "Link Unavailable" and there is no way
+  to recover it from the application. If a signer needs their copy later, they will have to ask you
+  for it; download and keep it while the envelope is still active.
+</Aside>
+
+## If you look for an envelope and cannot find it
+
+If a completed, cancelled or expired envelope is no longer in Envelopes, look in Archived before
+assuming it was deleted. If it is not there either, it may be in a workspace you have no access to:
+ask an administrator to check.
+
+<LinkCard title="Send and track" href="/en/sign/sending/send-and-track/" description="The statuses and filters of the active envelopes list." />

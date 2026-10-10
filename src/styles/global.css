@@ -1,0 +1,12 @@
+/* Layer order from the Starlight Tailwind v4 guide: Starlight's styles sit
+   between the base reset and Tailwind's theme/utilities. Unlayered rules in
+   starlight-theme.css win over all of them, which is how the token mapping
+   overrides Starlight's defaults. */
+@layer base, starlight, theme, components, utilities;
+
+@import '@astrojs/starlight-tailwind';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@import './tokens.css';
+@import './starlight-theme.css';

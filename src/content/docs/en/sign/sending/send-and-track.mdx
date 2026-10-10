@@ -1,0 +1,106 @@
+---
+title: Send and track
+description: The statuses of an envelope and of each signer, the filters of the Envelopes list, what the detail page shows, the Dashboard figures and the automatic reminders.
+product: sign
+audience: user
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE, REMINDERS } from '../../../../facts/sign';
+
+Once sent, an envelope moves on its own: each signer receives a link, signs, and bb-sign records
+every step. Your job is to follow it. This page explains what each status means, how to find an
+envelope in the list, what its detail page shows and what bb-sign does on its own so signers do not
+forget.
+
+## Statuses
+
+The envelope status appears as a badge in the list, on the Dashboard and on the detail page:
+
+| Status | Means |
+|---|---|
+| Draft | Created but not sent. Nobody has a link. |
+| Sent | Sent; no signer has signed yet. |
+| In Progress | At least one signer signed and someone is still missing. |
+| Completed | Everyone signed. The signed PDFs are generated next. |
+| Cancelled | A manager or an administrator cancelled it. The links do not work. |
+| Expired | The "Expires at" date passed without completion. The links do not work. |
+
+Each signer has a status of their own: "Pending" (no link yet, which happens with signing in
+order), "Notified" (received the email), "Viewed" (opened the link) and "Signed". The full flow is
+in [Envelopes and signers](/en/sign/concepts/envelopes-and-signers/).
+
+## The Envelopes list
+
+"Envelopes" shows the envelopes of the workspaces you have access to, newest first, ten per page.
+Next to the title is the total ("N total envelopes"); when there are more than
+<Fact of={ENVELOPE.listCountCap} />, the figure is shown with a plus sign, as
+"<Fact of={ENVELOPE.listCountCap} />+ envelopes", and the counter stops being exact.
+
+The filters combine:
+
+| Filter | Control |
+|---|---|
+| Workspace | "Workspace" selector, "All workspaces" by default. It only appears if you have access to more than one workspace. |
+| Status | "Filter by status" selector. In the English interface it shows the raw values: ALL, DRAFT, SENT, IN_PROGRESS, COMPLETED, CANCELLED, EXPIRED. |
+| Title | "Search by title..." field. It searches as you type. |
+| Dates | "From date" to "To date", on the creation date. |
+| Labels | "Filter by label...": choose the key, type the value and add it. Several can be stacked. |
+
+Each active filter appears as a chip you can remove; "Clear all" removes them all. If nothing
+matches, you see "No envelopes match your filters."; if there are no envelopes at all, "No
+envelopes yet." with the link "Create your first one". Each row shows the title, up to two labels,
+the workspace, the number of signers, the creation date and the status.
+
+## The detail page
+
+When you open an envelope you see its title, its identifier, the workspace and your role in it, and
+the labels (which you can change with "+ Add label" if you are a contributor or manager). Below, by
+section:
+
+- **Fields.** "Status", "OTP Required" (Yes or No), "Created" and, if you set it, "Expires"; once
+  the date has passed, it carries the suffix "(Expired)".
+- **"Documents (N)".** Each file with the buttons "Original PDF" and, on a completed envelope,
+  "Signed PDF". While the signed one is being generated, you see "Signed PDF processing...".
+  Without download permission, the name appears but not the buttons, with the explanation "You can
+  see this document's name but not download it. Ask an admin for auditor access." See
+  [Download signed documents](/en/sign/sending/download-signed-documents/).
+- **"Signers (N)".** The mode ("Sequential signing" or "Parallel signing" with its explanation)
+  and, per signer, name, email, "Order #N", the signing date if they signed, and their status.
+- **"Audit Trail (N events)".** Each event with its type, who caused it (the signer's email or
+  "System"), the date and time and its hash. Only for auditors and managers of the workspace; the
+  others see "The audit trail is available to auditors and managers of this workspace." See
+  [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
+- **Actions.** The "Cancel Envelope" button, only for those who can cancel and only in Draft, Sent
+  or In Progress. See [Cancel an envelope](/en/sign/sending/cancel/).
+
+If you open an envelope that does not exist or that you cannot see, the answer is the same:
+"Envelope not found, or you don't have access to it." bb-sign does not tell the two cases apart on
+purpose.
+
+## The Dashboard
+
+The Dashboard summarizes the envelopes you can see in four figures: "Total Envelopes", "Completed",
+"In Progress" (which adds up the envelopes in Sent and in In Progress) and "Drafts". Below, "Recent
+Envelopes" lists the last four with their status, and "+ New" opens the wizard.
+
+## Automatic reminders
+
+You do not have to chase signers. Every day at <Fact of={REMINDERS.dailyRunTime} />, bb-sign sends
+`Reminder: please sign {title}` to every signer who received their invitation more than
+<Fact of={REMINDERS.thresholdHours} unit="h" /> ago and has not signed yet, with at least
+<Fact of={REMINDERS.cooldownHours} unit="h" /> between two reminders to the same person. Reminders
+stop when they sign, or when the envelope completes, is cancelled or expires.
+
+There is no way to send a reminder by hand or to resend the link. If a signer says nothing arrived,
+ask them to check their spam folder and to search for the subjects above; the sender is always the
+same. See [The invitation email](/en/sign/signing/receiving-the-email/).
+
+<Aside type="note" title="bb-sign does not notify you when an envelope completes">
+  Today there is no email to the sender when an envelope completes. To find out, check the
+  Envelopes list or the Dashboard. If your organization integrates systems, an administrator can set
+  up a webhook for the `envelope.completed` event; see [Webhooks](/en/sign/admin/webhooks/).
+</Aside>
+
+<LinkCard title="Download signed documents" href="/en/sign/sending/download-signed-documents/" description="Original and signed PDF, how long a link lasts and who can download." />

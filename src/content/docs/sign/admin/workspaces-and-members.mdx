@@ -1,0 +1,99 @@
+---
+title: Espacios y miembros
+description: "Qué es el espacio General, cómo crear, renombrar y eliminar espacios de trabajo, y cómo dar a personas y claves de API el rol Lector, Auditor o Gestor."
+product: sign
+audience: admin
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { AUTH } from '../../../facts/sign';
+
+**Quién:** administrador de la organización (también los administradores de plataforma, desde la
+página de cada organización). **Dónde:** Configuración, pestaña «Espacios de trabajo»
+(`/settings?tab=workspaces`).
+
+Los espacios de trabajo deciden quién puede ver qué sobres. Cada sobre vive en un espacio; solo sus
+miembros y los administradores lo ven. Hasta que creas uno, todo está en General.
+
+## El espacio General
+
+General existe desde el primer día y la pestaña lo describe así: «Todos en la organización · los
+miembros son Colaboradores y pueden crear y enviar aquí». Cada miembro de la organización es
+Colaborador en General sin que nadie lo añada, y ese rol no se puede quitar ni cambiar. General no se
+puede renombrar ni eliminar: «El espacio de trabajo General no se puede renombrar ni eliminar».
+
+Crea otro espacio cuando quieras que algunos sobres los vea un grupo más pequeño. La pestaña lo
+sugiere: «Por ahora solo existe General. Crea un espacio de trabajo para limitar algunos sobres a un
+grupo más pequeño».
+
+## Crear, renombrar y eliminar
+
+<Steps>
+
+1. Pulsa «Nuevo espacio de trabajo», escribe el «Nombre» y pulsa «Crear espacio de trabajo». Verás
+   «Espacio de trabajo "nombre" creado». Si el nombre ya existe: «Ya existe otro espacio de trabajo
+   con ese nombre».
+
+2. Para cambiar el nombre, pulsa «Renombrar» en la fila y escribe el «Nuevo nombre».
+
+3. Para eliminarlo, pulsa «Eliminar». El diálogo avisa: «Solo se pueden eliminar espacios de trabajo
+   vacíos, incluidos sus sobres archivados. No se puede deshacer». Confirma con «Eliminar espacio de
+   trabajo».
+
+</Steps>
+
+Un espacio con sobres no se elimina. Verás «todavía tiene sobres, incluidos los archivados, así que
+no se puede eliminar» con el enlace «Ver sus sobres». Los sobres no se mueven de espacio: un espacio
+que alguna vez tuvo un sobre se queda.
+
+## Miembros: personas y claves de API
+
+Pulsa «Miembros» en la fila del espacio. Si está vacío verás «Todavía no hay miembros. Solo los
+administradores ven este espacio de trabajo hasta que añadas a alguien».
+
+<Steps>
+
+1. En «Añadir miembro», abre «Selecciona…». Las personas aparecen como «nombre — correo» y las
+   credenciales de API como «etiqueta (clave de API)».
+
+2. Elige el rol y pulsa «Añadir». Si eliges Gestor, el diálogo explica: «Los gestores pueden crear,
+   enviar y cancelar sobres, leer el archivo y el registro de auditoría, descargar documentos y
+   asignar etiquetas en este espacio de trabajo».
+
+3. Para cambiar el rol de alguien, usa el selector «Rol de nombre» en su fila. Para quitarlo, pulsa
+   «Quitar» y confirma.
+
+</Steps>
+
+<Aside type="note" title="Los administradores no se añaden">
+  «Los administradores ya ven todos los espacios de trabajo, así que no aparecen». Un administrador
+  tiene acceso a todo sin membresía; intentar añadirlo responde «Los administradores ya ven todos los
+  espacios de trabajo».
+</Aside>
+
+## Roles que puedes asignar
+
+| Rol | Qué puede hacer en el espacio |
+| --- | --- |
+| Lector (`viewer`) | Ver los sobres y el archivo. No descarga documentos ni lee la auditoría. |
+| Auditor (`auditor`) | Lo del Lector, más leer el registro de auditoría y descargar documentos. |
+| Gestor (`manager`) | Todo: crear, editar, enviar y cancelar sobres, subir documentos, asignar etiquetas, descargar y auditar. |
+
+Colaborador (`contributor`) es el rol implícito de todo miembro en General y no se puede asignar en
+ningún espacio: «Ese rol no se puede asignar. Elige Lector, Auditor o Gestor». Si alguien necesita
+crear y enviar en un espacio privado, dale Gestor. La tabla completa está en la
+[Matriz de permisos](/sign/admin/permissions/).
+
+## Límites y tiempos
+
+- Una persona o clave de API puede pertenecer como máximo a
+  <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> espacios. Al superarlo, la aplicación lo
+  rechaza y nombra el máximo.
+- Los cambios no son instantáneos: «Los cambios llegan a una persona o integración cuando se renueva
+  su sesión». Una sesión dura <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />, así que ese es el
+  máximo de espera, tanto para dar acceso como para quitarlo.
+- Si ves «El acceso todavía se está configurando. Inténtalo de nuevo en un momento» o «Todavía se
+  está guardando otro cambio», espera unos segundos y repite.
+- Una clave de API necesita acceso al menos a un espacio; ver
+  [Credenciales de API](/sign/admin/api-credentials/).

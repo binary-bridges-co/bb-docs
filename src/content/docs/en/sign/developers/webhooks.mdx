@@ -1,0 +1,197 @@
+---
+title: Webhooks
+description: The six events bb-sign posts, the three headers, how to verify the signature over the raw body, delivery and retries, and how to read the history.
+product: sign
+audience: developer
+source: docs/api/webhooks.md
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { WEBHOOKS, ENVELOPE } from '../../../../facts/sign';
+
+bb-sign posts a signed JSON payload to your URL when something happens to an envelope, so you do not
+have to poll.
+
+<Aside type="note" title="The spec is the contract; this page is the guide">
+  The signature scheme is defined normatively in the
+  [webhook signature specification](/en/sign/developers/webhook-signature-spec/). Where they
+  disagree, the spec wins. Please tell us, because they should not.
+</Aside>
+
+## Setting one up
+
+**Settings**, tab **Webhooks**, **New webhook**.
+
+- **Endpoint URL**: "Must be HTTPS and reachable from the internet. We refuse private and internal
+  addresses." The check runs again on every delivery, not just at registration.
+- **Events to receive**: pick the ones you need. There are six:
+
+| Event | When |
+|---|---|
+| `envelope.sent` | An envelope was sent to its signers |
+| `envelope.completed` | Every signer has signed |
+| `envelope.cancelled` | An envelope was cancelled |
+| `envelope.expired` | An envelope passed its expiry unsigned |
+| `signer.signed` | One signer signed; others may remain |
+| `signer.viewed` | A signer opened the document |
+
+The **signing secret is shown once**, at creation. Store it wherever you keep secrets. An
+organization can have up to <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
+
+## What arrives
+
+```json
+{
+  "id": "3f8c...",
+  "type": "envelope.completed",
+  "apiVersion": "2026-08-09",
+  "createdAt": "2026-08-09T14:22:31Z",
+  "data": {
+    "envelope": {
+      "id": "...", "title": "Q3 Agreement", "status": "COMPLETED",
+      "createdAt": "...", "expiresAt": null
+    },
+    "signer": { "id": "...", "email": "...", "name": "...", "signOrder": 1, "status": "SIGNED", "signedAt": "..." }
+  }
+}
+```
+
+`data.signer` is present only for `signer.*` events. Full schemas are in the
+[API reference](/sign/api/) as `WebhookEvent`, so if you generate a client, these are typed.
+
+Three headers matter:
+
+| Header | Use |
+|---|---|
+| `X-BBSign-Signature` | What you verify. `t=<unix>,v1=<hex>` |
+| `X-BBSign-Event-Id` | Your **idempotency key**, stable across retries |
+| `X-BBSign-Event-Type` | The event name, so you can route before parsing |
+
+### Getting the signed document
+
+`envelope.completed` is exactly when you want the file, and the payload deliberately does not carry
+it: a presigned URL in a payload outlives the delivery and may sit in a log for months. Call
+`GET /api/v1/envelopes/{id}/documents` instead. It returns `signedUrl` once the envelope is
+`COMPLETED`, valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />. The
+[walkthrough](/en/sign/developers/envelope-walkthrough/) shows the whole sequence.
+
+## Verifying, and the mistake everyone makes first
+
+**The signature covers the exact bytes on the wire.** Almost every web framework parses the JSON
+before your handler sees it, and re-encoding that object produces *different bytes*: key order and
+whitespace change. Verification then fails for a reason you cannot see, because the parsed object
+looks perfectly correct.
+
+This is the single most common integration failure. Capture the raw body.
+
+<Tabs syncKey="lang">
+  <TabItem label="JavaScript">
+    ```js
+    import { verifyWebhookSignature } from '@binarybridges/bb-sign-sdk/webhooks'
+
+    app.use(express.json({ verify: (req, _res, buf) => { req.rawBody = buf } }))
+
+    app.post('/webhooks/bb-sign', (req, res) => {
+      if (!verifyWebhookSignature(req.get('X-BBSign-Signature'), req.rawBody, SECRET)) {
+        return res.sendStatus(401)
+      }
+      res.sendStatus(200)
+      void handle(JSON.parse(req.rawBody.toString('utf8')))
+    })
+    ```
+
+    Next.js: `await request.text()`, not `.json()`. Fastify: register a content-type parser with
+    `parseAs: 'buffer'`. The [JavaScript SDK](/en/sign/sdks/javascript/) page has those examples
+    in full.
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    @PostMapping("/webhooks/bb-sign")
+    public ResponseEntity<Void> receive(
+            @RequestHeader("X-BBSign-Signature") String signature,
+            @RequestBody byte[] rawBody) {                    // byte[], NOT a DTO
+
+        if (!Webhooks.verify(signature, rawBody, System.getenv("BBSIGN_WEBHOOK_SECRET"))) {
+            return ResponseEntity.status(401).build();
+        }
+        WebhookEvent event = new ObjectMapper().readValue(rawBody, WebhookEvent.class);
+        // ... handle asynchronously
+        return ResponseEntity.ok().build();
+    }
+    ```
+
+    The [Java SDK](/en/sign/sdks/java/) page explains why the parameter is `byte[]`.
+  </TabItem>
+</Tabs>
+
+### Writing it yourself
+
+Read [the spec](/en/sign/developers/webhook-signature-spec/). It is normative and short. Three
+things it will tell you that are easy to get wrong:
+
+1. **Compare in constant time.** `==` on the digest leaks, byte by byte, how much of a forged
+   signature was correct, which is enough to construct a valid one.
+2. **Check the timestamp.** A signature with no freshness check is valid forever, so any captured
+   delivery can be replayed indefinitely.
+3. **Accept any matching `v1`.** During a secret rotation the header carries two. Requiring the first
+   to match makes the rotation window useless.
+
+There are <a href="/sync/sign/webhook-signature-vectors.json">test vectors</a>:
+<Fact of={WEBHOOKS.testVectorCount} /> cases including the ones that must *fail*. Both SDKs are
+tested against that exact file, and so is the server. If you implement your own verifier, run it
+against them too; that is what they are for.
+
+## Delivery behaviour
+
+**Respond 2xx quickly, then do the work.** Acknowledge as soon as the signature checks out and
+process asynchronously.
+
+**Retries.** A failed delivery is retried on a backoff ladder spanning roughly
+<Fact of={WEBHOOKS.retryLadderHoursApprox} unit="hours" />; the exact delays are in
+[Limits and defaults](/en/sign/reference/limits-and-defaults/). Any 2xx counts as success; anything
+else is a failure.
+
+**We will disable your endpoint if it keeps failing.** After <Fact of={WEBHOOKS.disableAfterLadders} />
+consecutive deliveries that exhaust all their retries, the subscription is switched off and your org
+admins are emailed. The settings panel shows it as **Disabled automatically**, with the note: "We
+disabled this endpoint after its retries failed repeatedly. Fix the endpoint, then enable it again."
+We also probe it on our own every <Fact of={WEBHOOKS.probeIntervalHours} unit="h" />, and one success
+switches it back on.
+
+**Deliveries during that time are recorded as "Not sent".** They are not queued for later: a backlog
+released after a week of downtime would flood you with stale events. The history shows exactly what
+you missed.
+
+**Delivery is at-least-once.** The same event can arrive twice, after a network blip or a restart.
+`X-BBSign-Event-Id` is identical across those, so deduplicate on it.
+
+**The body never changes between retries.** It is rendered once and resent byte for byte, so an
+`envelope.sent` retried hours later still describes the moment it was sent. Only the signature is
+recomputed, because it carries the send time.
+
+## Diagnosing it yourself
+
+**Settings**, tab **Webhooks**, **History** shows every event, every attempt, the response code and
+the error. Entries are kept for <Fact of={WEBHOOKS.deliveryLogRetentionDays} unit="days" />. That is
+the first place to look, before contacting anyone:
+
+| Status | Meaning | What to do |
+|---|---|---|
+| Delivered | It arrived and you returned 2xx | Nothing |
+| Rejected / Unreachable | Your endpoint answered badly, or not at all; the attempt list shows which | Check your logs for that attempt; the next retry is scheduled |
+| Gave up | Every retry was used | Fix the endpoint; fetch the state with the API, since this event will not be resent |
+| Not sent | The endpoint was disabled at the time; this explains a gap | Enable the endpoint; reconcile the gap with `GET /api/v1/envelopes` |
+| Could not be built | A problem on our side | Not something you can fix; tell us |
+
+## Rotating the secret
+
+**Settings**, tab **Webhooks**, **Rotate secret**. "Both the old and the new secret will be accepted
+for a grace period, so your receiver keeps working until you redeploy it with the new one." The
+grace period is <Fact of={WEBHOOKS.secretRotationGraceHours} unit="h" />. Deliveries in that window
+carry two `v1` values; a correct verifier accepts either, and both SDKs do.
+
+## Testing
+
+**Send test** delivers a synthetic event to your endpoint and shows you the status code it answered
+with. It exercises the real signing path, so it is a genuine check of your verifier, not a mock.

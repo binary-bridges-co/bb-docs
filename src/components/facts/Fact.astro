@@ -1,0 +1,36 @@
+---
+/**
+ * Renders one value from a fact sheet inline, with its source as a tooltip.
+ *
+ *   import { OTP } from '../../../facts/sign';
+ *   El código vale <Fact of={OTP.validitySeconds} unit="s" />.
+ */
+import type { Fact } from '../../content/facts/sign';
+
+interface Props {
+  of: Fact<string | number | boolean>;
+  unit?: string;
+  /** Format a number with a locale: "10 000" vs "10,000". Defaults to the page locale. */
+  locale?: string;
+}
+
+const { of, unit, locale } = Astro.props;
+// Outside a Starlight route (the llms.txt renders) `starlightRoute` throws; fall back to Spanish.
+let lang = locale ?? 'es-CO';
+if (!locale) {
+  try {
+    lang = Astro.locals.starlightRoute.lang ?? lang;
+  } catch {
+    // not a Starlight page
+  }
+}
+const text = typeof of.value === 'number' ? new Intl.NumberFormat(lang).format(of.value) : String(of.value);
+---
+
+<span class="bb-fact" title={`Fuente: ${of.source}`} data-source={of.source}>{text}{unit ? ` ${unit}` : ''}</span>
+
+<style>
+  .bb-fact {
+    font-variant-numeric: tabular-nums;
+  }
+</style>

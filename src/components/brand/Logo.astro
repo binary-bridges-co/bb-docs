@@ -1,0 +1,79 @@
+---
+/**
+ * Binary Bridges mark — "Puente binario", copied from bb-homepage
+ * (src/components/brand/Logo.astro) so the parent and the products read as
+ * one family. Where bb-sign's nodes are two brass dots (evidence), the
+ * parent's are a 1 and a 0.
+ *
+ * Invariant inherited from bb-sign: the arc never disappears. Under 20px the
+ * nodes withdraw and the arc thickens.
+ */
+interface Props {
+  /** `full`: accent arc, ink nodes. `mono`: currentColor. */
+  variant?: 'full' | 'mono';
+  size?: number;
+  /** Set only when the mark stands alone; leave unset beside a wordmark. */
+  label?: string;
+  /** A product's own drawing: brass dots instead of 1/0. */
+  product?: 'parent' | 'sign';
+}
+
+const SMALL_SIZE_THRESHOLD = 20;
+const ARC_FULL = 'M4 34C4 17 13 8 24 8s20 9 20 26c0 6-6 8-10 4';
+const ARC_SMALL = 'M9 33C9 21 15.5 14 24 14s15 7 15 19';
+
+const { variant = 'full', size = 28, label, product = 'parent' } = Astro.props;
+const isSmall = size < SMALL_SIZE_THRESHOLD;
+---
+
+<svg
+  class:list={['logo', `logo--${variant}`, `logo--${product}`]}
+  width={size}
+  height={size}
+  viewBox="0 0 48 48"
+  fill="none"
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+  focusable="false"
+>
+  <path
+    class="logo__arc"
+    d={isSmall ? ARC_SMALL : ARC_FULL}
+    stroke="currentColor"
+    stroke-width={isSmall ? 5.5 : 4}
+    stroke-linecap="round"
+    stroke-linejoin="round"></path>
+  {
+    !isSmall && product === 'parent' && (
+      <g class="logo__nodes">
+        <rect x="13.6" y="24.6" width="2.8" height="8.8" rx="1.4" fill="currentColor" />
+        <circle cx="33" cy="29" r="3" stroke="currentColor" stroke-width="2.2" />
+      </g>
+    )
+  }
+  {
+    !isSmall && product === 'sign' && (
+      <g class="logo__nodes">
+        <circle cx="15" cy="29" r="2.6" fill="currentColor" />
+        <circle cx="33" cy="29" r="2.6" fill="currentColor" />
+      </g>
+    )
+  }
+</svg>
+
+<style>
+  .logo {
+    flex-shrink: 0;
+  }
+  .logo--full .logo__arc {
+    color: var(--sl-color-accent);
+  }
+  .logo--full.logo--parent .logo__nodes {
+    color: var(--sl-color-text);
+  }
+  /* Brass means evidence: the product's own mark is the one place it is decorative. */
+  .logo--sign .logo__nodes {
+    color: var(--bb-seal);
+  }
+</style>

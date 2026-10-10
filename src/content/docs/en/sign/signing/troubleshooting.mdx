@@ -1,0 +1,45 @@
+---
+title: If something goes wrong
+description: Every message the signing page can show you, what happened and what to do. And what does not exist yet, such as declining to sign or asking for another link.
+product: sign
+audience: signer
+---
+
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ENVELOPE, OTP } from '../../../../facts/sign';
+
+You have no account and no support channel, so this table gathers everything the signing page can
+tell you. In almost every case, the person who can help is whoever sent you the document: they see
+the state of the envelope and can cancel it or create another one.
+
+## What you see, what happened and what to do
+
+| What you see | What happened | What to do |
+|---|---|---|
+| "Link Unavailable" and below it "This signing link has expired" | The link expired. It is valid for <Fact of={ENVELOPE.linkTtlHoursDefault} unit="hours" /> by default; the sender may set a different period. | Ask whoever sent it to check the envelope; they can create a new one. |
+| "Link Unavailable" and below it "This signing link has already been used" | Someone already signed with this link. | If it was not you, tell whoever sent it right away. |
+| "Link Unavailable" and below it "Envelope is not open for signing" or "This envelope has expired" | The envelope was cancelled, expired or is already complete. | Ask whoever sent it whether they need to send you another. |
+| "Link Unavailable" and below it "Failed to load signing page." | The page could not reach the server, or the link is incomplete. | Reload; if nothing changes, open the link from the original email. |
+| "Waiting for Previous Signers" | The envelope has a signing order and the people before you have not finished. | Wait. The page checks on its own and you can press "Check Again". You will receive `It's your turn to sign: {title}` when it is your turn. |
+| "Already Signed" | You have already signed this document with this link. | Nothing. When everyone has signed, `Signing complete: {title}` will arrive. |
+| "That code is not valid. Please check it and try again." | The code does not match or expired. Every failure counts; there are <Fact of={OTP.maxAttempts} unit="attempts" /> per code. | Copy the code from the latest email. If it does not work, ask for another with "Resend code". |
+| "That code can no longer be used. You can request a new one shortly." | That code's attempts ran out or it was already used, and the wait of <Fact of={OTP.resendCooldownSeconds} unit="s" /> is still running. | Wait until the button says "Resend code" and ask for a new one. |
+| "Please draw your signature." or "Please type your name." | You pressed "Submit Signature" with the box empty. | Draw or type and submit again. |
+| "Signing failed. Please try again." | The signature did not reach the server. | Press "Submit Signature" again. If instead you see "Your identity check has expired. Please request a new code.", more than <Fact of={OTP.verifiedValidityMinutes} unit="minutes" /> passed since verification: reload the page and ask for a new code. |
+| "This document is no longer available for download. Please contact the administrator." | The envelope was archived: <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> have passed since it was created. | Ask whoever sent you the document; the organization keeps it. |
+| "Your signed copy is still being prepared. We have emailed you a link — you can download it from there once it is ready." | Sealing is taking longer than usual. | Close the page and open the link in `Signing complete: {title}` later. |
+
+The messages shown under "Link Unavailable" are written by the server.
+
+## Declining to sign
+
+There is no button to decline. If you do not want to sign, do not sign and tell whoever sent you
+the document why; that person can cancel the envelope. If nobody does anything, the link expires on
+its own.
+
+## Asking for a new link
+
+There is no "resend my link" for signers today either. If you lost it or it expired, ask whoever
+sent you the document to check the envelope: they can confirm your email address and, if the
+envelope is still open, the reminders carry the same link; if it expired, they can create another
+envelope.
