@@ -1,6 +1,6 @@
 ---
 title: From credential to signed document
-description: Every call from a token to the signed PDF, in curl, JavaScript and Java, with the list-before-you-retry rule for a POST that timed out.
+description: Every call from the token to the signed PDF, in curl, JavaScript and Java, and how to safely retry a POST that got no response.
 product: sign
 audience: developer
 ---
@@ -9,19 +9,19 @@ import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS } from '../../../../facts/sign';
 
-The [quickstart](/en/sign/developers/quickstart/) ends at a `201`. This page goes the whole way:
-upload a PDF, create the envelope around it, add a second signer, send, learn from a webhook that
-everyone signed, and download the sealed PDF. Each step shows the same call in `curl`, JavaScript
-and Java; pick one tab and it stays picked.
+This guide walks through the complete integration flow: upload a PDF, create the envelope, add a
+second signer, send it, receive webhook confirmation that everyone signed and download the sealed
+PDF. It continues where the [quickstart](/en/sign/developers/quickstart/) ends. Each step shows the
+same call in `curl`, JavaScript and Java; the tab you choose stays selected across the page.
 
-You need the four environment variables from the quickstart (`BBSIGN_BASE_URL`,
-`BBSIGN_TOKEN_URL`, `BBSIGN_CLIENT_ID`, `BBSIGN_CLIENT_SECRET`), a PDF named `contract.pdf`, and,
+Requirements: the four environment variables from the quickstart (`BBSIGN_BASE_URL`,
+`BBSIGN_TOKEN_URL`, `BBSIGN_CLIENT_ID`, `BBSIGN_CLIENT_SECRET`), a PDF named `contract.pdf` and,
 for the JavaScript and Java tabs, a `client` built as in the quickstart.
 
 ## 1. Get a token
 
-Both SDKs fetch and refresh tokens on their own. You still need a raw token for `curl` and for the
-upload in step 2, which is a plain HTTP request without the SDK. A token lives
+Both SDKs fetch and refresh tokens automatically. The explicit token is needed for `curl` and for
+the upload in step 2, which uses plain HTTP. A token is valid for
 <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
 
 <Tabs syncKey="lang">
@@ -65,9 +65,9 @@ upload in step 2, which is a plain HTTP request without the SDK. A token lives
 
 ## 2. Upload the document
 
-`POST /api/v1/documents` is multipart with one part, `file`. Only
-<Fact of={DOCUMENTS.contentType} /> is accepted, up to <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />.
-The answer is an `UploadedDocumentResponse`; keep its `id`. A document that is not attached to an
+`POST /api/v1/documents` takes multipart with one part, `file`. It accepts
+<Fact of={DOCUMENTS.contentType} /> up to <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />.
+The response is an `UploadedDocumentResponse`; keep its `id`. A document that is not attached to an
 envelope within <Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> is deleted.
 
 <Tabs syncKey="lang">
@@ -113,14 +113,14 @@ envelope within <Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> is del
   </TabItem>
 </Tabs>
 
-The generated SDK methods for uploads send JSON, not multipart, so the JavaScript and Java tabs use
+The generated SDK methods send JSON, so the multipart uploads in the JavaScript and Java tabs use
 the platform HTTP client (okhttp is already a dependency of the Java SDK). You can also attach a
-file to an existing draft with `POST /api/v1/envelopes/{id}/documents`, same part name.
+file to an existing draft with `POST /api/v1/envelopes/{id}/documents`, with the same part name.
 
 ## 3. Create the envelope
 
-Pass the uploaded id in `documentIds`. `title` is the only required field; an envelope cannot be
-sent without at least one signer and one document.
+Send the document id in `documentIds`. `title` is the only required field; sending the envelope
+requires at least one signer and one document.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -165,8 +165,8 @@ sent without at least one signer and one document.
 
 ## 4. Add a signer
 
-Signers can be added while the envelope is a `DRAFT`. `signOrder` only matters when
-`sequentialSigning` is true; otherwise every signer gets a link at once.
+You can add signers while the envelope is in `DRAFT`. `signOrder` applies when
+`sequentialSigning` is true; otherwise every signer receives a link at the same time.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -193,11 +193,11 @@ Signers can be added while the envelope is a `DRAFT`. `signOrder` only matters w
   </TabItem>
 </Tabs>
 
-## 5. Send
+## 5. Send the envelope
 
-This is the point of no return: documents and signers freeze, each signer is emailed a link valid
-for <Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" /> by default, and `envelope.sent` fires. The
-answer is a `SendResponse` with the signing tokens by signer.
+On send, the documents and signers become fixed, each signer is emailed a link valid for
+<Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" /> by default, and `envelope.sent` is emitted. The
+response is a `SendResponse` with each signer's signing tokens.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -223,9 +223,10 @@ answer is a `SendResponse` with the signing tokens by signer.
 ## 6. Receive `envelope.completed`
 
 Register a webhook in **Settings**, tab **Webhooks**, subscribed to `envelope.completed`. When the
-last signer signs, bb-sign posts a signed event to your URL. Verify the signature over the raw body,
-answer `2xx`, then do the work. The payload carries the envelope id and status, not the document:
-you fetch that in step 7. [Webhooks](/en/sign/developers/webhooks/) covers delivery and retries.
+last signer signs, bb-sign sends a signed event to your URL. Verify the signature over the raw
+body, respond `2xx` and then process the event. The payload contains the envelope id and status;
+the document is retrieved in step 7. [Webhooks](/en/sign/developers/webhooks/) describes delivery
+and retries.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -283,9 +284,9 @@ you fetch that in step 7. [Webhooks](/en/sign/developers/webhooks/) covers deliv
 
 `GET /api/v1/envelopes/{id}/documents` returns each document with a `downloadUrl` (the original)
 and, once the envelope is `COMPLETED`, a `signedUrl` (the sealed copy). Both are presigned links
-valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />, and they are `null` unless the
-credential holds `document:download` in the envelope's workspace. Treat them as secrets: they grant
-the file without a token.
+valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />, and they are `null` if the
+credential does not hold `document:download` in the envelope's workspace. Treat them as secrets:
+they give access to the file without a token.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -324,26 +325,27 @@ the file without a token.
   </TabItem>
 </Tabs>
 
-Archive what you download: bb-sign keeps signed documents for a fixed period, and conservation after
-that is the organization's responsibility. See [Scope and retention](/en/sign/legal/retention/).
+Archive the documents you download: bb-sign keeps signed documents for a fixed period, and
+conservation after that is the organization's responsibility. See
+[Scope and retention](/en/sign/legal/retention/).
 
-## If a POST timed out: list before you retry
+## Retry a POST that got no response
 
-<Aside type="caution" title="A write with an unknown outcome is never retried">
+<Aside type="caution" title="List before you retry a write">
   If `POST /api/v1/envelopes` or `/send` times out, the outcome is unknown: the envelope may exist
-  or may already have been emailed to real people. Neither SDK retries it, and the API has no
-  idempotency key. **List before you retry.** Search by title with
-  `GET /api/v1/envelopes?title=...` (or `getEnvelope` if you kept the id); only when nothing is
-  there do you send again. The SDKs report this case as status `0` (`BbSignError.statusCode` in
-  JavaScript, `BbSignException.statusCode()` in Java).
+  or may already have been emailed to the signers. The SDKs do not retry these calls and the API
+  does not use idempotency keys. **List before you retry**: search by title with
+  `GET /api/v1/envelopes?title=...` (or use `getEnvelope` if you kept the id) and send again only
+  if the envelope is not there. The SDKs report this case as status `0`
+  (`BbSignError.statusCode` in JavaScript, `BbSignException.statusCode()` in Java).
 </Aside>
 
-`429` and `503` are retried, including for `POST`: those mean the server explicitly did not process
-the request.
+`429` and `503` are also retried for `POST`, because they indicate the server did not process the
+request.
 
-## Every envelope lives in a workspace
+## Envelope workspace
 
-The envelope above was filed in **General** because no `workspaceId` was passed. A credential
-reaches only the workspaces an admin granted it; `GET /api/v1/workspaces` lists them, and an
-`EnvelopeResponse` carries `workspaceId` and `workspaceName`. Envelopes in workspaces the
-credential cannot read answer `404` and never appear in lists.
+The envelope in this walkthrough was filed in **General** because no `workspaceId` was sent. A
+credential accesses the workspaces an admin assigned to it; `GET /api/v1/workspaces` lists them,
+and each `EnvelopeResponse` includes `workspaceId` and `workspaceName`. Envelopes in workspaces the
+credential cannot read return `404` and do not appear in lists.

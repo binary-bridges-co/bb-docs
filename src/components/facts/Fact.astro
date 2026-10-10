@@ -1,6 +1,6 @@
 ---
 /**
- * Renders one value from a fact sheet inline, with its source as a tooltip.
+ * Renders one value from a fact sheet inline. The source stays in a data attribute for audits, not shown to readers.
  *
  *   import { OTP } from '../../../facts/sign';
  *   El código vale <Fact of={OTP.validitySeconds} unit="s" />.
@@ -27,7 +27,7 @@ if (!locale) {
 const text = typeof of.value === 'number' ? new Intl.NumberFormat(lang).format(of.value) : String(of.value);
 ---
 
-<span class="bb-fact" title={`Fuente: ${of.source}`} data-source={of.source}>{text}{unit ? ` ${unit}` : ''}</span>
+<span class="bb-fact" data-source={of.source}>{text}{unit ? ` ${unit}` : ''}</span>
 
 <style>
   .bb-fact {

@@ -1,6 +1,6 @@
 ---
 title: Cancel an envelope
-description: Who can cancel an envelope, from which statuses, how it is confirmed, what the signer sees afterwards, why nobody receives an email and why it cannot be undone.
+description: Withdraw an envelope before it completes. Who can cancel, from which statuses, how to confirm it and what happens to the signers.
 product: sign
 audience: user
 ---
@@ -9,73 +9,68 @@ import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { ENVELOPE } from '../../../../facts/sign';
 
-Cancelling closes an envelope before it completes: the signing links stop working and the envelope
-becomes "Cancelled" for good. It is the only way to withdraw an envelope sent by mistake, with the
-wrong document or with a signer missing.
+Cancelling an envelope closes it before it completes: the signing links are deactivated
+immediately and the envelope moves to the **Cancelled** status. Use this action to withdraw an
+envelope sent by mistake, with the wrong document or with a signer missing, and then send a new one.
 
 ## Who can cancel
 
-Only someone who holds the cancel permission in the envelope's workspace:
+Envelopes can be cancelled by those who hold that permission in the envelope's workspace:
 
-- the **manager** of the workspace, and
-- any **administrator of the organization**, who has access to every workspace.
+- the workspace **manager**;
+- the organization's **administrators**, who have access to every workspace.
 
-A **contributor** can create and send envelopes, but not cancel them: on the detail page the
-"Cancel Envelope" button does not appear. If you need to cancel and do not see the button, ask the
-workspace manager or an administrator to do it. See
+**Contributors** create and send envelopes; to cancel one, they ask the workspace manager or an
+administrator. See
 [Organizations, workspaces and roles](/en/sign/concepts/organizations-workspaces-roles/).
 
-## From which statuses
+## Statuses that allow cancellation
 
-An envelope can be cancelled in "Draft", "Sent" or "In Progress". A "Completed", "Cancelled" or
-"Expired" envelope is already closed and does not offer the button.
+You can cancel an envelope in **Draft**, **Sent** or **In Progress**. Envelopes in **Completed**,
+**Cancelled** or **Expired** are already closed.
 
-Cancelling a "Draft" (an envelope that was created but not sent) keeps it from lingering in the
-list; it affects nobody, because nobody received a link.
+Cancelling a **Draft** removes it from the active list without affecting anyone, because no signer
+has received a link.
 
-## How to cancel
+## Cancel the envelope
 
 <Steps>
 
-1. Open the envelope from Envelopes.
+1. Open the envelope from **Envelopes**.
 
-2. At the bottom of the page, press "Cancel Envelope".
+2. At the bottom of the page, press **Cancel Envelope**.
 
-3. The "Cancel Envelope" dialog asks: "Are you sure you want to cancel this envelope? This action
-   cannot be undone and all pending signatures will be invalidated." Confirm with "Cancel
-   Envelope".
+3. The **Cancel Envelope** dialog asks for confirmation: "Are you sure you want to cancel this
+   envelope? This action cannot be undone and all pending signatures will be invalidated." Confirm
+   with **Cancel Envelope**.
 
-4. The status changes to "Cancelled" and the button disappears.
+4. The status changes to **Cancelled**.
 
 </Steps>
 
-If the application answers "Could not cancel the envelope", reload the page: someone else may have
-cancelled or completed it in the meantime. If the error persists, copy the reference the notice
-shows and send it to your administrator.
+If the application shows "Could not cancel the envelope", reload the page: someone else may have
+cancelled or completed it at that moment. If the message repeats, copy the reference shown in the
+notice and send it to your administrator.
 
 ## What happens to the signers
 
-From the moment of cancellation, every signer's link opens the "Link Unavailable" page. Whoever had
-already signed keeps their signature in the envelope's audit trail, but no signed PDF is generated,
-because the envelope never completed.
-
-<Aside type="caution" title="Nobody receives a cancellation email">
-  Today bb-sign sends no email when you cancel. Signers who had not signed yet will still have the
-  invitation in their inbox and, if enough time had passed, a reminder, and when they open the link
-  they will only see that it is unavailable. Tell them yourself, especially if you are about to send
-  them a new envelope: that way they know which one is the right one.
-</Aside>
-
-Automatic reminders stop with the cancellation. If your organization uses webhooks, the
+From the moment of cancellation, every signer's link opens the **Link Unavailable** page and
+automatic reminders stop. Signatures already made remain in the envelope's audit trail. The signed
+PDF is generated only for completed envelopes. If your organization uses webhooks, the
 `envelope.cancelled` event is published at that moment.
 
-## It cannot be undone
+<Aside type="caution" title="Let the signers know">
+  Signers do not receive a cancellation notice. Tell them yourself, especially if you are about to
+  send them a new envelope, so they know which one to sign.
+</Aside>
 
-A cancelled envelope is not reopened or resent. To move on, create a new envelope with the same
-documents (they have to be uploaded again) and the same signers, who will receive new links.
+## Send a replacement envelope
 
-The cancelled envelope stays visible in Envelopes, with its original documents and its audit trail,
-until <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> have passed since its creation; then it
-moves to [Archived envelopes](/en/sign/sending/archived-envelopes/).
+Cancellation is final. To continue, create a new envelope, upload the documents again and add the
+signers, who will receive new links.
 
-<LinkCard title="Your first envelope" href="/en/sign/getting-started/first-envelope/" description="Creating the replacement envelope, step by step." />
+The cancelled envelope stays visible in **Envelopes**, with its original documents and its audit
+trail, for <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> from its creation; then it moves to
+[Archived envelopes](/en/sign/sending/archived-envelopes/).
+
+<LinkCard title="Your first envelope" href="/en/sign/getting-started/first-envelope/" description="Create the replacement envelope step by step." />

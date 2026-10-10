@@ -1,6 +1,6 @@
 ---
 title: Verify a signed document
-description: What the QR code on the seal opens, what Valid Signature and Invalid Signature mean, what that page does not check and how to see the certificate seal.
+description: How to confirm a signature with the QR code on the seal, what each result means and how to check the PDF's integrity with the certificate seal.
 product: sign
 audience: all
 ---
@@ -9,64 +9,57 @@ import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { CERTIFICATE } from '../../../../facts/sign';
 
-Anyone holding the signed PDF can check the seal without an account. This page explains what that
-verification checks and, above all, what it does not.
+Anyone who has the signed PDF can verify it without an account. The QR code on the seal confirms
+the signature details, and the organization's certificate seal confirms that the file has not
+changed.
 
 ## Scan the QR code
 
-Every seal carries a QR code. Scanning it opens bb-sign's "Signature Verification" page, which
-queries the server and shows a result and four details: "Signer", "Email", "Signed" and
-"Document" (the envelope identifier). If you open the link by hand and something is missing, you
-see "This link is missing its verification details. Scan the QR code on the signed document again,
-or open the link exactly as it appears there."
+Scanning the QR code on the seal opens the **Signature Verification** page, which shows the result
+and four details: **Signer**, **Email**, **Signed** and **Document** (the envelope identifier). If
+the link is incomplete, the page shows "This link is missing its verification details. Scan the QR
+code on the signed document again, or open the link exactly as it appears there."
 
-## What "Valid Signature" means
+## "Valid Signature" result
 
-Under the result you read "This document has not been altered since it was signed." Concretely,
-bb-sign recomputes the seal's fingerprint, <Fact of={CERTIFICATE.sealHashFormula} />, from the
-signer details it has stored and the certificate **active today** in the organization, and
-compares it with the one printed on the seal. If they match, the details on the seal (who, with
-which email, on which day, on which envelope) are the ones bb-sign recorded and nobody has changed
-them.
+**Valid Signature** means that the details on the seal (signer, email, date and envelope) match
+what bb-sign recorded at the time of signing. To check this, bb-sign recomputes the seal's
+fingerprint, <Fact of={CERTIFICATE.sealHashFormula} />, from the recorded details and the
+organization's active certificate, and compares it with the fingerprint printed on the seal.
 
-## What "Invalid Signature" can mean
+## "Invalid Signature" result
 
-The page says "The document does not match its signature. It may have been edited after signing,
-or this may not be the original file." The possible causes:
+**Invalid Signature** means the fingerprint does not match. Possible causes:
 
-- The QR or the link does not correspond to any recorded signature (a badly copied link, for
-  example).
-- The organization changed its certificate after the signature. The fingerprint includes the
-  certificate, so earlier seals stop matching even though the document is intact.
-- There is no active certificate to compare against ("Certificate not available for
-  verification").
+- a QR code or link that does not correspond to a recorded signature, such as a badly copied link;
+- a certificate change in the organization after the signature: the fingerprint includes the
+  certificate, so earlier seals stop matching even though the document is intact;
+- no active certificate to compare against ("Certificate not available for verification").
 
-If in doubt, ask the organization to confirm the signature from the envelope's history.
+In any of these cases, the organization that sent the document can confirm the signature from the
+envelope's history.
 
-## What this check does not do
+## Check the PDF's integrity
 
-<Aside type="caution" title="The QR does not examine the PDF file">
-  The verification compares details stored in bb-sign, not the file in front of you. A PDF edited
-  after signing, with its seal intact, would still show "Valid Signature" when you scan its QR. To
-  know whether the file changed, look at the certificate seal.
+<Aside type="caution" title="Use the certificate seal to check the file">
+  The QR code verifies the details recorded in bb-sign. To confirm that the PDF file was not
+  modified after signing, check the certificate seal.
 </Aside>
 
-## Check the certificate seal
-
-When the envelope completes, bb-sign signs every PDF with the organization's certificate. Open the
+When the envelope completes, bb-sign seals every PDF with the organization's certificate. Open the
 file in Adobe Acrobat Reader and open the signature panel (the pen icon in the side bar). There
-you see:
+you can see:
 
-- whether the file changed after it was sealed: Acrobat warns next to the signature;
-- whose name the certificate is in. By default bb-sign uses a Binary Bridges testing certificate,
-  which Acrobat marks as untrusted; an organization with its own certificate appears under its
-  name. See [Your own certificate](/en/sign/admin/own-certificate/).
+- whether the file changed after it was sealed, which Acrobat shows next to the signature;
+- whose name the certificate is in. An organization with its own certificate appears under its
+  name. If the organization uses the default Binary Bridges testing certificate, Acrobat marks it
+  as untrusted. See [Your own certificate](/en/sign/admin/own-certificate/).
 
-Today the PDF embeds only the end certificate, not the full chain, so Acrobat may ask you to trust
-it manually.
+The PDF embeds the end certificate without the full chain, so Acrobat may ask you to trust it
+manually.
 
 ## If the service does not respond
 
-You see "We could not reach the verification service. This does not mean the signature is invalid
-— please try again in a moment." It is a temporary failure of the service, not of the document:
-scan the QR again later.
+If the page shows "We could not reach the verification service. This does not mean the signature
+is invalid — please try again in a moment.", the service is temporarily unavailable. Scan the QR
+code again later.

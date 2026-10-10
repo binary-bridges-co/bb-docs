@@ -1,6 +1,6 @@
 ---
 title: "Scope and retention"
-description: What bb-sign covers, how long it keeps documents and evidence under the terms, what the infrastructure does today and how to archive every envelope.
+description: "What bb-sign guarantees for every signed document, how long it keeps it, how that policy is applied and how to archive each envelope on completion."
 product: sign
 audience: legal
 ---
@@ -9,59 +9,54 @@ import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { ENVELOPE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../../facts/sign';
 
-bb-sign covers one part of the signing process and covers it completely. The other part, keeping the
-signed documents for the years the law or the customer's own rules require, is the customer's job.
-This page separates three things that tend to get mixed up: what bb-sign guarantees, what the terms
-of service promise about retention, and what the infrastructure does today.
+bb-sign backs every signed document with integrity, signer identification and evidence, and keeps it
+for a fixed period. This page explains what the service covers, how long it keeps documents and how
+your organization can archive each envelope to keep it for as long as the law or your own rules
+require.
 
 ## What bb-sign covers
 
-- **Integrity.** Every signed document is sealed; any later alteration is detectable.
+- **Integrity.** Every signed document is sealed, and any later change is detected.
 - **Identification.** The signer is identified by their email and, when the organization requires
   it, by a one-time code.
-- **Compliance with agreements.** What the signer saw and accepted is recorded with date and time.
-- **Inconsistency detection.** The audit chain lets you check that nothing was inserted or deleted
-  afterwards.
-- **Probative value.** The evidence (who, what, when, from where) can be consulted and downloaded.
-- **Traceability.** Every relevant action on an envelope is in its history.
+- **Record of the agreement.** What the signer saw and accepted is recorded with date and time.
+- **Consistent evidence.** The audit chain lets you confirm that no record was inserted or removed.
+- **Probative value.** The evidence (who, what, when and from where) can be viewed and downloaded.
+- **Traceability.** Every relevant action on an envelope is recorded in its history.
 
-**Conservation is the customer's job.** bb-sign keeps the files for a fixed period and says so in its
-terms; after that period, keeping them is the responsibility of the organization that sent them.
+bb-sign keeps documents for a fixed period set out in its terms. Once that period ends, keeping them
+is the responsibility of the organization that sent them.
 
-## Policy (service terms)
+## Retention policy
 
-These are the service's commitments. They are in the draft retention clause of the
-[Terms and conditions](/en/sign/legal/terms/).
+These are the service's commitments, set out in the retention clause of the
+[Terms and conditions](/en/sign/legal/terms/) (draft for Version 2).
 
-| What | Policy |
+| Item | Policy |
 |---|---|
-| Retention of signed documents and evidence | <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. Fixed period; not configurable per organization. |
+| Retention of signed documents and evidence | <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. A fixed period, the same for every organization. |
 | Move to cold archive | At <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" />. A file in cold archive cannot be downloaded immediately. |
-| Restore | On request. The restored copy stays available for <Fact of={RETENTION_POLICY.restoredCopyDays} unit="days" />. Usually within hours, with no guaranteed time. |
-| After the period | Keeping the files is the customer's responsibility (Ley 527 de 1999, article 12). |
+| Restore | On request. The restored copy stays available for <Fact of={RETENTION_POLICY.restoredCopyDays} unit="days" />. It usually takes a few hours, with no guaranteed time. |
+| After the period | Retention is the customer's responsibility (Ley 527 de 1999, article 12). |
 
-## What the infrastructure does today
+## How the policy is applied
 
-The policy is the commitment; this table is what was verified in the code and the infrastructure. It
-describes no more than what exists.
+This table describes how the service currently behaves, as verified on the platform.
 
-| Item | Today |
+| Item | Current behaviour |
 |---|---|
-| Documents: move to infrequent-access storage (Standard-IA) | At <Fact of={RETENTION_IMPLEMENTED.documentsStandardIaDays} unit="days" />. |
-| Documents: move to cold archive (Glacier) | At <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="days" />. |
-| Document expiration rule | None. No document is deleted today. |
-| Restore on request | Does not exist yet. A document already moved to Glacier cannot be downloaded from the application; ask Binary Bridges for it. |
-| Evidence bucket | Exists, but nothing writes to it yet. |
-| Audit events | Never purged. |
-| Envelope archive in the database | <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after creation, a completed, cancelled or expired envelope moves to the "Archived" view. The record is not deleted. |
+| Documents: move to infrequent-access storage | At <Fact of={RETENTION_IMPLEMENTED.documentsStandardIaDays} unit="days" />. |
+| Documents: move to cold archive | At <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="days" />. |
+| Restore on request | Handled by Binary Bridges. To obtain a document that has moved to cold archive, request it from Binary Bridges; it cannot be downloaded from the application. |
+| Envelope moves to "Archived" | <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after creation, a completed, cancelled or expired envelope moves to the "Archived" view. The record is kept. |
 
-What the application's Storage page shows outside production are testing defaults, not the
-production configuration. See [Storage](/en/sign/admin/storage/).
+Outside production, the application's **Storage** page shows testing defaults, not the production
+configuration. See [Storage](/en/sign/admin/storage/).
 
 ## What Ley 527 de 1999 says
 
-Article 12 sets the conditions under which a conserved data message satisfies a legal obligation to
-conserve. The Spanish text is the authoritative one:
+Article 12 sets the conditions under which a retained data message satisfies a legal obligation to
+retain. The Spanish text is the authoritative one:
 
 > **Artículo 12. Conservación de los mensajes de datos y documentos.** Cuando la ley requiera que
 > ciertos documentos, registros o informaciones sean conservados, ese requisito quedará satisfecho,
@@ -81,9 +76,9 @@ conserve. The Spanish text is the authoritative one:
 > Los libros y papeles del comerciante podrán ser conservados en cualquier medio técnico que
 > garantice su reproducción exacta.
 
-In short: the information must remain accessible for later consultation; it must be kept in the
+In summary: the information must remain accessible for later consultation; it must be kept in the
 format in which it was generated, sent or received, or in one that demonstrably reproduces it
-exactly; and any information that identifies the origin, destination, date and time must be kept
+exactly; and any information that identifies its origin, destination, date and time must be kept
 with it.
 
 Article 13 allows that obligation to be met through third parties:
@@ -93,27 +88,27 @@ Article 13 allows that obligation to be met through third parties:
 > datos, se podrá realizar directamente o a través de terceros, siempre y cuando se cumplan las
 > condiciones enunciadas en el artículo anterior.
 
-That is, conservation may be done directly or through a third party, as long as the conditions of
-article 12 hold. bb-sign is one such third party, but only for the period in the policy. The sealed
-PDF you download meets the second condition (it reproduces exactly what was signed) and carries in
-its seal the name, email and date of every signature. Keeping it for the years your obligation
-requires is the part that falls to you.
+In other words, retention may be carried out directly or through a third party, provided the
+conditions of article 12 are met. bb-sign acts as that third party for the policy period. The sealed
+PDF you download meets the second condition, because it reproduces exactly what was signed, and its
+seal includes the name, email and date of every signature. To keep it for the years your obligation
+requires, store it in your organization's archive.
 
-## What to do: archive every envelope on completion
+## Archive every envelope on completion
 
-The most reliable way is automatic: when the `envelope.completed` event arrives, list the envelope's
-documents and download the signed copy of each one to your own archive.
+The most reliable approach is automatic: when the `envelope.completed` event arrives, list the
+envelope's documents and download the signed copy of each one to your organization's archive.
 
 <Steps>
 
 1. Create a webhook subscribed to `envelope.completed`. See [Webhooks](/en/sign/developers/webhooks/).
-2. Verify the signature of every delivery before acting on it. The envelope id is in
+2. Verify the signature of every delivery before processing it. The envelope ID is in
    `data.envelope.id`.
 3. Call `GET /api/v1/envelopes/{id}/documents` with a credential that holds `document:download` in
    the envelope's workspace (auditor role or above). Without that permission, `signedUrl` comes back
    empty.
 4. Download every `signedUrl`. The links are valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="seconds" />;
-   download them as you receive them, do not store them.
+   download them as you receive them, without storing them.
 
 </Steps>
 
@@ -210,12 +205,12 @@ void archiveEnvelope(BbSignClient client, UUID envelopeId) throws Exception {
   </TabItem>
 </Tabs>
 
-If you have no integration, download the signed documents from the envelope page. See
+If you do not have an integration, download the signed documents from the envelope page. See
 [Download signed documents](/en/sign/sending/download-signed-documents/).
 
-<Aside type="note" title="The signer's link has a different clock">
-  The copy a signer downloads from their own link stops being available when the envelope moves to
-  the "Archived" view, <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after creation. That
-  period is not the retention policy: it is the database archive. If your signers need their copy
-  for longer, hand it to them from your own archive.
+<Aside type="note" title="The signer's copy has its own period">
+  The copy a signer downloads from their link is available until the envelope moves to the
+  "Archived" view, <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after creation. That period
+  belongs to the "Archived" view, not to the retention policy. If your signers need their copy for
+  longer, provide it from your organization's archive.
 </Aside>

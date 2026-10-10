@@ -1,6 +1,6 @@
 ---
 title: Autenticación de máquinas
-description: Cómo una credencial obtiene un token, qué lleva el token, a qué llega por sus roles de espacio de trabajo, cuánto vive y qué significa cada estado de error.
+description: Cómo una credencial obtiene un token, qué contiene, a qué tiene acceso según sus roles de espacio de trabajo, cuánto dura y qué indica cada estado de error.
 product: sign
 audience: developer
 source: docs/api/machine-authentication.md
@@ -11,30 +11,28 @@ import Fact from '../../../../components/facts/Fact.astro';
 import RolesMatrix from '../../../../components/facts/RolesMatrix.astro';
 import { URLS, AUTH, ORG_API_NEVER } from '../../../facts/sign';
 
-Esta página es normativa sobre cómo una identidad de máquina se autentica ante bb-sign y a qué
-puede llegar. Una credencial la crea un administrador de la organización en **Configuración**,
-pestaña **Credenciales de API**; lo que puede hacer lo deciden los **roles de espacio de trabajo**
-que tiene, no una lista fija de endpoints.
+Sus integraciones se autentican ante bb-sign con una credencial de API y operan con las mismas
+garantías de aislamiento que un usuario de la organización. Un administrador crea la credencial en
+**Configuración**, pestaña **Credenciales de API**; los **roles de espacio de trabajo** que se le
+asignan determinan lo que puede hacer. Esta página es normativa.
 
-## 1. El modelo: las máquinas no son un segundo tipo de llamador
+## Un único modelo de identidad
 
-Una máquina se autentica con **client credentials** de OAuth2 contra el realm `bbsign`. El token
-que recibe lo lee exactamente el mismo código que lee el token de una persona, porque Keycloak
-emite los dos de forma idéntica:
+Una máquina se autentica con **client credentials** de OAuth2 contra el realm `bbsign`. bb-sign
+procesa su token con el mismo código que procesa el token de una persona, porque Keycloak emite
+ambos de la misma forma:
 
-- Una **cuenta de servicio de Keycloak es un registro de usuario real.** No es un principal sin
+- Una **cuenta de servicio de Keycloak es un registro de usuario real**, no un principal sin
   usuario.
-- Por eso el **mismo mapeador de atributos** que le da a un token humano su claim `bb_sign_org_id`
-  le da al token de máquina el mismo claim, tomado de un atributo del usuario de la cuenta de
-  servicio.
-- Cada decisión de alcance por organización en la API pasa por una sola costura, que lee ese claim
-  y no sabe nada de tipos de concesión (grant types).
+- El **mismo mapeador de atributos** que agrega el claim `bb_sign_org_id` al token de una persona
+  lo agrega al token de máquina, a partir de un atributo del usuario de la cuenta de servicio.
+- Todas las decisiones de alcance por organización pasan por un único punto de la API, que lee ese
+  claim con independencia del tipo de concesión (grant type).
 
-La consecuencia práctica: **el aislamiento por organización se hereda, no se reimplementa.** Un
-token de máquina queda limitado por la misma comprobación que uno humano. Hay un modelo de
-identidad, no dos.
+En consecuencia, **el aislamiento por organización se hereda**: un token de máquina queda limitado
+por la misma comprobación que el de una persona.
 
-## 2. Obtener un token
+## Obtener un token
 
 ```bash
 curl -s -X POST https://auth.binarybridges.co/realms/bbsign/protocol/openid-connect/token \
@@ -47,56 +45,55 @@ curl -s -X POST https://auth.binarybridges.co/realms/bbsign/protocol/openid-conn
 { "access_token": "eyJ...", "expires_in": 300, "token_type": "Bearer" }
 ```
 
-Úsalo como un bearer token corriente:
+Envíelo como bearer token en cada solicitud:
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" https://sign-api.binarybridges.co/api/v1/envelopes
 ```
 
-### Qué debe llevar el token
+### Claims requeridos
 
-| Claim | Valor | Por qué importa |
+| Claim | Valor | Función |
 |---|---|---|
-| `bb_sign_org_id` | El UUID de la organización propietaria | Toda lectura y escritura con alcance de organización se resuelve a partir de este. **Sin él la API devuelve 403**, ver la sección 5 |
+| `bb_sign_org_id` | El UUID de la organización propietaria | Toda lectura y escritura con alcance de organización se resuelve a partir de este valor. **Si falta, la API responde 403** (ver [Estados de error](#estados-de-error)) |
 | `realm_access.roles` | contiene `org_api` | El rol que admiten los endpoints con alcance de organización |
-| `aud` | contiene `bb-sign` | Si falta, el validador de audiencia rechaza el token antes de cualquier decisión de autorización |
+| `aud` | contiene `bb-sign` | Si falta, el validador de audiencia rechaza el token antes de evaluar la autorización |
 
-Un cliente al que le falta el mapeador de audiencia falla en la validación; uno al que le falta el
-atributo de organización falla en la autorización. Ambos son fallos de aprovisionamiento, y ambos
-fallan cerrados. Las credenciales creadas desde **Configuración** llevan los tres.
+Sin el mapeador de audiencia, el token falla en la validación; sin el atributo de organización,
+falla en la autorización. En ambos casos el acceso se niega. Las credenciales creadas desde
+**Configuración** incluyen los tres claims.
 
-<Aside type="note" title="Vida del token">
-  Un token vive <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> (`expires_in`). Los tokens se
-  validan contra el JWKS del realm **sin llamada de introspección**, así que un token sigue siendo
-  válido hasta que caduca aunque la credencial detrás de él haya sido revocada. Todo lo que revoca
-  acceso queda, por tanto, acotado por esa ventana; no es inmediato.
+<Aside type="note" title="Vigencia del token">
+  Un token es válido durante <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> (`expires_in`). Se
+  valida contra el JWKS del realm **sin llamada de introspección**, de modo que conserva su validez
+  hasta que expira aunque la credencial se haya revocado. Toda revocación de acceso se hace
+  efectiva dentro de esa ventana.
 </Aside>
 
-## 3. A qué llega una credencial
+## Alcance de una credencial
 
-Con alcance de organización una credencial solo tiene `label:read` y `workspace:read`: puede
-listar las claves de etiqueta y los espacios de trabajo a los que pertenece. Todo lo que puede
-hacer **con los sobres** viene del rol que tiene en cada espacio de trabajo. Cuando un
-administrador de la organización crea la credencial, el formulario pide un espacio de trabajo y un
-rol, y «General con Gestor es la opción predeterminada». Un administrador puede añadir después la
-credencial a otros espacios desde **Configuración**, pestaña **Espacios de trabajo**, en
-**Miembros**.
+En el nivel de organización, una credencial tiene únicamente `label:read` y `workspace:read`:
+puede listar las claves de etiqueta y los espacios de trabajo a los que pertenece. Lo que puede
+hacer **con los sobres** depende del rol que tenga en cada espacio de trabajo. Al crear la
+credencial, el formulario solicita un espacio de trabajo y un rol: «General con Gestor es la
+opción predeterminada». Un administrador puede agregarla después a otros espacios desde
+**Configuración**, pestaña **Espacios de trabajo**, sección **Miembros**.
 
 <RolesMatrix locale="es" show="workspace" />
 
-- `GET /api/v1/workspaces` devuelve General más los espacios de trabajo en los que la credencial
-  tiene un rol. Pasa el `id` de uno como `workspaceId` al crear un sobre; si lo omites, el sobre se
+- `GET /api/v1/workspaces` devuelve General y los espacios de trabajo en los que la credencial
+  tiene un rol. Envíe el `id` de uno como `workspaceId` al crear un sobre; si lo omite, el sobre se
   archiva en General.
-- Una credencial puede pertenecer a lo sumo a <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> espacios de trabajo.
-- Un cambio de rol llega a la credencial cuando se emite su siguiente token, es decir, en menos de
-  <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
-- La organización **siempre se toma del token**, nunca de la petición. Una máquina no indica un
-  `orgId` al crear un sobre; indicarlo no cambia dónde queda.
+- Una credencial puede pertenecer como máximo a <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> espacios de trabajo.
+- Un cambio de rol se aplica cuando se emite el siguiente token de la credencial, es decir, en
+  menos de <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
+- La organización **siempre se toma del token**, nunca de la solicitud. Una máquina no envía
+  `orgId` al crear un sobre; si lo envía, no cambia la organización del sobre.
 
-## 4. Qué no puede hacer una credencial
+## Permisos reservados a personas
 
-Una credencial nunca puede tener estos permisos de organización, por más que un administrador
-intente concederlos. Son guardas contra la escalada en el catálogo de permisos:
+Una credencial nunca recibe estos permisos de organización, aunque un administrador intente
+concederlos. Son protecciones contra la escalada de privilegios en el catálogo de permisos:
 
 <ul>
   {ORG_API_NEVER.map((key) => (
@@ -104,57 +101,57 @@ intente concederlos. Son guardas contra la escalada en el catálogo de permisos:
   ))}
 </ul>
 
-Más allá de eso, administrar organizaciones, usuarios, cuotas, certificados, etiquetas, el
-archivo, la auditoría, credenciales, webhooks y espacios de trabajo son **operaciones de la
-interfaz** que hace un administrador de la organización. No están en el contrato público, así que
-no hay endpoint que llamar. La ceremonia de firma (`/api/v1/sign/**`) es pública por diseño y está
-limitada a un firmante por el token de su enlace; una máquina no tiene nada que hacer ahí.
+La administración de organizaciones, usuarios, cuotas, certificados, etiquetas, el archivo, la
+auditoría, credenciales, webhooks y espacios de trabajo se realiza en la interfaz, a cargo de un
+administrador de la organización. La ceremonia de firma (`/api/v1/sign/**`) es pública por diseño
+y está limitada a un firmante por el token de su enlace; las integraciones no la utilizan.
 
-Dos tipos de negativa, y se ven distintas a propósito:
+Los dos tipos de rechazo se distinguen de forma intencional:
 
-| Pediste | Respuesta |
+| Solicitud | Respuesta |
 |---|---|
-| Una operación para la que tu credencial no tiene el permiso de organización | `403`, sin cuerpo |
-| Un sobre o espacio de trabajo que no puedes ver, o que no existe | `404`, indistinguible de «no existe» |
+| Una operación para la que la credencial no tiene el permiso de organización | `403`, sin cuerpo |
+| Un sobre o espacio de trabajo que la credencial no puede ver, o que no existe | `404`, idéntico a «no existe» |
 
-## 5. Modos de fallo, y qué significa cada uno
+## Estados de error
 
-| Estado | Significado | Causa habitual | Qué hacer |
+| Estado | Significado | Causa habitual | Acción |
 |---|---|---|---|
-| `401` | Sin token, token caducado, o un token que el realm no valida | Falta el header `Authorization`; token con más de <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> | Pide un token nuevo; revisa el prefijo `Bearer ` |
-| `403` en un endpoint del flujo | Autenticado, pero sin permiso con alcance de organización | Llamar a una operación de administración que es solo de la interfaz | Comprueba que la operación existe en la [referencia de la API](/sign/api/) |
-| `403` en `GET /api/v1/envelopes` en particular | El token lleva `org_api` pero **no `bb_sign_org_id`** | Una credencial que no se creó desde **Configuración** | Revócala y crea una desde **Configuración**, pestaña **Credenciales de API** |
-| `404` en un sobre o espacio de trabajo | La credencial no tiene rol en ese espacio, o el id está mal | Un espacio de trabajo que nunca se le concedió a la credencial | Pide a un administrador que añada la credencial en **Miembros**, o usa General |
+| `401` | Sin token, token expirado o token que el realm no valida | Falta el encabezado `Authorization`; token con más de <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> | Solicite un token nuevo; revise el prefijo `Bearer ` |
+| `403` en un endpoint del flujo | Autenticado, pero sin permiso en el nivel de organización | Llamar a una operación de administración que solo existe en la interfaz | Confirme que la operación existe en la [referencia de la API](/sign/api/) |
+| `403` en `GET /api/v1/envelopes` en particular | El token incluye `org_api` pero **no `bb_sign_org_id`** | Una credencial que no se creó desde **Configuración** | Revóquela y cree una nueva en **Configuración**, pestaña **Credenciales de API** |
+| `404` en un sobre o espacio de trabajo | La credencial no tiene rol en ese espacio, o el id es incorrecto | Un espacio de trabajo que nunca se asignó a la credencial | Pida a un administrador que agregue la credencial en **Miembros**, o use General |
 
-Esa tercera fila merece su propia línea. **Falla cerrada**: a un token sin claim se le niega el
-acceso, no se le sirven los datos de todos los inquilinos.
+En el caso de la tercera fila, el acceso se niega: un token sin el claim de organización no recibe
+datos de ninguna organización.
 
-## 6. Vida del token y revocación
+## Vigencia del token y revocación
 
-- Un token vive <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> y nunca se introspecciona.
-- **Revocar** detiene de inmediato la emisión de tokens nuevos. La confirmación avisa que las
-  peticiones que usen un token que la credencial ya obtuvo pueden seguir funcionando hasta que ese
-  token caduque: «revocar no corta el acceso que ya está en curso». La credencial aparece como
-  **Revocada — en expiración** hasta que caduca el último token que emitió, luego como
-  **Revocada**, y sigue en la lista durante
-  <Fact of={AUTH.revokedCredentialListedDays} unit="días" />. Si estás respondiendo a una
-  filtración, trata la credencial como activa hasta que haya pasado ese tiempo.
+- Un token es válido durante <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> y no se valida por
+  introspección.
+- **Revocar** detiene de inmediato la emisión de tokens nuevos. La confirmación indica que las
+  solicitudes con un token ya obtenido pueden seguir funcionando hasta que ese token expire:
+  «revocar no corta el acceso que ya está en curso». La credencial aparece como **Revocada — en
+  expiración** hasta que expira el último token emitido, luego como **Revocada**, y permanece en
+  la lista durante <Fact of={AUTH.revokedCredentialListedDays} unit="días" />. Ante una filtración,
+  considere la credencial activa hasta que haya transcurrido ese tiempo.
 - **Rotar** reemplaza el secreto sin periodo de gracia: «El secreto actual deja de funcionar de
   inmediato. Cualquier integración que lo use fallará hasta que la vuelvas a desplegar con el nuevo
   secreto».
-- Una organización puede tener a lo sumo <Fact of={AUTH.maxCredentialsPerOrg} /> credenciales activas.
+- Una organización puede tener como máximo <Fact of={AUTH.maxCredentialsPerOrg} /> credenciales activas.
 
-## 7. Crear una credencial
+## Crear una credencial
 
-Solo puede hacerlo un administrador de la organización, y solo desde la interfaz:
+Un administrador de la organización crea las credenciales desde la interfaz:
 
 <Steps>
-1. Abre **Configuración**, pestaña **Credenciales de API**, y elige **Nueva credencial**.
-2. Dale una etiqueta que diga qué la va a usar, y en **Acceso** elige el espacio de trabajo y el rol.
-3. Copia el **ID de cliente** y el **Secreto de cliente**. El secreto se muestra una sola vez: se
-   guarda únicamente en Keycloak y bb-sign no conserva ninguna copia.
-4. Entrega ambos valores al sistema que los va a usar, a través de su gestor de secretos, nunca por
+1. Abra **Configuración**, pestaña **Credenciales de API**, y seleccione **Nueva credencial**.
+2. Asígnele una etiqueta que identifique el sistema que la usará y, en **Acceso**, elija el espacio
+   de trabajo y el rol.
+3. Copie el **ID de cliente** y el **Secreto de cliente**. El secreto se muestra una sola vez: se
+   almacena únicamente en Keycloak y bb-sign no conserva copia.
+4. Entregue ambos valores al sistema que los usará a través de su gestor de secretos, nunca por
    control de versiones ni por chat.
 </Steps>
 
-El lado del administrador está documentado en [Credenciales de API](/sign/admin/api-credentials/).
+La gestión desde la interfaz se describe en [Credenciales de API](/sign/admin/api-credentials/).

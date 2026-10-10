@@ -1,6 +1,6 @@
 ---
 title: De la credencial al documento firmado
-description: Cada llamada desde el token hasta el PDF firmado, en curl, JavaScript y Java, con la regla de listar antes de reintentar un POST que agotó el tiempo de espera.
+description: Todas las llamadas desde el token hasta el PDF firmado, en curl, JavaScript y Java, y cómo reintentar de forma segura un POST sin respuesta.
 product: sign
 audience: developer
 ---
@@ -9,19 +9,20 @@ import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS } from '../../../facts/sign';
 
-El [inicio rápido](/sign/developers/quickstart/) termina en un `201`. Esta página recorre todo el
-camino: subir un PDF, crear el sobre a su alrededor, añadir un segundo firmante, enviar, enterarte
-por un webhook de que todos firmaron, y descargar el PDF sellado. Cada paso muestra la misma
-llamada en `curl`, JavaScript y Java; elige una pestaña y se queda elegida.
+Esta guía recorre el flujo completo de una integración: subir un PDF, crear el sobre, agregar un
+segundo firmante, enviarlo, recibir por webhook la confirmación de que todos firmaron y descargar
+el PDF sellado. Continúa donde termina el [inicio rápido](/sign/developers/quickstart/). Cada paso
+muestra la misma llamada en `curl`, JavaScript y Java; la pestaña elegida se mantiene en toda la
+página.
 
-Necesitas las cuatro variables de entorno del inicio rápido (`BBSIGN_BASE_URL`,
+Requisitos: las cuatro variables de entorno del inicio rápido (`BBSIGN_BASE_URL`,
 `BBSIGN_TOKEN_URL`, `BBSIGN_CLIENT_ID`, `BBSIGN_CLIENT_SECRET`), un PDF llamado `contract.pdf` y,
 para las pestañas de JavaScript y Java, un `client` construido como en el inicio rápido.
 
-## 1. Obtén un token
+## 1. Obtener un token
 
-Los dos SDKs obtienen y renuevan los tokens por su cuenta. Aun así necesitas un token en crudo para
-`curl` y para la subida del paso 2, que se hace con HTTP directo, sin el SDK. Un token vive
+Ambos SDKs obtienen y renuevan los tokens automáticamente. El token explícito se necesita para
+`curl` y para la subida del paso 2, que se hace con HTTP directo. Un token es válido durante
 <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
 
 <Tabs syncKey="lang">
@@ -63,12 +64,12 @@ Los dos SDKs obtienen y renuevan los tokens por su cuenta. Aun así necesitas un
   </TabItem>
 </Tabs>
 
-## 2. Sube el documento
+## 2. Subir el documento
 
-`POST /api/v1/documents` es multipart con una sola parte, `file`. Solo se acepta
-<Fact of={DOCUMENTS.contentType} />, hasta <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />.
-La respuesta es un `UploadedDocumentResponse`; guarda su `id`. Un documento que no se adjunta a un
-sobre en <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> se elimina.
+`POST /api/v1/documents` recibe multipart con una sola parte, `file`. Acepta
+<Fact of={DOCUMENTS.contentType} /> de hasta <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />.
+La respuesta es un `UploadedDocumentResponse`; conserve su `id`. Un documento que no se adjunta a
+un sobre en <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> se elimina.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -113,15 +114,15 @@ sobre en <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> se elimin
   </TabItem>
 </Tabs>
 
-Los métodos generados del SDK para subidas envían JSON, no multipart, así que las pestañas de
+Los métodos generados del SDK envían JSON, por lo que las subidas multipart de las pestañas de
 JavaScript y Java usan el cliente HTTP de la plataforma (okhttp ya es una dependencia del SDK de
-Java). También puedes adjuntar un archivo a un borrador existente con
+Java). También puede adjuntar un archivo a un borrador existente con
 `POST /api/v1/envelopes/{id}/documents`, con el mismo nombre de parte.
 
-## 3. Crea el sobre
+## 3. Crear el sobre
 
-Pasa el id subido en `documentIds`. `title` es el único campo obligatorio; un sobre no se puede
-enviar sin al menos un firmante y un documento.
+Envíe el id del documento en `documentIds`. `title` es el único campo obligatorio; para enviar el
+sobre se requieren al menos un firmante y un documento.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -164,10 +165,11 @@ enviar sin al menos un firmante y un documento.
   </TabItem>
 </Tabs>
 
-## 4. Añade un firmante
+## 4. Agregar un firmante
 
-Se pueden añadir firmantes mientras el sobre es un `DRAFT`. `signOrder` solo importa cuando
-`sequentialSigning` es true; si no, todos los firmantes reciben su enlace a la vez.
+Puede agregar firmantes mientras el sobre está en `DRAFT`. `signOrder` aplica cuando
+`sequentialSigning` es true; en caso contrario, todos los firmantes reciben su enlace al mismo
+tiempo.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -194,11 +196,11 @@ Se pueden añadir firmantes mientras el sobre es un `DRAFT`. `signOrder` solo im
   </TabItem>
 </Tabs>
 
-## 5. Envía
+## 5. Enviar el sobre
 
-Este es el punto sin retorno: los documentos y los firmantes se congelan, cada firmante recibe por
-correo un enlace válido por <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> por defecto,
-y se dispara `envelope.sent`. La respuesta es un `SendResponse` con los tokens de firma por
+Al enviar, los documentos y los firmantes quedan fijos, cada firmante recibe por correo un enlace
+válido durante <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> de forma predeterminada y
+se emite `envelope.sent`. La respuesta es un `SendResponse` con los tokens de firma de cada
 firmante.
 
 <Tabs syncKey="lang">
@@ -222,13 +224,13 @@ firmante.
   </TabItem>
 </Tabs>
 
-## 6. Recibe `envelope.completed`
+## 6. Recibir `envelope.completed`
 
-Registra un webhook en **Configuración**, pestaña **Webhooks**, suscrito a `envelope.completed`.
-Cuando firma el último firmante, bb-sign publica un evento firmado en tu URL. Verifica la firma
-sobre el cuerpo en crudo, responde `2xx` y luego haz el trabajo. El payload lleva el id y el estado
-del sobre, no el documento: ese lo obtienes en el paso 7. [Webhooks](/sign/developers/webhooks/)
-cubre la entrega y los reintentos.
+Registre un webhook en **Configuración**, pestaña **Webhooks**, suscrito a `envelope.completed`.
+Cuando firma el último firmante, bb-sign envía un evento firmado a su URL. Verifique la firma sobre
+el cuerpo original, responda `2xx` y luego procese el evento. El payload contiene el id y el estado
+del sobre; el documento se obtiene en el paso 7. [Webhooks](/sign/developers/webhooks/) describe
+la entrega y los reintentos.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -282,13 +284,13 @@ cubre la entrega y los reintentos.
   </TabItem>
 </Tabs>
 
-## 7. Lista los documentos y descarga el PDF firmado
+## 7. Listar los documentos y descargar el PDF firmado
 
 `GET /api/v1/envelopes/{id}/documents` devuelve cada documento con un `downloadUrl` (el original)
 y, cuando el sobre está `COMPLETED`, un `signedUrl` (la copia sellada). Ambos son enlaces
-prefirmados válidos por <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />, y son `null` a menos
-que la credencial tenga `document:download` en el espacio de trabajo del sobre. Trátalos como
-secretos: entregan el archivo sin token.
+prefirmados válidos durante <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />, y son `null` si la
+credencial no tiene `document:download` en el espacio de trabajo del sobre. Trátelos como
+secretos: dan acceso al archivo sin token.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -327,27 +329,27 @@ secretos: entregan el archivo sin token.
   </TabItem>
 </Tabs>
 
-Archiva lo que descargas: bb-sign conserva los documentos firmados durante un plazo fijo, y
-conservarlos después es responsabilidad de la organización. Ver
+Archive los documentos que descarga: bb-sign conserva los documentos firmados durante un plazo
+fijo, y su conservación posterior es responsabilidad de la organización. Consulte
 [Alcance y conservación](/sign/legal/retention/).
 
-## Si un POST agotó el tiempo de espera: lista antes de reintentar
+## Reintentar un POST sin respuesta
 
-<Aside type="caution" title="Una escritura con resultado desconocido nunca se reintenta">
+<Aside type="caution" title="Liste antes de reintentar una escritura">
   Si `POST /api/v1/envelopes` o `/send` agotan el tiempo de espera, el resultado es desconocido: el
-  sobre puede existir o puede que ya se haya enviado por correo a personas reales. Ningún SDK lo
-  reintenta, y la API no tiene clave de idempotencia. **Lista antes de reintentar.** Busca por
-  título con `GET /api/v1/envelopes?title=...` (o `getEnvelope` si guardaste el id); solo cuando no
-  hay nada envías de nuevo. Los SDKs informan este caso como estado `0` (`BbSignError.statusCode`
-  en JavaScript, `BbSignException.statusCode()` en Java).
+  sobre puede existir o ya puede haberse enviado por correo a los firmantes. Los SDKs no reintentan
+  estas llamadas y la API no usa claves de idempotencia. **Liste antes de reintentar**: busque por
+  título con `GET /api/v1/envelopes?title=...` (o use `getEnvelope` si conserva el id) y envíe de
+  nuevo solo si el sobre no aparece. Los SDKs reportan este caso como estado `0`
+  (`BbSignError.statusCode` en JavaScript, `BbSignException.statusCode()` en Java).
 </Aside>
 
-`429` y `503` sí se reintentan, incluso para `POST`: significan que el servidor explícitamente no
-procesó la petición.
+`429` y `503` se reintentan también en `POST`, porque indican que el servidor no procesó la
+solicitud.
 
-## Cada sobre vive en un espacio de trabajo
+## Espacio de trabajo del sobre
 
-El sobre de arriba se archivó en **General** porque no se pasó `workspaceId`. Una credencial solo
-llega a los espacios de trabajo que un administrador le concedió; `GET /api/v1/workspaces` los
-lista, y un `EnvelopeResponse` lleva `workspaceId` y `workspaceName`. Los sobres de espacios que la
-credencial no puede leer responden `404` y nunca aparecen en las listas.
+El sobre de este recorrido se archivó en **General** porque no se envió `workspaceId`. Una
+credencial accede a los espacios de trabajo que un administrador le asignó; `GET /api/v1/workspaces`
+los lista, y cada `EnvelopeResponse` incluye `workspaceId` y `workspaceName`. Los sobres de
+espacios que la credencial no puede leer responden `404` y no aparecen en las listas.

@@ -1,6 +1,6 @@
 ---
 title: Usuarios e invitaciones
-description: "Cómo invitar a una persona a tu organización, qué roles puedes darle, cuánto dura el enlace de invitación, cómo reenviarlo y qué ve cada rol."
+description: "Cómo invitar a una persona a su organización, qué rol asignarle, cuánto tiempo es válido el enlace de invitación y cómo reenviarlo."
 product: sign
 audience: admin
 ---
@@ -9,79 +9,75 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { AUTH, URLS } from '../../../facts/sign';
 
-**Quién:** administrador de la organización (también los administradores de plataforma). **Dónde:**
-Usuarios (`/users`) en el menú lateral.
+Usted crea la cuenta de cada persona que usa bb-sign en su organización. La persona recibe un correo,
+establece su contraseña y entra con su correo electrónico. Así, solo las personas que usted invita
+tienen acceso.
 
-Cada persona que usa bb-sign tiene una cuenta en tu organización. Tú la creas; la persona recibe un
-correo, establece su contraseña y entra. No hay registro por cuenta propia.
+**Quién:** administradores de la organización y administradores de plataforma. **Dónde:**
+**Usuarios**, en el menú lateral.
 
 ## Invitar a una persona
 
 <Steps>
 
-1. Pulsa «Nuevo Usuario». Se abre el formulario «Crear Usuario».
+1. Pulse **Nuevo Usuario**. Se abre el formulario **Crear Usuario**.
 
-2. Escribe «Nombre de usuario», «Correo» y, si quieres, «Nombre» y «Apellidos». El correo es la
-   identidad de la persona: ahí llega la invitación y con él inicia sesión.
+2. Escriba el **Nombre de usuario** y el **Correo** y, de forma opcional, el **Nombre** y los
+   **Apellidos**. El correo identifica a la persona: allí recibe la invitación y con él inicia sesión.
 
-3. Elige el «Rol». El campo «Organización» ya trae la tuya y no se puede cambiar.
+3. Elija el **Rol**. El campo **Organización** ya muestra la suya.
 
-4. Pulsa «Crear Usuario». Verás «Usuario creado correctamente» y el formulario te recuerda que «El
-   usuario recibirá un correo para establecer su contraseña».
+4. Pulse **Crear Usuario**. Verá «Usuario creado correctamente» y la persona recibirá el correo para
+   establecer su contraseña.
 
 </Steps>
 
-Si la cuenta se creó pero el correo no salió, verás «Usuario creado, pero no se pudo enviar el correo
-de configuración. Usa «Reenviar invitación» para intentarlo de nuevo». La cuenta existe; no vuelvas a
-crearla.
+Si aparece «Usuario creado, pero no se pudo enviar el correo de configuración», la cuenta ya existe.
+Use **Reenviar invitación** en su fila en lugar de crearla de nuevo.
 
-## Roles que puedes asignar
+## Elegir el rol
 
-| Rol en la lista | Qué puede hacer |
+| Rol | Qué puede hacer |
 | --- | --- |
-| «Miembro de Organización» (`org_member`) | Crear, editar y enviar sobres, subir documentos y asignar etiquetas en los espacios donde sea Colaborador o más. En General lo es siempre. No puede cancelar sobres. |
-| «Administrador de Organización» (`org_admin`) | Todo lo de esta sección: usuarios, espacios, etiquetas, credenciales, webhooks, certificado. Ve todos los sobres de todos los espacios. |
+| **Miembro de Organización** | Crear, editar y enviar sobres, subir documentos y asignar etiquetas en los espacios de trabajo donde sea Colaborador o Gestor. En el espacio General es Colaborador siempre. La cancelación de sobres corresponde a Gestores y administradores. |
+| **Administrador de Organización** | Todas las tareas de esta sección: usuarios, espacios, etiquetas, credenciales y webhooks. Ve todos los sobres de todos los espacios. |
 
-Nunca puedes crear un «Administrador de Plataforma»: esa opción solo aparece en la lista de un
-administrador de plataforma. Tampoco puedes invitar a alguien a otra organización: el campo
-«Organización» está fijo en la tuya. El detalle de cada permiso está en la
-[Matriz de permisos](/sign/admin/permissions/).
+Las cuentas que usted crea pertenecen siempre a su organización. El detalle de cada permiso está en
+la [Matriz de permisos](/sign/admin/permissions/).
 
-## El correo de invitación y su enlace
+## El enlace de invitación
 
-La invitación la envía el servidor de identidad desde <code>{URLS.identitySenderAddress.value}</code>,
-con un enlace para establecer la contraseña. El enlace vale
-<Fact of={AUTH.invitationLinkHours} unit="horas" />. Pasado ese tiempo, el enlace deja de funcionar y
-hay que reenviar la invitación; la cuenta sigue existiendo.
+La invitación llega desde <code>{URLS.identitySenderAddress.value}</code> con un enlace para establecer
+la contraseña, válido durante <Fact of={AUTH.invitationLinkHours} unit="horas" />. Si vence, reenvíe
+la invitación; la cuenta se mantiene.
 
 ## Reenviar una invitación
 
-Cada fila de la lista tiene el botón «Reenviar invitación». Al pulsarlo, la persona recibe un correo
-nuevo con un enlace nuevo. Verás «Correo de invitación enviado» o, si falló, «No se pudo enviar el
-correo de invitación»: espera un momento y vuelve a intentarlo.
+Cada fila de la lista tiene el botón **Reenviar invitación**. La persona recibe un correo nuevo con
+un enlace nuevo, y usted verá «Correo de invitación enviado». Úselo cuando el enlace haya vencido o
+la persona no encuentre el correo.
 
-Úsalo cuando el enlace caducó, cuando el correo se perdió o cuando la persona no lo encuentra.
+Si aparece «No se pudo enviar el correo de invitación», espere un momento e intente de nuevo.
 
-## Activo y desactivado
+## Cuentas activas y desactivadas
 
-Cada fila muestra «Activo» o «Desactivado». Una cuenta desactivada no puede iniciar sesión. Hoy la
-aplicación no tiene un interruptor para desactivar o reactivar a alguien; pídelo al soporte de
-Binary Bridges.
+Cada fila muestra **Activo** o **Desactivado**. Una cuenta desactivada no puede iniciar sesión. Para
+desactivar o reactivar una cuenta, solicítelo al soporte de Binary Bridges.
 
-## Qué ve un miembro y qué ve un administrador
+## Qué ve cada rol en el menú
 
 | Entrada del menú | Miembro | Administrador de organización | Administrador de plataforma |
 | --- | --- | --- | --- |
-| Panel, Sobres, Archivados, Nuevo Sobre | Sí | Sí | Sí |
-| Etiquetas, Usuarios, Almacenamiento, Configuración | No | Sí | Sí |
-| Organizaciones | No | No | Sí |
+| **Panel**, **Sobres**, **Archivados**, **Nuevo Sobre** | Sí | Sí | Sí |
+| **Etiquetas**, **Usuarios**, **Almacenamiento**, **Configuración** | No | Sí | Sí |
+| **Organizaciones** | No | No | Sí |
 
-Un miembro que abre una dirección de administración ve «Acceso Denegado» y «Tu rol no tiene permiso
-para ver esta página». Lo que un miembro puede hacer con un sobre depende de su rol en el espacio de
-trabajo del sobre; ver [Espacios y miembros](/sign/admin/workspaces-and-members/).
+Si un miembro abre una página de administración, verá «Acceso Denegado». Lo que un miembro puede
+hacer con un sobre depende de su rol en el espacio de trabajo del sobre; ver
+[Espacios y miembros](/sign/admin/workspaces-and-members/).
 
 <Aside type="note" title="Límite de usuarios">
-  Si tu cuota tiene un máximo de usuarios y lo alcanzaste, al crear uno verás «Tu organización ha
-  alcanzado su límite de usuarios». Pide al administrador de plataforma que lo amplíe; ver
+  Si su organización tiene un máximo de usuarios y ya lo alcanzó, al crear una cuenta verá «Tu
+  organización ha alcanzado su límite de usuarios». Solicite la ampliación a Binary Bridges; ver
   [Cuota y uso](/sign/admin/quota-and-usage/).
 </Aside>

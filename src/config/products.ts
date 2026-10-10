@@ -71,8 +71,8 @@ export const PRODUCTS: readonly Product[] = [
     id: 'sign',
     name: 'bb-sign',
     tagline: {
-      es: 'Firma electrónica para organizaciones: sobres, firmantes, evidencia y API.',
-      en: 'Electronic signature for organizations: envelopes, signers, evidence and an API.',
+      es: 'Firma electrónica para organizaciones, con identificación de firmantes, documentos sellados, evidencia completa y API de integración.',
+      en: 'Electronic signature for organizations, with signer identification, sealed documents, complete evidence and an integration API.',
     },
     appUrl: 'https://sign.binarybridges.co',
     repo: `${GITHUB_ORG}/bb-sign`,

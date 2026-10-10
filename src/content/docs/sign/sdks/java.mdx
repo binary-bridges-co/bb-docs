@@ -1,6 +1,6 @@
 ---
 title: "SDK de Java"
-description: "El cliente Java: instalar el jar con -DpomFile, crear un sobre, listar por páginas, verificar webhooks sobre arreglos de bytes, reintentos, errores y lo que no hace."
+description: "Cliente Java: instalación del jar con -DpomFile, creación de sobres, paginación, verificación de webhooks, reintentos, errores y garantías de seguridad."
 product: sign
 audience: developer
 source: sdk-java/README.md
@@ -10,30 +10,27 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { SDK, WEBHOOKS } from '../../../facts/sign';
 
-Un cliente Java para la API de bb-sign, con verificación de firmas de webhook. Las coordenadas son
+El SDK de Java conecta sus servicios con la API de bb-sign: gestiona los tokens, reintenta de
+forma segura y verifica las firmas de los webhooks. Las coordenadas son
 <code><Fact of={SDK.java.groupId} />:<Fact of={SDK.java.artifactId} />:<Fact of={SDK.java.version} /></code>.
 Esta página reúne el `README.md` del SDK y su `README-INSTALL.md`.
-
-<Aside type="note" title="No está publicado en ningún registro">
-  Compílalo localmente o instala el artefacto de entrega; ver Instalación. Las coordenadas son
-  provisionales y cambiarán antes de cualquier release.
-</Aside>
 
 Requiere **Java <Fact of={SDK.java.minJava} />** o superior.
 
 ## Instalación
 
-Recibiste cuatro archivos: el jar, su pom, un `.sha256` y esta guía. Instala el jar en tu repositorio
-local de Maven y luego decláralo como dependencia.
+El SDK se entrega en cuatro archivos: el jar, su pom, un `.sha256` y la guía de instalación. También
+puede compilarlo desde el código fuente (ver [Compilar desde el código fuente](#compilar-desde-el-código-fuente)).
+Instale el jar en su repositorio local de Maven y declárelo como dependencia.
 
 <Steps>
-1. Comprueba que recibiste lo que enviamos:
+1. Verifique la integridad del archivo recibido:
 
    ```bash
    shasum -a 256 -c bb-sign-sdk-java-0.1.0-SNAPSHOT.jar.sha256
    ```
 
-2. Instálalo. **`-DpomFile` es obligatorio:**
+2. Instálelo. **`-DpomFile` es obligatorio:**
 
    ```bash
    mvn install:install-file \
@@ -41,7 +38,7 @@ local de Maven y luego decláralo como dependencia.
      -DpomFile=bb-sign-sdk-java-0.1.0-SNAPSHOT.pom
    ```
 
-3. Decláralo como dependencia:
+3. Declárelo como dependencia:
 
    ```xml
    <dependency>
@@ -52,29 +49,26 @@ local de Maven y luego decláralo como dependencia.
    ```
 </Steps>
 
-<Aside type="caution" title="No omitas -DpomFile">
-  Sin él, Maven sintetiza un pom que no declara dependencias. La instalación tiene éxito y tu build
-  tiene éxito, y después tu primera llamada a la API falla en tiempo de ejecución con
-  `NoClassDefFoundError` para una clase de Retrofit o de okhttp, muy lejos de la causa. El pom es lo
-  que trae okhttp, Retrofit y Jackson. Si ves ese error, reinstala con `-DpomFile`.
+<Aside type="caution" title="Incluya siempre -DpomFile">
+  Sin este parámetro, Maven genera un pom sin dependencias. La instalación y la compilación terminan
+  sin errores, pero la primera llamada a la API falla en tiempo de ejecución con
+  `NoClassDefFoundError` para una clase de Retrofit o de okhttp. El pom es el que declara okhttp,
+  Retrofit y Jackson. Si aparece ese error, reinstale con `-DpomFile`.
 </Aside>
 
-### Lo que esto asume
+### Dependencias
 
-**Tu build puede alcanzar Maven Central.** Este es un jar simple, no un jar shaded, así que tu build
-resuelve okhttp, Retrofit y Jackson por su cuenta y, lo que importa, los deduplica contra las
-versiones que ya tienes. Jackson en particular ya está presente en la mayoría de los servicios Java,
-y empaquetar una segunda copia causa conflictos mucho más difíciles de diagnosticar que una
-dependencia faltante.
+**El build debe tener acceso a Maven Central.** El SDK es un jar simple, no shaded: su build
+resuelve okhttp, Retrofit y Jackson y los unifica con las versiones que ya usa. Esto evita
+conflictos con Jackson, presente en la mayoría de los servicios Java.
 
-Si tu build no puede alcanzar Central, avísanos antes de empezar. Un build shaded es posible; es un
-artefacto distinto y preferimos producirlo antes de que descubras el problema a mitad de la
-integración.
+Si su build no tiene acceso a Maven Central, contáctenos antes de comenzar la integración para
+recibir una variante shaded del SDK.
 
 ## Inicio rápido
 
-Todo lo que sigue es un solo archivo. Las credenciales salen de **Configuración**, pestaña
-**Credenciales de API** en bb-sign; el secreto se muestra una sola vez, al crearlo.
+El ejemplo completo cabe en un solo archivo. Las credenciales se crean en **Configuración**,
+pestaña **Credenciales de API**, de bb-sign; el secreto se muestra una sola vez, al crearlas.
 
 ```java
 import co.binarybridges.sign.sdk.BbSignClient;
@@ -102,12 +96,11 @@ try (BbSignClient client = BbSignClient.builder()
 }
 ```
 
-Lee las credenciales del entorno, no del código fuente. El secreto no se puede recuperar después de
-crearlo: se guarda solo en Keycloak y bb-sign no conserva copia. Si se pierde, rótalo, lo que
-invalida el anterior **de inmediato**. El cliente expone `envelopes()`, `documents()` y
-`verification()`.
+Lea las credenciales desde variables de entorno, fuera del código fuente. El secreto se almacena
+solo en Keycloak y bb-sign no conserva copia; si se pierde, rótelo, lo que invalida el anterior
+**de inmediato**. El cliente expone `envelopes()`, `documents()` y `verification()`.
 
-### Listar, una página a la vez
+### Listar por páginas
 
 ```java
 client.eachPage(
@@ -116,13 +109,13 @@ client.eachPage(
     .forEach(envelope -> System.out.println(envelope.getTitle()));
 ```
 
-Las páginas se obtienen de forma perezosa a medida que iteras, así que contar cincuenta mil sobres
-no pone cincuenta mil sobres en memoria.
+Las páginas se obtienen bajo demanda durante la iteración, de modo que recorrer miles de sobres no
+los carga todos en memoria.
 
 ## Verificar un webhook
 
-**Lee esta sección antes de escribir el handler.** El fallo de integración más común no está en este
-SDK; está en cómo el cuerpo llega hasta él.
+`Webhooks.verify` comprueba la firma sobre el cuerpo tal como se recibió. Declare el cuerpo como
+`byte[]` en su handler:
 
 ```java
 import co.binarybridges.sign.sdk.Webhooks;
@@ -146,62 +139,59 @@ public ResponseEntity<Void> receive(
 }
 ```
 
-### El raw body no es un detalle
+### Capturar el cuerpo original
 
-La firma cubre **los bytes exactos que viajan por la red**. Declarar el parámetro como un DTO hace que
-Spring parsee el JSON y te entregue un objeto; volver a serializar ese objeto produce bytes distintos
-(cambian el orden de las claves y los espacios) y la verificación falla por una razón que no puedes
-ver en un depurador, porque el objeto se ve correcto.
+La firma cubre **los bytes exactos recibidos**. Si el parámetro se declara como un DTO, Spring
+interpreta el JSON y entrega un objeto; volver a serializarlo produce bytes distintos (cambian el
+orden de las claves y los espacios) y la verificación falla aunque el objeto sea correcto.
 
 - **Spring MVC**: `@RequestBody byte[]` o `@RequestBody String`, o un `ContentCachingRequestWrapper`
-  si además necesitas la forma parseada.
-- **Jakarta Servlet**: lee `request.getInputStream()` una sola vez, antes de que cualquier otra cosa
-  lo toque.
+  si además necesita la forma interpretada.
+- **Jakarta Servlet**: lea `request.getInputStream()` una sola vez, antes que cualquier otro
+  componente.
 
-El SDK recibe `byte[]` en lugar de `String` a propósito: el tipo hace que esto sea difícil de hacer
-mal.
+El SDK recibe `byte[]` en lugar de `String` de forma intencional: el tipo orienta hacia el uso
+correcto.
 
-### Responde rápido, trabaja después
+### Responder de inmediato y procesar después
 
-Devuelve 2xx tan pronto la firma sea válida y haz el trabajo de forma asíncrona. bb-sign reintenta
-con una escalera que abarca aproximadamente
+Devuelva 2xx en cuanto la firma sea válida y procese el evento de forma asíncrona. bb-sign
+reintenta con una secuencia que abarca aproximadamente
 <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="horas" />, y tras
-<Fact of={WEBHOOKS.disableAfterLadders} /> escaleras consecutivas agotadas **deshabilita tu
-endpoint**; un handler que haga treinta segundos de trabajo en línea lo disparará bajo carga.
+<Fact of={WEBHOOKS.disableAfterLadders} /> secuencias consecutivas agotadas **desactiva el
+endpoint**; el procesamiento asíncrono mantiene la respuesta rápida bajo carga.
 
-### Deduplica por el id del evento
+### Eliminar duplicados por id de evento
 
-`X-BBSign-Event-Id` es estable entre reintentos e idéntico en las reentregas del mismo evento. La
-entrega es al menos una vez, así que el mismo evento puede llegar dos veces; trata el id como clave
-de idempotencia.
+`X-BBSign-Event-Id` es estable entre reintentos y reentregas del mismo evento. La entrega es al
+menos una vez, de modo que un evento puede llegar dos veces; use el id como clave de idempotencia.
 
-### Durante una rotación del secreto
+### Rotación del secreto
 
-El header lleva dos valores `v1=` mientras la ventana de rotación está abierta. `Webhooks.verify`
-acepta cualquiera de los dos, que es lo que te permite redesplegar sin interrupción. No hay nada que
-configurar.
+Mientras la ventana de rotación está abierta, el encabezado lleva dos valores `v1=`.
+`Webhooks.verify` acepta cualquiera de los dos, lo que le permite desplegar el nuevo secreto sin
+interrupción y sin configuración adicional.
 
-### Probar tu handler
+### Probar el handler
 
 La verificación depende del tiempo: una firma con más de
-<Fact of={WEBHOOKS.toleranceSeconds} unit="s" /> de antigüedad se rechaza, así que un fixture fijo
-en una prueba unitaria falla mañana. Usa la sobrecarga que recibe el reloj:
+<Fact of={WEBHOOKS.toleranceSeconds} unit="s" /> de antigüedad se rechaza, de modo que un fixture
+fijo en una prueba unitaria deja de ser válido. Use la sobrecarga que recibe el reloj:
 
 ```java
 Webhooks.verify(signature, rawBody, secret, Duration.ofSeconds(300), Instant.ofEpochSecond(1760000000L));
 ```
 
-## Reintentos, y lo único que este SDK no hará por ti
+## Reintentos
 
-Las solicitudes `GET` se reintentan ante 5xx y ante timeouts de conexión, con backoff exponencial y
-jitter completo.
+Las solicitudes `GET` se reintentan ante errores 5xx y timeouts de conexión, con backoff
+exponencial y jitter completo.
 
-**Un `POST` cuya respuesta nunca se vio no se reintenta jamás.** Si `createEnvelope` agota el tiempo
-de espera, el resultado es genuinamente desconocido: el sobre puede existir. Reintentar crearía un
-segundo, y estos son acuerdos legales enviados a personas reales. La API no tiene clave de
-idempotencia, así que no hay forma de hacerlo seguro.
+**Un `POST` cuya respuesta no se recibió no se reintenta.** Si `createEnvelope` agota el tiempo de
+espera, el resultado es desconocido: el sobre puede existir ya, y un reintento crearía un segundo
+acuerdo enviado a las mismas personas. La API no usa claves de idempotencia.
 
-Si una creación agota el tiempo de espera, **lista antes de reintentar**:
+Si una creación agota el tiempo de espera, **liste antes de reintentar**:
 
 ```java
 try {
@@ -213,36 +203,35 @@ try {
 }
 ```
 
-`429` y `503` **sí** se reintentan, incluso para `POST`: significan que el servidor explícitamente no
-procesó la solicitud.
+`429` y `503` se reintentan también en `POST`, porque indican que el servidor no procesó la
+solicitud.
 
 ## Errores
 
-Toda respuesta que no sea 2xx lanza `BbSignException`, que lleva `statusCode()`. `0` significa que la
-solicitud nunca obtuvo respuesta.
+Toda respuesta distinta de 2xx lanza `BbSignException`, que expone `statusCode()`. `0` indica que la
+solicitud no obtuvo respuesta.
 
 | Estado | Significado |
 |---|---|
-| 400 | Mal formada o falló la validación |
+| 400 | Solicitud mal formada o con errores de validación |
 | 401 | Credenciales rechazadas. El SDK renueva el token y reintenta una vez antes de reportarlo |
 | 403 | Autenticado, pero esta credencial no tiene el permiso de la organización |
-| 404 | El recurso no existe, o pertenece a otra organización o a un espacio de trabajo que no puedes ver. Indistinguible a propósito |
-| 409 | No está en un estado que permita esto, por ejemplo enviar un sobre ya enviado |
+| 404 | El recurso no existe, o pertenece a otra organización o a un espacio de trabajo que la credencial no puede ver. No se distinguen, de forma intencional |
+| 409 | El recurso no está en un estado que permita la operación, por ejemplo enviar un sobre ya enviado |
 | 429 | Una cuota de la organización está agotada |
 
-Los mensajes de las excepciones nunca contienen tu secreto ni tu token de acceso, incluso cuando la
-respuesta de bb-sign sí los contiene. [Errores](/sign/developers/errors/) tiene la tabla completa y el
-cuerpo del error.
+Los mensajes de las excepciones nunca incluyen su secreto ni su token de acceso, aunque la
+respuesta de bb-sign los contenga. [Errores](/sign/developers/errors/) incluye la tabla completa y
+el cuerpo del error.
 
-## Lo que este SDK no hará
+## Garantías de seguridad
 
-- **Registrar tus credenciales en el log.** No hay interceptor de logging ni hook para instalar uno.
-  El `HttpLoggingInterceptor` de okhttp en nivel `BODY` imprime el header `Authorization` y el cuerpo
-  del formulario del token tal cual; actívalo por tu cuenta y tu secreto queda en tu agregador de
-  logs para siempre.
-- **Dejarte desactivar la verificación TLS.** No hay bandera para eso. Se activa para un certificado
-  de staging y nunca se vuelve a desactivar.
-- **Reintentar una escritura con resultado desconocido.** Ver arriba.
+- **Credenciales fuera de los logs.** El SDK no incluye interceptor de logging ni punto para
+  instalar uno. Evite agregar por su cuenta el `HttpLoggingInterceptor` de okhttp en nivel `BODY`:
+  imprime el encabezado `Authorization` y el cuerpo del formulario del token tal cual.
+- **TLS siempre verificado.** La verificación de certificados no se puede desactivar.
+- **Escrituras sin duplicados.** Una escritura con resultado desconocido no se reintenta (ver
+  [Reintentos](#reintentos)).
 
 ## Compilar desde el código fuente
 
@@ -253,6 +242,6 @@ mvn verify          # regenerates the client, compiles, runs the tests
 mvn package         # writes the handover artifact to target/handover/
 ```
 
-El cliente bajo `src/main/java/co/binarybridges/sign/sdk/generated/` es **generado y versionado**.
-Nunca lo edites; regenéralo. Está versionado en lugar de ignorado para que un cambio en la
-especificación aparezca como un diff revisable en vez de colarse en silencio en el siguiente build.
+El cliente en `src/main/java/co/binarybridges/sign/sdk/generated/` es **código generado y
+versionado**: regenérelo en lugar de editarlo. Se versiona para que cada cambio en la
+especificación aparezca como un diff revisable.

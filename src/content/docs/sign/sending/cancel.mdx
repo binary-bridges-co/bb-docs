@@ -1,6 +1,6 @@
 ---
 title: Cancelar un sobre
-description: Quién puede cancelar un sobre, desde qué estados, cómo se confirma, qué ve el firmante después, por qué nadie recibe un correo y por qué no se puede deshacer.
+description: Retire un sobre antes de que se complete. Quién puede cancelar, desde qué estados, cómo confirmarlo y qué ocurre con los firmantes.
 product: sign
 audience: user
 ---
@@ -9,73 +9,68 @@ import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { ENVELOPE } from '../../../facts/sign';
 
-Cancelar cierra un sobre antes de que se complete: los enlaces de firma dejan de funcionar y el
-sobre pasa a "Cancelado" para siempre. Es la única forma de retirar un sobre enviado por error, con
-un documento equivocado o con un firmante que falta.
+Cancelar un sobre lo cierra antes de que se complete: los enlaces de firma se desactivan de
+inmediato y el sobre pasa al estado **Cancelado**. Use esta acción para retirar un sobre enviado por
+error, con un documento equivocado o con un firmante que falta, y luego envíe uno nuevo.
 
 ## Quién puede cancelar
 
-Solo quien tenga el permiso de cancelar en el espacio de trabajo del sobre:
+Pueden cancelar un sobre quienes tienen ese permiso en su espacio de trabajo:
 
-- el **gestor** del espacio de trabajo, y
-- cualquier **administrador de la organización**, que tiene acceso a todos los espacios.
+- el **gestor** del espacio de trabajo;
+- los **administradores de la organización**, que tienen acceso a todos los espacios.
 
-Un **colaborador** puede crear y enviar sobres, pero no cancelarlos: en su página de detalle el
-botón "Cancelar Sobre" no aparece. Si necesitas cancelar y no ves el botón, pide al gestor del
-espacio o a un administrador que lo haga. Ver
+Los **colaboradores** crean y envían sobres; para cancelar uno, deben pedirlo al gestor del espacio
+o a un administrador. Consulte
 [Organizaciones, espacios y roles](/sign/concepts/organizations-workspaces-roles/).
 
-## Desde qué estados
+## Estados que admiten la cancelación
 
-Se puede cancelar un sobre en "Borrador", "Enviado" o "En Progreso". Un sobre "Completado",
-"Cancelado" o "Expirado" ya está cerrado y no ofrece el botón.
+Puede cancelar un sobre en **Borrador**, **Enviado** o **En Progreso**. Los sobres en
+**Completado**, **Cancelado** o **Expirado** ya están cerrados.
 
-Cancelar un "Borrador" (un sobre que se creó pero no se envió) sirve para que no siga apareciendo
-en la lista; no afecta a nadie, porque nadie recibió enlace.
+Cancelar un **Borrador** lo retira de la lista activa sin afectar a nadie, porque ningún firmante
+ha recibido enlace.
 
-## Cómo cancelar
+## Cancelar el sobre
 
 <Steps>
 
-1. Abre el sobre desde Sobres.
+1. Abra el sobre desde **Sobres**.
 
-2. Al final de la página, pulsa "Cancelar Sobre".
+2. Al final de la página, pulse **Cancelar Sobre**.
 
-3. El diálogo "Cancelar Sobre" pregunta: "¿Seguro que quieres cancelar este sobre? Esta acción no
-   se puede deshacer y todas las firmas pendientes quedarán invalidadas." Confirma con "Cancelar
-   Sobre".
+3. El diálogo **Cancelar Sobre** solicita confirmación: "¿Seguro que quieres cancelar este sobre?
+   Esta acción no se puede deshacer y todas las firmas pendientes quedarán invalidadas." Confirme
+   con **Cancelar Sobre**.
 
-4. El estado cambia a "Cancelado" y el botón desaparece.
+4. El estado cambia a **Cancelado**.
 
 </Steps>
 
-Si la aplicación responde "No se pudo cancelar el sobre", vuelve a cargar la página: puede que otra
-persona lo haya cancelado o completado mientras tanto. Si el error persiste, copia la referencia que
-muestra el aviso y envíala a tu administrador.
+Si la aplicación muestra "No se pudo cancelar el sobre", vuelva a cargar la página: es posible que
+otra persona lo haya cancelado o completado en ese momento. Si el mensaje se repite, copie la
+referencia que aparece en el aviso y envíela a su administrador.
 
-## Qué pasa con los firmantes
+## Qué ocurre con los firmantes
 
-Desde el instante de la cancelación, el enlace de cada firmante abre la página "Enlace no
-disponible". Quien ya había firmado conserva su firma en el registro de auditoría del sobre, pero
-no se genera ningún PDF firmado, porque el sobre nunca se completó.
+A partir de la cancelación, el enlace de cada firmante abre la página **Enlace no disponible** y
+los recordatorios automáticos se detienen. Las firmas ya realizadas quedan en el registro de
+auditoría del sobre. El PDF firmado se genera solo para los sobres completados. Si su organización
+usa webhooks, el evento `envelope.cancelled` se publica en ese momento.
 
-<Aside type="caution" title="Nadie recibe un correo de cancelación">
-  Hoy bb-sign no envía ningún correo al cancelar. Los firmantes que aún no habían firmado seguirán
-  teniendo en su bandeja la invitación y, si ya había pasado el plazo, algún recordatorio, y al
-  abrir el enlace solo verán que no está disponible. Avísales tú, sobre todo si vas a enviarles un
-  sobre nuevo: así sabrán cuál es el bueno.
+<Aside type="caution" title="Avise a los firmantes">
+  Los firmantes no reciben un aviso de cancelación. Infórmeles usted, sobre todo si les enviará un
+  sobre nuevo, para que sepan cuál deben firmar.
 </Aside>
 
-Los recordatorios automáticos se detienen con la cancelación. Si tu organización usa webhooks, el
-evento `envelope.cancelled` se publica en ese momento.
+## Enviar un sobre de reemplazo
 
-## No se puede deshacer
+La cancelación es definitiva. Para continuar, cree un sobre nuevo, suba de nuevo los documentos y
+añada los firmantes, que recibirán enlaces nuevos.
 
-Un sobre cancelado no se reabre ni se reenvía. Para seguir adelante, crea un sobre nuevo con los
-mismos documentos (hay que subirlos de nuevo) y los mismos firmantes, que recibirán enlaces nuevos.
+El sobre cancelado sigue visible en **Sobres**, con sus documentos originales y su registro de
+auditoría, durante <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> desde su creación; después
+pasa a [Sobres archivados](/sign/sending/archived-envelopes/).
 
-El sobre cancelado sigue visible en Sobres, con sus documentos originales y su registro de
-auditoría, hasta que pasan <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> desde su creación;
-entonces pasa a [Sobres archivados](/sign/sending/archived-envelopes/).
-
-<LinkCard title="Tu primer sobre" href="/sign/getting-started/first-envelope/" description="Crear el sobre de reemplazo, paso a paso." />
+<LinkCard title="Tu primer sobre" href="/sign/getting-started/first-envelope/" description="Cree el sobre de reemplazo paso a paso." />

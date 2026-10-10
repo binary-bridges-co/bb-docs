@@ -1,81 +1,75 @@
 ---
 title: Attach documents
-description: "Uploading PDFs to an envelope: the Documents step, the accepted format and size, what happens to uploads you never send, and how to place the seal with the signer marker."
+description: "Upload the PDFs to be signed: accepted format and size, documents uploaded without sending, and placing the seal with the signer marker."
 product: sign
 audience: user
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { DOCUMENTS } from '../../../../facts/sign';
 
-The Documents step of the "Create Envelope" wizard attaches the files to be signed. Documents are
-uploaded right away, before the envelope exists, and are frozen when you send. This page covers the
-step, the limits and what happens to a file you upload and never send.
+In the **Documents** step of the **Create Envelope** wizard you attach the files to be signed.
+Each document uploads right away and is fixed when you send the envelope, so every signer signs
+exactly the same content.
 
-## Upload
+## Upload the documents
 
-The "Upload Documents" screen says: "Attach the PDF document(s) to be signed." Press "Click to
-upload PDF" and choose one or more files. Each file uploads immediately ("Uploading...") and appears
-in the list with its name. Until there is at least one, "Next" is disabled and the screen reminds
-you: "Upload at least one document to continue."
+The **Upload Documents** screen says: "Attach the PDF document(s) to be signed." Press **Click to
+upload PDF** and choose one or more files. Each file uploads immediately (**Uploading...**) and
+appears in the list with its name. The **Next** button becomes available as soon as there is at
+least one document.
 
-If a file fails, the application names it along with the reason. The most common reasons:
+Review the documents before you continue; to change them, use **Start over**.
 
-| Message | What happened | What to do |
+If a file cannot be uploaded, the application shows its name and the reason:
+
+| Message | Cause | What to do |
 |---|---|---|
-| "That file is too large." | It exceeds <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />. | Shrink the PDF (compressed images, fewer pages) and upload it again. |
-| "Your organization has run out of document storage." | Your organization hit its ceiling of unattached documents, or the plan's storage quota. | Send the envelopes you have half done, or wait for unattached files to be cleaned up; if it persists, ask your administrator to raise the limit. |
-| The file is not a PDF | Only <code>{DOCUMENTS.contentType.value}</code> is accepted. | Convert the document to PDF and upload it. |
+| "That file is too large." | The file exceeds <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />. | Reduce the PDF's size (compressed images, fewer pages) and upload it again. |
+| "Your organization has run out of document storage." | Your organization reached its limit of unattached documents or the plan's storage quota. | Send your pending envelopes or wait for unattached documents to be released. If it continues, ask your administrator to raise the limit. |
+| The file is not a PDF | The accepted format is <code>{DOCUMENTS.contentType.value}</code>. | Convert the document to PDF and upload it. |
 
-## PDF only
+## Prepare the PDF
 
-bb-sign signs PDF only. A text document, an image or a spreadsheet must be converted first. The PDF
+bb-sign signs PDF documents. Convert any text document, image or spreadsheet to PDF first. The PDF
 needs no form fields or special preparation: each signer's seal is placed on the document when the
 envelope completes.
 
 ## Limits
 
-| What | Value |
+| Item | Value |
 |---|---|
 | Maximum size per file | <Fact of={DOCUMENTS.maxUploadMb} unit="MB" /> |
 | Unattached documents per organization | <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" /> |
 | How long an unattached document is kept | <Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> |
 
-There is no limit on the number of documents per envelope, but each one counts towards your
+An envelope can include as many documents as you need. Each one counts towards your
 organization's storage quota when the envelope is created. See [Quotas](/en/sign/concepts/quotas/).
 
-## Before sending
+## Correct an envelope created but not sent
 
-The wizard has no button to remove a file already uploaded. If you uploaded the wrong document:
-
-- If the envelope has not been created yet, use "Start over" in the draft notice. The wizard
-  empties and the file stays unattached until the system deletes it (see the next section).
-- If the envelope was created but not sent, its documents cannot be changed from the application.
-  [Cancel it](/en/sign/sending/cancel/) and create a new one.
-
-When you send, the documents are frozen. An envelope with no documents cannot be sent.
+If the envelope has been created but not sent yet and you need to change its documents,
+[cancel it](/en/sign/sending/cancel/) and create a new one. When you send, the documents are fixed.
 
 ## Documents uploaded without an envelope
 
-Because the envelope does not exist until you press "Send Envelope", every PDF you upload lives for
-a while without an envelope. Those files cost no quota. A daily process deletes the ones that have
-spent more than <Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> without being attached
-to any envelope.
+The envelope is created when you press **Send Envelope**; until then, uploaded PDFs are kept
+without an envelope and use no quota. Every day, bb-sign deletes those that have gone more than
+<Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> without being attached to an envelope.
 
-If you return to the wizard after that window, the draft is restored without the files and the
-application tells you: "Your uploaded documents expired and were removed. Everything else was kept
-— please upload them again." Title, signers and options are still there; only the Documents step
-needs repeating.
+If you return to the wizard after that period, the draft keeps the title, signers and options, and
+the application says: "Your uploaded documents expired and were removed. Everything else was kept
+— please upload them again." Upload the documents again and continue.
 
-## The signer marker
+## Place the seal with the signer marker
 
-If you want each signer's seal to land in a specific place in the PDF, write in the document the
-text `{{signerN}}`, where N is the signer's order number: `{{signer1}}` for the first,
-`{{signer2}}` for the second. When the envelope completes, the seal is placed over that text.
-Without a marker, the seals stack in the bottom right corner of the last page.
+To have each signer's seal appear in a specific place in the PDF, write the text `{{signerN}}` in
+the document, where N is the signer's order number: `{{signer1}}` for the first, `{{signer2}}` for
+the second. When the envelope completes, the seal is placed over that text. Without a marker, the
+seals are placed in the bottom right corner of the last page.
 
-What the seal looks like and what it contains is in [Documents](/en/sign/concepts/documents/) and
+The seal's appearance and contents are described in [Documents](/en/sign/concepts/documents/) and
 [Electronic signature and seal](/en/sign/concepts/signature-and-seal/).
 
-<LinkCard title="Signers and order" href="/en/sign/sending/signers-and-order/" description="The Signers step: each person's details and the difference between signing at once or in order." />
+<LinkCard title="Signers and order" href="/en/sign/sending/signers-and-order/" description="The Signers step: each person's details and how to sign at once or in order." />

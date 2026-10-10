@@ -1,96 +1,92 @@
 ---
 title: Your first envelope
-description: The Create Envelope wizard step by step, with the labels you see on screen, what happens when you press Send, and what it means that an envelope was created but not sent.
+description: Create and send your first envelope with the Create Envelope wizard, step by step, and learn what happens on send and how to finish a pending send.
 product: sign
 audience: user
 ---
 
-import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { DOCUMENTS, ENVELOPE } from '../../../../facts/sign';
 
 An **envelope** gathers one or more PDF documents, the people who must sign them and the conditions
-of the signature. You create it with the "Create Envelope" wizard, reached through the "New
-Envelope" button in the side menu. The wizard has five steps: Details, Documents, Signers, Review
-and Done.
+of the signature. With the **Create Envelope** wizard, opened from the **New Envelope** button in the
+side menu, you prepare and send it in five steps: **Details**, **Documents**, **Signers**,
+**Review** and **Done**.
 
-While you move through it, nothing exists on the server yet: the wizard keeps a draft in your
-browser and says so ("Draft saved in this browser. Nothing is created until you send."). If you
-close the tab and come back, you pick up where you left off; "Start over" discards that draft.
+As you move through it, the wizard keeps a draft in your browser ("Draft saved in this browser.
+Nothing is created until you send."). If you close the tab and come back, you continue where you
+left off. To discard the draft, use **Start over**.
 
 ## Before you start
 
-- You need to be able to create envelopes in at least one workspace. If you do not see the "New
-  Envelope" button, ask an administrator for the contributor or manager role in a workspace. See
+- You need permission to create envelopes in at least one workspace. If you do not see the **New
+  Envelope** button, ask an administrator for the Contributor or Manager role in a workspace. See
   [Organizations, workspaces and roles](/en/sign/concepts/organizations-workspaces-roles/).
-- Have the PDFs to be signed at hand, each up to <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />.
+- Have the PDFs to be signed at hand, up to <Fact of={DOCUMENTS.maxUploadMb} unit="MB" /> each.
 - Have the email and full name of every signer.
 
-## The five steps
+## Create and send the envelope
 
 <Steps>
 
-1. **Details.** The "Envelope Details" screen asks for the "Workspace" (General by default), the
-   "Title *", the "Labels" if your organization uses them, a "Message to signers", the checkbox
-   "Require OTP verification for signers" (checked by default), the "Signing order" ("Everyone
-   signs at once" or "Signers sign in order"), the "Link expiry (hours)" (by default
-   <Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" />) and the date "Expires at (optional)". Only
-   the title and the workspace are required. Press "Next". Every field is explained in
+1. **Details.** In **Envelope Details**, fill in the **Workspace** (General by default) and the
+   **Title**, the only required fields. You can also add **Labels**, a **Message to signers**, the
+   option **Require OTP verification for signers** (on by default), the **Signing order**
+   (**Everyone signs at once** or **Signers sign in order**), the **Link expiry (hours)** (by
+   default <Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" />) and the date **Expires at
+   (optional)**. Press **Next**. Every field is explained in
    [Create an envelope](/en/sign/sending/create-an-envelope/).
 
-2. **Documents.** In "Upload Documents", press "Click to upload PDF" and choose one or more files.
-   Each file uploads right away and appears in the list. PDF only. Until there is at least one, the
-   wizard warns: "Upload at least one document to continue." See
+2. **Documents.** In **Upload Documents**, press **Click to upload PDF** and choose one or more PDF
+   files. Each file uploads right away and appears in the list. See
    [Attach documents](/en/sign/sending/documents/).
 
-3. **Signers.** In "Add Signers", type the "Email" and "Name" of each person and use "Add another
-   signer" to add rows. The "Order" field only appears if you chose signing in order. See
-   [Signers and order](/en/sign/sending/signers-and-order/).
+3. **Signers.** In **Add Signers**, type the **Email** and **Name** of each person and use **Add
+   another signer** to add more. If you chose signing in order, you also see the **Order** field.
+   See [Signers and order](/en/sign/sending/signers-and-order/).
 
-4. **Review.** The "Review & Send" screen summarizes "Title:", "Workspace:", "OTP Required:",
-   "Sequential Signing:", "Documents:", "Signers:" and "Labels:". Below it reminds you: "Sending
-   will generate unique signing links for each signer. This cannot be undone." Press "Send
-   Envelope". A dialog asks "Send Envelope?" and explains: "This will generate unique signing links
-   for each signer and send the envelope. This action cannot be undone." Confirm with "Send".
+4. **Review.** In **Review & Send**, check the summary: title, workspace, OTP verification,
+   sequential signing, documents, signers and labels. Press **Send Envelope** and confirm with
+   **Send** in the **Send Envelope?** dialog.
 
-5. **Done.** The "Envelope Sent!" screen shows each signer's signing link with a "Copy" button.
-   bb-sign has already emailed each of them that same link (if you chose signing in order, only
-   the first ones). From here you can go to "View Envelope Details" or "Create Another".
+5. **Done.** The **Envelope Sent!** screen shows each signer's signing link with a **Copy** button.
+   bb-sign has already emailed each signer their link (with signing in order, the first ones in the
+   order). From here you can go to **View Envelope Details** or **Create Another**.
 
 </Steps>
 
 ## What happens when you send
 
-Sending is the point of no return. The envelope moves from "Draft" to "Sent", every signer receives
-a unique link by email, and the documents and the list of signers are frozen: they can no longer be
-changed, neither from the application nor through the API. If you made a mistake, the only way out
-is to [cancel the envelope](/en/sign/sending/cancel/) and create another.
+On send, the envelope moves from **Draft** to **Sent** and every signer receives a unique link by
+email. From that moment the documents and the list of signers are fixed, which guarantees that
+everyone signs exactly the same thing. If you need to correct something,
+[cancel the envelope](/en/sign/sending/cancel/) and create a new one.
 
-After sending, you follow progress from Envelopes. See [Send and track](/en/sign/sending/send-and-track/).
+From then on, follow its progress from **Envelopes**. See
+[Send and track](/en/sign/sending/send-and-track/).
 
-## If the envelope was created but not sent
+## Finish a pending send
 
-Under the hood, "Send Envelope" does two things: first it creates the envelope with everything you
-gathered, then it sends it. If the first succeeds and the second fails (for example, because your
-organization reached a limit of its plan), the envelope exists in the "Draft" status and the wizard
-tells you:
+**Send Envelope** creates the envelope with everything you gathered and then sends it. If the
+envelope is created but the send does not complete (for example, because your organization reached
+a limit of its plan), the envelope stays in **Draft** and the wizard says so:
 
 > The envelope was created but not sent. Sending again sends it as it is; to change it, open it
 > from Envelopes.
 
-From then on the previous steps are locked. You can press "Send Envelope" again once the cause of
-the failure is resolved. If you close and come back later, the wizard recognizes it ("You already
-created this envelope, but it was not sent.") and offers "Send the envelope you already created".
+Once the cause is resolved, press **Send Envelope** again. If you close the wizard and come back
+later, it recognizes the envelope ("You already created this envelope, but it was not sent.") and
+offers **Send the envelope you already created**.
 
-From Envelopes, a draft created this way can be opened to change its labels or to cancel it. Its
-documents and signers cannot be changed from the application: if you need different ones, cancel it
-and create a new one.
+From **Envelopes** you can also open that draft to change its labels or cancel it. If you need
+different documents or signers, cancel it and create a new one.
 
 ## What the signer sees
 
-The signer has no account. They receive an email in English with the subject
+The signer does not need an account. They receive an email in English with the subject
 `You have a document to sign: {title}`, open the link, review every document, enter the
-verification code if you asked for one, draw or type their signature and download their copy at the
-end. Knowing that path helps you answer their questions:
+verification code if you requested one, draw or type their signature and download their copy at the
+end. Knowing that path helps you answer their questions.
 
 <LinkCard title="The signer's path" href="/en/sign/signing/" description="What every signer sees and does, start to finish, on one page." />

@@ -1,6 +1,6 @@
 ---
 title: Send and track
-description: The statuses of an envelope and of each signer, the filters of the Envelopes list, what the detail page shows, the Dashboard figures and the automatic reminders.
+description: Follow each envelope through to signature. Envelope and signer statuses, list filters, the detail page, the Dashboard and automatic reminders.
 product: sign
 audience: user
 ---
@@ -9,98 +9,86 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { ENVELOPE, REMINDERS } from '../../../../facts/sign';
 
-Once sent, an envelope moves on its own: each signer receives a link, signs, and bb-sign records
-every step. Your job is to follow it. This page explains what each status means, how to find an
-envelope in the list, what its detail page shows and what bb-sign does on its own so signers do not
-forget.
+Once sent, the envelope moves forward on its own: each signer receives a link and signs, while
+bb-sign records every step and reminds those who have not signed yet. From the Envelopes list, the
+detail page and the Dashboard, you always know where each envelope stands.
 
-## Statuses
+## Envelope statuses
 
-The envelope status appears as a badge in the list, on the Dashboard and on the detail page:
+The status appears in the list, on the Dashboard and on the detail page:
 
-| Status | Means |
+| Status | Meaning |
 |---|---|
-| Draft | Created but not sent. Nobody has a link. |
-| Sent | Sent; no signer has signed yet. |
-| In Progress | At least one signer signed and someone is still missing. |
-| Completed | Everyone signed. The signed PDFs are generated next. |
-| Cancelled | A manager or an administrator cancelled it. The links do not work. |
-| Expired | The "Expires at" date passed without completion. The links do not work. |
+| **Draft** | Created and waiting to be sent. No signer has a link. |
+| **Sent** | Sent; no signer has signed yet. |
+| **In Progress** | At least one signer has signed and others remain. |
+| **Completed** | Everyone signed. The signed PDFs are generated next. |
+| **Cancelled** | A manager or an administrator cancelled it. The links are closed. |
+| **Expired** | The **Expires at** date arrived before completion. The links are closed. |
 
-Each signer has a status of their own: "Pending" (no link yet, which happens with signing in
-order), "Notified" (received the email), "Viewed" (opened the link) and "Signed". The full flow is
-in [Envelopes and signers](/en/sign/concepts/envelopes-and-signers/).
+Each signer also has a status of their own: **Pending** (no link yet, when signing in order),
+**Notified** (received the email), **Viewed** (opened the link) and **Signed**. The full cycle is
+described in [Envelopes and signers](/en/sign/concepts/envelopes-and-signers/).
 
-## The Envelopes list
+## Find an envelope in the list
 
-"Envelopes" shows the envelopes of the workspaces you have access to, newest first, ten per page.
-Next to the title is the total ("N total envelopes"); when there are more than
-<Fact of={ENVELOPE.listCountCap} />, the figure is shown with a plus sign, as
-"<Fact of={ENVELOPE.listCountCap} />+ envelopes", and the counter stops being exact.
+**Envelopes** shows the envelopes of the workspaces you have access to, newest first, ten per page.
+Next to the title is the total ("N total envelopes"); from <Fact of={ENVELOPE.listCountCap} />
+envelopes on, the figure is shown as "<Fact of={ENVELOPE.listCountCap} />+ envelopes".
 
-The filters combine:
+The filters can be combined:
 
 | Filter | Control |
 |---|---|
-| Workspace | "Workspace" selector, "All workspaces" by default. It only appears if you have access to more than one workspace. |
-| Status | "Filter by status" selector. In the English interface it shows the raw values: ALL, DRAFT, SENT, IN_PROGRESS, COMPLETED, CANCELLED, EXPIRED. |
-| Title | "Search by title..." field. It searches as you type. |
-| Dates | "From date" to "To date", on the creation date. |
-| Labels | "Filter by label...": choose the key, type the value and add it. Several can be stacked. |
+| Workspace | **Workspace** selector, with **All workspaces** by default. It appears when you have access to more than one workspace. |
+| Status | **Filter by status** selector, with the values ALL, DRAFT, SENT, IN_PROGRESS, COMPLETED, CANCELLED, EXPIRED. |
+| Title | **Search by title...** field, which searches as you type. |
+| Dates | **From date** and **To date**, on the creation date. |
+| Labels | **Filter by label...**: choose the key, type the value and add it. You can combine several. |
 
-Each active filter appears as a chip you can remove; "Clear all" removes them all. If nothing
-matches, you see "No envelopes match your filters."; if there are no envelopes at all, "No
-envelopes yet." with the link "Create your first one". Each row shows the title, up to two labels,
-the workspace, the number of signers, the creation date and the status.
+Each active filter appears as a chip you can remove on its own; **Clear all** removes them all.
+Each row shows the title, up to two labels, the workspace, the number of signers, the creation date
+and the status.
 
-## The detail page
+## Use the detail page
 
-When you open an envelope you see its title, its identifier, the workspace and your role in it, and
-the labels (which you can change with "+ Add label" if you are a contributor or manager). Below, by
-section:
+When you open an envelope you see its title, its identifier, the workspace, your role in it and the
+labels, which contributors and managers can change with **+ Add label**. The page is organized in
+sections:
 
-- **Fields.** "Status", "OTP Required" (Yes or No), "Created" and, if you set it, "Expires"; once
-  the date has passed, it carries the suffix "(Expired)".
-- **"Documents (N)".** Each file with the buttons "Original PDF" and, on a completed envelope,
-  "Signed PDF". While the signed one is being generated, you see "Signed PDF processing...".
-  Without download permission, the name appears but not the buttons, with the explanation "You can
-  see this document's name but not download it. Ask an admin for auditor access." See
-  [Download signed documents](/en/sign/sending/download-signed-documents/).
-- **"Signers (N)".** The mode ("Sequential signing" or "Parallel signing" with its explanation)
-  and, per signer, name, email, "Order #N", the signing date if they signed, and their status.
-- **"Audit Trail (N events)".** Each event with its type, who caused it (the signer's email or
-  "System"), the date and time and its hash. Only for auditors and managers of the workspace; the
-  others see "The audit trail is available to auditors and managers of this workspace." See
-  [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
-- **Actions.** The "Cancel Envelope" button, only for those who can cancel and only in Draft, Sent
-  or In Progress. See [Cancel an envelope](/en/sign/sending/cancel/).
+| Section | Contents |
+|---|---|
+| Envelope details | **Status**, **OTP Required** (Yes or No), **Created** and, if set, **Expires**, with the suffix **(Expired)** once the date has passed. |
+| **Documents (N)** | Each file with **Original PDF** and, on a completed envelope, **Signed PDF**. While the signed PDF is being generated, **Signed PDF processing...** is shown. See [Download signed documents](/en/sign/sending/download-signed-documents/). |
+| **Signers (N)** | The mode (**Sequential signing** or **Parallel signing**) and, per signer, name, email, **Order #N**, signing date and status. |
+| **Audit Trail (N events)** | Each event with its type, who triggered it (the signer's email or **System**), the date and time and its hash. Available to the workspace's auditors and managers. See [Evidence and audit](/en/sign/concepts/evidence-and-audit/). |
+| Actions | **Cancel Envelope**, for those who can cancel, on envelopes in Draft, Sent or In Progress. See [Cancel an envelope](/en/sign/sending/cancel/). |
 
-If you open an envelope that does not exist or that you cannot see, the answer is the same:
-"Envelope not found, or you don't have access to it." bb-sign does not tell the two cases apart on
-purpose.
+If an envelope does not exist or you do not have access to it, the application shows "Envelope not
+found, or you don't have access to it." For security, the answer is the same in both cases.
 
-## The Dashboard
+## See the summary on the Dashboard
 
-The Dashboard summarizes the envelopes you can see in four figures: "Total Envelopes", "Completed",
-"In Progress" (which adds up the envelopes in Sent and in In Progress) and "Drafts". Below, "Recent
-Envelopes" lists the last four with their status, and "+ New" opens the wizard.
+The **Dashboard** summarizes the envelopes you can see in four figures: **Total Envelopes**,
+**Completed**, **In Progress** (which groups envelopes in Sent and in In Progress) and **Drafts**.
+Below, **Recent Envelopes** shows the last four with their status, and **+ New** opens the wizard.
 
 ## Automatic reminders
 
-You do not have to chase signers. Every day at <Fact of={REMINDERS.dailyRunTime} />, bb-sign sends
-`Reminder: please sign {title}` to every signer who received their invitation more than
-<Fact of={REMINDERS.thresholdHours} unit="h" /> ago and has not signed yet, with at least
-<Fact of={REMINDERS.cooldownHours} unit="h" /> between two reminders to the same person. Reminders
-stop when they sign, or when the envelope completes, is cancelled or expires.
+bb-sign reminds signers who have a signature pending. Every day at
+<Fact of={REMINDERS.dailyRunTime} />, it sends `Reminder: please sign {title}` to every signer who
+received their invitation more than <Fact of={REMINDERS.thresholdHours} unit="h" /> ago and has not
+signed yet, with at least <Fact of={REMINDERS.cooldownHours} unit="h" /> between two reminders to
+the same person. Reminders end when the signer signs or when the envelope completes, is cancelled
+or expires.
 
-There is no way to send a reminder by hand or to resend the link. If a signer says nothing arrived,
-ask them to check their spam folder and to search for the subjects above; the sender is always the
-same. See [The invitation email](/en/sign/signing/receiving-the-email/).
+If a signer cannot find the email, ask them to check their spam folder and to search for the
+subjects shown on this page. See [The invitation email](/en/sign/signing/receiving-the-email/).
 
-<Aside type="note" title="bb-sign does not notify you when an envelope completes">
-  Today there is no email to the sender when an envelope completes. To find out, check the
-  Envelopes list or the Dashboard. If your organization integrates systems, an administrator can set
-  up a webhook for the `envelope.completed` event; see [Webhooks](/en/sign/admin/webhooks/).
+<Aside type="tip" title="Know when an envelope completes">
+  Check the Envelopes list or the Dashboard to see completed envelopes. If your organization
+  integrates other systems, an administrator can set up a webhook for the `envelope.completed`
+  event; see [Webhooks](/en/sign/admin/webhooks/).
 </Aside>
 
-<LinkCard title="Download signed documents" href="/en/sign/sending/download-signed-documents/" description="Original and signed PDF, how long a link lasts and who can download." />
+<LinkCard title="Download signed documents" href="/en/sign/sending/download-signed-documents/" description="Original and signed PDF, how long a download link lasts and who can download." />

@@ -1,6 +1,6 @@
 ---
 title: Claves de etiqueta
-description: "Cómo crear, editar y eliminar las claves de etiqueta de la organización, qué límites tienen y qué pasa con los valores asignados a los sobres al eliminar una clave."
+description: "Cómo definir las claves de etiqueta de la organización para clasificar y filtrar los sobres, y qué ocurre con sus valores al editar o eliminar una clave."
 product: sign
 audience: admin
 ---
@@ -9,68 +9,67 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { LABELS } from '../../../facts/sign';
 
-**Quién:** administrador de la organización (también los administradores de plataforma). **Dónde:**
-Etiquetas (`/labels`) en el menú lateral.
+Las etiquetas clasifican los sobres con pares de clave y valor, como `departamento: ventas` o
+`proyecto: alfa`, para encontrarlos y filtrarlos con rapidez. Usted define las claves para toda la
+organización y quienes trabajan con cada sobre asignan los valores. El uso diario de las etiquetas
+está en [Etiquetas](/sign/concepts/labels/).
 
-Una etiqueta es un par clave y valor sobre un sobre: `departamento: ventas`, `proyecto: alfa`. Las
-claves las define el administrador para toda la organización; los valores los pone quien trabaja
-con cada sobre. Esta página cubre las claves. El uso de las etiquetas está en
-[Etiquetas](/sign/concepts/labels/).
+**Quién:** administradores de la organización y administradores de plataforma. **Dónde:**
+**Etiquetas**, en el menú lateral.
 
 ## Crear una clave
 
 <Steps>
 
-1. Pulsa «Nueva clave». Se abre «Crear clave de etiqueta».
+1. Pulse **Nueva clave**. Se abre **Crear clave de etiqueta**.
 
-2. Escribe el «Nombre», de hasta <Fact of={LABELS.keyNameMaxChars} unit="caracteres" />. El
-   formulario sugiere «p. ej. contratista, proyecto, departamento». El nombre se guarda en
-   minúsculas.
+2. Escriba el **Nombre**, de hasta <Fact of={LABELS.keyNameMaxChars} unit="caracteres" />. El nombre
+   se guarda en minúsculas.
 
-3. Elige un «Color» entre los propuestos o con el selector. Es el color del distintivo que verán los
-   usuarios en la lista de sobres.
+3. Elija un **Color** de la paleta o con el selector. Es el color con el que la etiqueta aparece en la
+   lista de sobres.
 
-4. Escribe una «Descripción» opcional, de hasta <Fact of={LABELS.keyDescriptionMaxChars} unit="caracteres" />,
-   para que los usuarios sepan qué valores poner.
+4. Si lo desea, escriba una **Descripción** de hasta
+   <Fact of={LABELS.keyDescriptionMaxChars} unit="caracteres" /> para orientar a los usuarios sobre
+   qué valores usar.
 
-5. Pulsa «Crear». Verás «Clave de etiqueta creada».
+5. Pulse **Crear**. Verá «Clave de etiqueta creada».
 
 </Steps>
 
-La cabecera muestra cuántas claves hay y el máximo. Al alcanzarlo, el botón «Nueva clave»
-desaparece hasta que elimines alguna.
+El encabezado de la página indica cuántas claves tiene la organización y el máximo permitido.
+Cuando se alcanza el máximo, el botón **Nueva clave** se oculta hasta que elimine una.
 
 ## Editar una clave
 
-Pulsa el lápiz («Editar nombre») en la fila. Puedes cambiar el nombre, el color y la descripción;
-confirma con «Guardar» o descarta con «Cancelar». Los sobres que ya usan la clave muestran el nombre
-y el color nuevos; sus valores no cambian.
+Pulse el ícono de lápiz en la fila. Puede cambiar el nombre, el color y la descripción, y confirmar
+con **Guardar**. Los sobres que ya usan la clave muestran el nombre y el color nuevos, con los mismos
+valores.
 
-## Eliminar una clave y qué pasa con los valores
+## Eliminar una clave
 
-Pulsa la papelera («Eliminar nombre»). El diálogo «Eliminar clave de etiqueta» pregunta: «¿Eliminar
-la clave de etiqueta «nombre»? Se quitará de todos los sobres». Confirma con «Eliminar».
+Pulse el ícono de papelera en la fila y confirme con **Eliminar** en el diálogo **Eliminar clave de
+etiqueta**. La clave se quita de todos los sobres.
 
-<Aside type="caution" title="Los valores se pierden">
-  Al eliminar una clave, el valor que cada sobre tenía bajo esa clave desaparece con ella, y no hay
-  forma de recuperarlo. Si solo quieres dejar de usarla, edítala y dilo en la descripción, o
-  renómbrala; no la elimines.
+<Aside type="caution" title="Los valores se eliminan con la clave">
+  Al eliminar una clave, el valor que cada sobre tenía bajo esa clave se elimina de forma
+  definitiva. Si solo quiere dejar de usarla, edite su nombre o su descripción para indicarlo.
 </Aside>
 
 ## Quién asigna los valores
 
-Los valores los asignan los Colaboradores y los Gestores del espacio del sobre, desde el detalle del
-sobre con «+ Añadir etiqueta»; los administradores también, en cualquier sobre. Un valor tiene hasta
-<Fact of={LABELS.valueMaxChars} unit="caracteres" />. Los Lectores y los Auditores ven las etiquetas
-pero no las cambian. Cualquiera que vea la lista de sobres puede filtrar con «Filtrar por etiqueta...».
+Los Colaboradores y Gestores del espacio del sobre asignan los valores desde el detalle del sobre con
+**+ Añadir etiqueta**; los administradores lo hacen en cualquier sobre. Cada valor admite hasta
+<Fact of={LABELS.valueMaxChars} unit="caracteres" />. Los Lectores y Auditores ven las etiquetas, y
+cualquier persona con acceso a la lista de sobres puede filtrarla por etiqueta.
 
-Las credenciales de API leen las claves y asignan valores con el mismo rol que una persona; no
-pueden crear ni eliminar claves.
+Las credenciales de API leen las claves y asignan valores según su rol, igual que una persona. La
+gestión de las claves corresponde a los administradores.
 
-## Si algo falla
+## Mensajes de error
 
-| Mensaje | Qué pasó y qué hacer |
+| Mensaje | Qué ocurrió y qué hacer |
 | --- | --- |
-| «No se pudo crear la clave de etiqueta» | El nombre ya existe o se alcanzó el máximo de claves. Cambia el nombre o elimina una clave que no uses. |
-| «No se pudo actualizar la clave de etiqueta» | El nombre nuevo ya existe o quedó vacío. Elige otro. |
-| «No se pudo eliminar la clave de etiqueta» | Un problema temporal. Espera un momento y repite. |
+| «No se pudo crear la clave de etiqueta» | Ya existe una clave con ese nombre o se alcanzó el máximo. Use otro nombre o elimine una clave que no utilice. |
+| «No se pudo actualizar la clave de etiqueta» | El nombre nuevo ya existe o quedó vacío. Elija otro nombre. |
+| «No se pudo eliminar la clave de etiqueta» | Hubo un problema temporal. Espere un momento e intente de nuevo. |

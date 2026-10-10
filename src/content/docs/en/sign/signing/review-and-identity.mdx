@@ -1,6 +1,6 @@
 ---
 title: Review and verify identity
-description: Opening every document before you continue, how the verification code by email works and what each message on that screen means.
+description: How to review the documents before signing, how to use the verification code sent to your email and what each message means.
 product: sign
 audience: signer
 ---
@@ -8,52 +8,52 @@ audience: signer
 import Fact from '../../../../../components/facts/Fact.astro';
 import { OTP } from '../../../../facts/sign';
 
-When you open your link you land on the first screen of the process. At the top, an indicator
-shows the steps: "Review", "Verify" (only if the envelope requires it) and "Sign".
+Before signing, you review each document and, if the envelope requires it, confirm your identity
+with a code sent to your email. The indicator at the top shows which step you are on: **Review**,
+**Verify** (when it applies) and **Sign**.
 
-## Signing as
+## Confirm your details
 
-The screen starts with "Signing as", your name and your email. These are the details whoever sent
-the document entered for you, and the ones that will appear on the seal. If they are not yours,
-do not continue: tell whoever sent it so they can correct the envelope.
+The screen shows **Signing as** with your name and email. These are the details that will appear
+on the document's seal. If they are not yours, do not continue and contact the person who sent you
+the document so they can correct them.
 
-## Open every document
+## Review each document
 
-Under "Documents to Review" each PDF appears with a "View" button that expands it on the same page
-("Hide" closes it). You have to open them all: until then the "I have reviewed the document"
-button does not respond and the screen says "Open every document before you continue."
+Under **Documents to Review**, press **View** to open each PDF on the same page and **Hide** to
+close it. Once you have opened every document, press **I have reviewed the document**. If you try
+to continue earlier, you see the message "Open every document before you continue."
 
-If your browser cannot display the PDF, you see "Your browser cannot display this PDF inline."
-with the link "Download the document". Opening the document that way counts too.
+If your browser cannot display the PDF, you see "Your browser cannot display this PDF inline." Use
+**Download the document** to open it; that download also counts as a review.
 
-## The verification code
+## Verify your identity
 
-If the envelope requires identity verification, pressing "I have reviewed the document" makes
-bb-sign email you a code and takes you to the "Verify Your Identity" screen, which says "An OTP
-code has been sent to your email." and how long until it expires.
+When the envelope requires verification, pressing **I have reviewed the document** makes bb-sign
+email you a code and opens the **Verify Your Identity** screen, which shows how long the code
+remains valid.
 
 - The code has <Fact of={OTP.digits} unit="digits" /> and is valid for <Fact of={OTP.validityMinutes} unit="minutes" />.
-- You have <Fact of={OTP.maxAttempts} unit="attempts" /> per code.
-- You can ask for another with "Resend code" once <Fact of={OTP.resendCooldownSeconds} unit="s" />
-  have passed since the last one; meanwhile the button shows "Resend code in" and a countdown.
-- The page only accepts the latest code we sent you.
+- Each code allows <Fact of={OTP.maxAttempts} unit="attempts" />.
+- You can request another with **Resend code** <Fact of={OTP.resendCooldownSeconds} unit="s" />
+  after the last one was sent; until then, the button shows a countdown.
+- The page always accepts the most recent code.
 
-Type the code and press "Verify & Continue".
+Enter the code and press **Verify & Continue**.
 
-## What each message means
+## Verification messages
 
 | Message | What happened | What to do |
 |---|---|---|
-| "A code was already sent to your email." | You asked for another code before the wait had passed, and the previous one is still valid. | Use the code you already have. |
-| "A new code is on its way." | A new code was sent. | Use that one and discard the previous one. |
-| "That code can no longer be used. You can request a new one shortly." | The last code is spent (it was verified, or the attempts ran out) and the wait is still running. | Wait until the button says "Resend code" and ask for another. |
-| "That code is not valid. Please check it and try again." | The code does not match, expired or is an old one. Every failure counts as an attempt. | Copy the code from the latest email. If the attempts ran out, ask for a new one. |
-| "Could not verify the code. Please try again." | The check did not complete. | Press "Verify & Continue" again. |
-| "Failed to send OTP. Please try again." | The email could not go out. | Press "I have reviewed the document" again. |
+| "A code was already sent to your email." | You requested another code before the wait ended, and the previous one is still valid. | Use the code you already received. |
+| "A new code is on its way." | A new code was sent. | Use the new code. |
+| "That code can no longer be used. You can request a new one shortly." | The code was already used or ran out of attempts, and the wait is still running. | When the button shows **Resend code**, request another. |
+| "That code is not valid. Please check it and try again." | The code does not match, has expired or is not the most recent one. Each error counts as an attempt. | Copy the code from the latest email. If you ran out of attempts, request a new one. |
+| "Could not verify the code. Please try again." | The verification did not complete. | Press **Verify & Continue** again. |
+| "Failed to send OTP. Please try again." | The email could not be sent. | Press **I have reviewed the document** again. |
 
 ## After verifying
 
 Once the code is verified, you have <Fact of={OTP.verifiedValidityMinutes} unit="minutes" /> to
-sign. If you take longer, submitting the signature shows the notice "Your identity check has
-expired. Please request a new code.": reload the page, go through the documents again and ask for
-a new code. What comes next is in [Sign and download](/en/sign/signing/sign-and-download/).
+sign. If that time runs out, reload the page, open the documents again and request a new code.
+Continue with [Sign and download](/en/sign/signing/sign-and-download/).

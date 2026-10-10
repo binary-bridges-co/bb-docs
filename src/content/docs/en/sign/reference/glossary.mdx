@@ -1,58 +1,60 @@
 ---
 title: "Glossary"
-description: The terms of bb-sign and of electronic signature in Colombia, with their Spanish equivalent and the page where each one is explained.
+description: "The terms of bb-sign and of electronic signature, with their Spanish equivalent and the page where each one is explained."
 product: sign
 audience: all
 ---
 
-Each term appears with its English name as used in the API, its Spanish name (the one the law and
-the Spanish application use) and, where it applies, the label the application shows. The links lead
-to the page that explains it in depth.
+Each term appears with its English name as used in the API, its Spanish name (the one the law and the
+Spanish application use) and, where it applies, the label the application shows. The links lead to
+the page that explains it in detail.
 
 ## The model
 
 - **Organization (organización).** The bb-sign customer. It groups users, workspaces, envelopes, the
-  seal certificate, API credentials and webhooks. An organization never sees another one's data. See
+  seal certificate, API credentials and webhooks. Each organization's data is isolated from every
+  other organization's. See
   [Organizations, workspaces and roles](/en/sign/concepts/organizations-workspaces-roles/).
-- **Workspace (espacio de trabajo).** A partition inside the organization where envelopes live. Each
-  person or credential has a role per workspace. In the application: "Workspace".
-- **General.** The workspace every organization has from the start. Every organization member takes
-  part in it as a contributor; that role cannot be removed or granted.
-- **Role (rol).** What someone can do. There are organization roles (administrator, member, API
-  credential) and workspace roles (viewer, auditor, contributor, manager). See
-  [Permissions matrix](/en/sign/admin/permissions/).
+- **Workspace (espacio de trabajo).** A division of the organization that holds envelopes. Each
+  person or credential has a role in each workspace. In the application: "Workspace".
+- **General.** The workspace every organization has from the moment it is created. Every member of
+  the organization takes part in it as a contributor; that role is fixed.
+- **Role (rol).** The set of actions someone can perform. There are organization roles
+  (administrator, member, API credential) and workspace roles (viewer, auditor, contributor,
+  manager). See [Permissions matrix](/en/sign/admin/permissions/).
 - **Envelope (sobre).** The unit of work: one or more PDF documents, one or more signers and the
   sending options (order, one-time code, link validity, expiry). See
   [Envelopes and signers](/en/sign/concepts/envelopes-and-signers/).
-- **Signer (firmante).** A person who must sign an envelope. Identified by their email; no bb-sign
+- **Signer (firmante).** The person who must sign an envelope. Identified by their email; no bb-sign
   account needed.
 - **Sign order (orden de firma).** Each signer's turn when the envelope uses sequential signing.
   Signers in the same turn sign in parallel.
 - **Label (etiqueta).** A key and value pair the organization defines and assigns to its envelopes to
   filter them. See [Labels](/en/sign/concepts/labels/).
-- **Archived (archivados).** The view that completed, cancelled or expired envelopes move to after a
-  period from their creation. It is a database view, not the retention policy. See
-  [Archived envelopes](/en/sign/sending/archived-envelopes/).
+- **Archived (archivados).** The view that completed, cancelled or expired envelopes move to once a
+  set period has passed since their creation. It organizes the envelope list and is independent of
+  the retention policy. See [Archived envelopes](/en/sign/sending/archived-envelopes/).
 
 ## Signature, seal and evidence
 
-- **Firma electrónica (electronic signature).** bb-sign's legal mechanism (Decreto 2364 de 2012): a
-  method that identifies the signer and shows their approval, reliable and appropriate for the
-  purpose. See [Electronic and digital signature](/en/sign/legal/electronic-vs-digital-signature/).
-- **Firma digital (digital signature).** A distinct figure in Ley 527 de 1999 (article 28), bound to
-  a personal certificate of the signer and carrying a legal presumption. bb-sign does **not** offer
-  it.
+- **Firma electrónica (electronic signature).** bb-sign's signature mechanism: a reliable method that
+  identifies the signer and records their approval. See
+  [How bb-sign signatures are valid](/en/sign/legal/electronic-vs-digital-signature/).
+- **Firma digital (digital signature).** A legal figure distinct from electronic signature, based on a
+  personal certificate issued to the signer by an ECD. See
+  [How bb-sign signatures are valid](/en/sign/legal/electronic-vs-digital-signature/).
 - **Signature (firma).** In bb-sign, the mark the signer draws or types, stamped into the document
   with their name, email and the date. See
   [Electronic signature and seal](/en/sign/concepts/signature-and-seal/).
-- **Seal (sello).** The cryptographic signature bb-sign places on each document when the envelope
-  completes, with the organization's certificate. It proves integrity and who sealed, not the
-  signer's identity. See [Your own certificate](/en/sign/admin/own-certificate/).
+- **Seal (sello).** The cryptographic signature bb-sign applies to each document when the envelope
+  completes, with the organization's certificate. It guarantees the document's integrity and shows
+  which organization sealed it; the signer's identity is established by the evidence. See
+  [Your own certificate](/en/sign/admin/own-certificate/).
 - **One-time code (OTP, código de un solo uso).** The numeric code the signer receives by email and
   types before signing, when the organization requires it on the envelope. See
   [Review and verify identity](/en/sign/signing/review-and-identity/).
-- **Audit trail (cadena de auditoría).** The hash-chained list of everything that happened to an
-  envelope: who, what, when, from where. See
+- **Audit trail (cadena de auditoría).** The hash-chained record of everything that happened to an
+  envelope: who, what, when and from where. See
   [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
 - **Verify (verificación).** The public check, through a QR code, that a seal matches the
   organization's active certificate. See
@@ -60,24 +62,24 @@ to the page that explains it in depth.
 
 ## Integration
 
-- **API credential (credencial de API).** An id and a secret a system uses to call the API on the
+- **API credential (credencial de API).** An ID and a secret a system uses to call the API on the
   organization's behalf. The secret is shown once. See
   [API credentials](/en/sign/admin/api-credentials/).
-- **Webhook.** An HTTPS URL of yours to which bb-sign sends a signed notice when an event happens
-  (envelope sent, completed, cancelled, expired; signer viewed or signed). See
+- **Webhook.** An HTTPS URL of your organization to which bb-sign sends a signed notice when an event
+  happens (envelope sent, completed, cancelled or expired; signer viewed or signed). See
   [Webhooks](/en/sign/developers/webhooks/).
-- **Delivery (entrega).** Each attempt by bb-sign to notify a webhook of an event. See
+- **Delivery (entrega).** Each notice bb-sign sends to a webhook for an event. See
   [Statuses](/en/sign/reference/statuses/).
 
 ## Certificates and entities
 
 - **ECD (Entidad de Certificación Digital).** An entity accredited in Colombia to issue digital
-  certificates. The organization's seal certificate is bought from an ECD.
+  certificates. The organization's seal certificate is purchased from an ECD.
 - **ONAC (Organismo Nacional de Acreditación de Colombia).** The body that accredits ECDs. Its
-  directory says which entities are accredited today.
+  directory lists the accredited entities.
 - **AATL (Adobe Approved Trust List).** The list of issuers Adobe Acrobat trusts by default. Outside
-  Colombia, the seal certificate is bought from one of its members.
+  Colombia, the seal certificate is purchased from one of its members.
 - **PKCS#12 (.p12, .pfx).** The file format that packages a certificate, its chain and the private
-  key protected by a password. It is the format bb-sign needs in order to seal.
-- **Certificate chain (cadena de certificación).** The organization's certificate, the intermediate
-  certificates and the root that back it. Today the bb-sign seal includes only the first.
+  key protected by a password. It is the format bb-sign uses to seal.
+- **Certificate chain (cadena de certificación).** The organization's certificate together with the
+  intermediate certificates and the root that back it.

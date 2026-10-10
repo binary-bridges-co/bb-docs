@@ -1,6 +1,6 @@
 ---
 title: Documents
-description: Which files bb-sign accepts, what happens to documents uploaded before the envelope is created, and how to decide where each signer's seal lands.
+description: Which files bb-sign accepts, how documents uploaded before the envelope is created are handled and how to set where each signer's seal goes.
 product: sign
 audience: user
 ---
@@ -9,84 +9,78 @@ import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { DOCUMENTS } from '../../../../facts/sign';
 
-An envelope carries one or more documents, and every signer signs all of them. This page explains
-which files bb-sign accepts, what happens to documents while the envelope does not exist yet, and
-how to mark in the PDF the exact place where each signer's seal should appear.
+An envelope contains one or more documents, and every signer signs all of them. You decide where on
+each document each signer's seal appears. This page explains which files bb-sign accepts, how they
+are handled while you prepare the envelope and how to place the seals.
 
-## PDF only
+## Format and size
 
-bb-sign accepts a single file type: <Fact of={DOCUMENTS.contentType} />. The wizard's "Upload
-Documents" step says so in its own words: "Attach the PDF document(s) to be signed." and "Click to
-upload PDF". If you have a document in Word, as an image or in another format, convert it to PDF
-before uploading.
+bb-sign works with documents in <Fact of={DOCUMENTS.contentType} /> format. If you have a document in
+Word, as an image or in another format, convert it to PDF before uploading it.
 
-Each file can weigh at most <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />. If a file is larger, the
-application answers "That file is too large." Shrink the PDF (for example, by lowering the
-resolution of its images) and upload it again.
+Each file can weigh up to <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />. If a file is larger, the
+application shows "That file is too large."; shrink the PDF (for example, by lowering the resolution
+of its images) and upload it again.
 
-An envelope needs at least one document to be sent: "Upload at least one document to continue."
+An envelope needs at least one document to be sent.
 
-## Uploading before the envelope exists
+## Documents uploaded before sending
 
-The creation wizard uploads documents in its second step, before the envelope is created. Until you
-press "Send Envelope", those files are **unassigned**: they belong to your organization, but to no
-envelope. This has three consequences:
+The wizard uploads documents in its second step, before the envelope is created. Until you press
+**Send Envelope**, those files are **unassigned**: they belong to your organization, but not yet to
+an envelope.
 
-- **They do not consume quota.** Storage quota is charged when the envelope is created, not on
-  upload. See [Quotas](/en/sign/concepts/quotas/).
-- **There is a cap per organization.** Across all users, unassigned documents cannot add up to more
-  than <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" />. When the cap is reached, the upload
-  fails with "Your organization has run out of document storage. Ask your administrator to raise
-  the limit." In practice, that means someone left wizards half done; wait for the reaper to clean
-  them up or finish yours.
-- **A reaper deletes them.** An unassigned document is removed after
-  <Fact of={DOCUMENTS.unassignedRetentionHours} unit="hours" />. If you resume a wizard after that,
-  the application warns "Your uploaded documents expired and were removed. Everything else was kept
-  — please upload them again." The title, signers and options are still there; only the PDFs need
-  uploading again.
+- **They do not consume quota.** Storage is charged when the envelope is created. See
+  [Quotas](/en/sign/concepts/quotas/).
+- **They have a cap per organization.** Across all users, unassigned documents can add up to
+  <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" />. When the cap is reached, the upload shows
+  "Your organization has run out of document storage. Ask your administrator to raise the limit.";
+  finish or discard pending wizards to free up space.
+- **They are removed automatically** after <Fact of={DOCUMENTS.unassignedRetentionHours} unit="hours" />.
+  If you resume a wizard after that, the application asks you to upload the PDFs again; the title,
+  signers and options are kept.
 
-A document can belong to one envelope only. If the wizard tries to reuse one that was already
-assigned, it answers "One of these documents is already part of another envelope. Remove it and
-upload it again."
+Each document belongs to one envelope only. If the wizard says a document is already part of another
+envelope, remove it and upload it again.
 
-## Where each signer's seal lands
+## Place each signer's seal
 
-When the envelope completes, bb-sign stamps on every document one seal image per signer (name,
-email, date, signature, hash and QR code; see
-[Electronic signature and seal](/en/sign/concepts/signature-and-seal/)). You decide where.
+When the envelope completes, bb-sign stamps on every document one seal per signer, with their name,
+email, date, signature, hash and QR code (see
+[Electronic signature and seal](/en/sign/concepts/signature-and-seal/)). You choose where each one
+goes.
 
 ### With a marker
 
 Write in the PDF, where you want the seal, the text <Fact of={DOCUMENTS.placementMarker} />,
 replacing `N` with the signer's order number: `{{signer1}}` for the first, `{{signer2}}` for the
-second, and so on. It is ordinary document text, in any font; all that matters is that the PDF
-contains it as text, not as an image. When sealing, bb-sign removes the marker and places the seal
-at that position, with the seal's top-left corner where the marker began.
+second, and so on. You can use any font, as long as the PDF contains the marker as text and not as
+an image. When sealing, bb-sign removes the marker and places the seal with its top-left corner where
+the marker began.
 
-Every marker is searched for on every page. If one signer has a marker and another does not, the
-first goes to their marker and the second to the default position.
+bb-sign looks for each marker on every page. Signers with a marker get their seal at their marker,
+and the others at the default position.
 
 <Aside type="tip" title="Leave room under the marker">
   The seal is drawn downwards from the marker's line and takes the width of a signature with its
-  details. Put the marker on a line of its own, with several blank lines below it, so it does not
-  cover document text. Test with a single-signer envelope before using the template with customers.
+  details. Put the marker on a line of its own, with several blank lines below it, and test your
+  template with a single-signer envelope before using it with customers.
 </Aside>
 
 ### Without a marker
 
 If the document has no marker for a signer, their seal goes to the **bottom-right corner of the
-last page**. With several signers without markers, the seals stack upwards in that corner, in
-signer order. If they do not fit on the last page, bb-sign adds a page at the end of the document
-and keeps stacking there.
+last page**. With several signers without markers, the seals stack upwards in that corner, in signer
+order. If they do not fit on the last page, bb-sign adds a page at the end and continues there.
 
-## Original and signed
+## Original and signed document
 
-In the envelope detail, every document offers two downloads: "Original PDF", the file as uploaded,
-and "Signed PDF", the same file with the seals stamped and the organization's certificate signature.
-The second only exists once the envelope is `COMPLETED`; while it is being generated, the detail
-shows "Signed PDF processing...". A Viewer of the workspace sees the document names but does not
-download them: "You can see this document's name but not download it. Ask an admin for auditor
-access." See [Download signed documents](/en/sign/sending/download-signed-documents/).
+In the envelope detail, every document offers two downloads: **Original PDF**, the file as uploaded,
+and **Signed PDF**, the same file with the seals stamped and the organization's certificate
+signature. The signed document is available once the envelope is `COMPLETED`; while it is being
+generated, the detail shows "Signed PDF processing...".
 
-Once the envelope is sent, documents do not change. Whatever is not in the PDF when you press "Send
-Envelope" will not be in the signed PDF.
+Downloading documents requires the Auditor role or higher in the workspace; a Viewer sees their
+names. See [Download signed documents](/en/sign/sending/download-signed-documents/).
+
+The signed document corresponds exactly to the PDF you attached when sending the envelope.

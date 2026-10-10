@@ -1,6 +1,6 @@
 ---
 title: Sobres archivados
-description: "La vista Sobres Archivados: qué sobres pasan a ella y cuándo, qué sigue siendo visible, por qué son de solo lectura y qué deja de funcionar para los firmantes."
+description: "La vista Sobres Archivados: qué sobres pasan al archivo y cuándo, qué información muestra y cómo encontrar un sobre cerrado."
 product: sign
 audience: user
 ---
@@ -9,59 +9,54 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { ENVELOPE } from '../../../facts/sign';
 
-Los sobres cerrados no se quedan para siempre en la lista de Sobres. Pasado un tiempo desde su
-creación, bb-sign los mueve a una vista aparte, "Sobres Archivados", donde siguen visibles pero ya
-no se puede hacer nada con ellos. Esta página explica cuáles, cuándo y qué cambia.
+bb-sign mantiene la lista de Sobres centrada en el trabajo en curso. Los sobres cerrados pasan,
+tras un tiempo, a la vista **Sobres Archivados**, donde siguen disponibles para consulta en modo de
+solo lectura.
 
-## Qué se archiva y cuándo
+## Qué sobres se archivan y cuándo
 
-Cada noche a las <Fact of={ENVELOPE.archiveCron} />, un proceso busca los sobres en estado
-"Completado", "Cancelado" o "Expirado" creados hace más de
-<Fact of={ENVELOPE.archiveAfterDays} unit="días" /> y los pasa al archivo. Dos detalles importan:
+Cada noche, a las <Fact of={ENVELOPE.archiveCron} />, bb-sign archiva los sobres en estado
+**Completado**, **Cancelado** o **Expirado** creados hace más de
+<Fact of={ENVELOPE.archiveAfterDays} unit="días" />.
 
-- El plazo cuenta desde la **creación** del sobre, no desde que se completó. Un sobre que tardó en
-  completarse se archiva poco después de completarse.
-- Un sobre en "Borrador", "Enviado" o "En Progreso" nunca se archiva, por antiguo que sea.
-  [Cancélalo](/sign/sending/cancel/) si no va a completarse.
+- El plazo cuenta desde la **creación** del sobre. Un sobre que tardó en completarse se archiva
+  poco después de completarse.
+- Los sobres en **Borrador**, **Enviado** o **En Progreso** permanecen en la lista activa. Si uno
+  de ellos no se va a completar, [cancélelo](/sign/sending/cancel/).
 
-No hay forma de archivar un sobre a mano ni de impedir que se archive.
+## Consultar los sobres archivados
 
-## La vista
+La opción **Archivados** del menú abre **Sobres Archivados**. La vista indica: "Estos sobres han
+sido archivados. Son de solo lectura y la recuperación de datos puede tardar más de lo habitual."
+Junto al título aparece el total ("N sobres archivados") y el enlace
+**Volver a los sobres activos**.
 
-La entrada "Archivados" del menú abre "Sobres Archivados". Un aviso encabeza la lista: "Estos
-sobres han sido archivados. Son de solo lectura y la recuperación de datos puede tardar más de lo
-habitual." Junto al título está el total ("N sobres archivados", con un signo más cuando supera el
-tope del contador) y el enlace "Volver a los sobres activos".
+Puede filtrar por **Espacio de trabajo**, igual que en Sobres; el total se ajusta al filtro. Cada
+fila muestra:
 
-Puedes acotar por "Espacio de trabajo", igual que en Sobres; el total se acota con el filtro. Cada
-fila muestra el título, sus etiquetas, el número de firmantes, la fecha de creación y la de archivo
-("N firmantes · Creado ... · Archivado ..."), el espacio de trabajo y el estado con el que se
-archivó. Las filas no se abren: no hay página de detalle de un sobre archivado.
+- el título y sus etiquetas;
+- el número de firmantes y las fechas de creación y de archivo ("N firmantes · Creado ... ·
+  Archivado ...");
+- el espacio de trabajo y el estado con el que se archivó.
 
-## Solo lectura
+## Conservación de la información
 
-De un sobre archivado no se puede:
-
-- cambiar las etiquetas ni cancelarlo (ya estaba cerrado);
-- ver su registro de auditoría desde la aplicación;
-- descargar el PDF original ni el firmado desde la aplicación.
-
-Nada se borra al archivar: el sobre, sus firmantes, sus documentos y su evidencia se conservan según
-[Alcance y conservación](/sign/legal/retention/). Pero desde la aplicación, lo que queda es la fila
-de la lista. Por eso conviene descargar los PDF firmados en cuanto el sobre se completa; ver
+Archivar un sobre no elimina nada: el sobre, sus firmantes, sus documentos y su evidencia se
+conservan según [Alcance y conservación](/sign/legal/retention/). La vista de archivo muestra la
+fila de cada sobre; descargue los PDF firmados y consulte el registro de auditoría mientras el sobre
+está en **Sobres**. Consulte
 [Descargar documentos firmados](/sign/sending/download-signed-documents/).
 
-<Aside type="caution" title="El enlace de descarga del firmante deja de funcionar al archivarse">
-  Mientras el sobre está en Sobres, cada firmante puede volver a su enlace y descargar su copia
-  firmada. En cuanto el sobre se archiva, ese enlace abre "Enlace no disponible" y no hay forma de
-  recuperarlo desde la aplicación. Si un firmante necesita su copia después, tendrá que pedírtela a
-  ti; descárgala y guárdala mientras el sobre sigue activo.
+<Aside type="caution" title="Entregue su copia a los firmantes antes del archivo">
+  Mientras el sobre está en **Sobres**, cada firmante puede volver a su enlace y descargar su copia
+  firmada. Al archivarse, ese enlace abre **Enlace no disponible**. Si un firmante necesita su
+  copia más adelante, envíele el PDF firmado que usted descargó.
 </Aside>
 
-## Si buscas un sobre y no lo encuentras
+## Encontrar un sobre cerrado
 
-Si un sobre completado, cancelado o expirado ya no está en Sobres, mira en Archivados antes de
-pensar que se borró. Si tampoco está ahí, puede que esté en un espacio de trabajo al que no tienes
-acceso: pide a un administrador que lo compruebe.
+Si un sobre completado, cancelado o expirado ya no aparece en **Sobres**, búsquelo en
+**Archivados**. Si tampoco aparece allí, es posible que pertenezca a un espacio de trabajo al que
+usted no tiene acceso: pida a un administrador que lo verifique.
 
 <LinkCard title="Enviar y seguir" href="/sign/sending/send-and-track/" description="Los estados y filtros de la lista de sobres activos." />

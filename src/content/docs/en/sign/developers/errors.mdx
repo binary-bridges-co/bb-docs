@@ -1,6 +1,6 @@
 ---
 title: Errors
-description: Every status the bb-sign API answers, the ErrorResponse and QuotaViolation bodies, the 404-not-403 rule, and how the SDKs surface failures.
+description: The statuses the bb-sign API returns, the ErrorResponse and QuotaViolation bodies, the 404-instead-of-403 rule and how the SDKs report failures.
 product: sign
 audience: developer
 ---
@@ -9,29 +9,30 @@ import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { AUTH, QUOTA } from '../../../../facts/sign';
 
-The API answers a small set of statuses, and every one of them means one thing. This page lists
-them, shows the body that comes with them, and explains the one rule that surprises people: an
-envelope you cannot see is a `404`, not a `403`.
+The API returns a small set of statuses and each has a single meaning, so your integration can
+decide what to do from the code alone. This page describes each status, the body that comes with
+it and why an envelope the credential cannot access returns `404`.
 
 ## Status codes
 
-| Status | Meaning | What to do |
+| Status | Meaning | Action |
 |---|---|---|
-| `400` | Malformed or failed validation | Compare the body with the schema in the [API reference](/sign/api/); dates must be ISO-8601 |
-| `401` | Credentials rejected: no token, an expired one (a token lives <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />), or one the realm will not validate | Request a new token; check the `Bearer ` prefix. Both SDKs refresh and retry once before surfacing this |
-| `403` | Authenticated, but this credential lacks the organization permission | You are calling a management operation that is UI only, or the token has no `bb_sign_org_id`. See [Machine authentication](/en/sign/developers/authentication/) |
-| `404` | No such resource, or it belongs to another organization or a workspace you cannot see. Deliberately indistinguishable | Check the id; if the workspace is the issue, ask an admin to grant the credential a role there |
-| `409` | Not in a state that allows this, for example sending an already-sent envelope | Read the envelope first and act on its `status` |
-| `422` | A domain rule rejected the request, for example sending with no document or no signer | Fix the envelope, then retry |
+| `400` | Malformed request or failed validation | Compare the body with the schema in the [API reference](/sign/api/); dates must be ISO-8601 |
+| `401` | Credentials rejected: no token, an expired token (a token is valid for <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />) or a token the realm will not validate | Request a new token and check the `Bearer ` prefix. Both SDKs refresh the token and retry once before reporting this status |
+| `403` | Authenticated, but the credential lacks the organization permission | The operation is a management operation that exists only in the UI, or the token has no `bb_sign_org_id`. See [Machine authentication](/en/sign/developers/authentication/) |
+| `404` | The resource does not exist, or belongs to another organization or a workspace the credential cannot see. Deliberately indistinguishable | Check the id; if the workspace is the issue, ask an admin to grant the credential a role there |
+| `409` | The resource is not in a state that allows the operation, for example sending an already-sent envelope | Read the envelope first and act on its `status` |
+| `422` | A business rule rejected the request, for example sending an envelope with no document or no signer | Fix the envelope and try again |
 | <code>{QUOTA.httpStatusWhenExhausted.value}</code> | An organization quota is exhausted. The body says which one | Ask the platform administrator to raise or renew the quota; the SDKs retry this status |
-| `0` (SDKs only) | The request never got an answer: it never reached bb-sign, or the reply was lost | For a `POST`, **list before you retry**; see below |
+| `0` (SDKs only) | The request got no answer: it never reached bb-sign or the reply was lost | For a `POST`, **list before you retry** (see below) |
 
-`401` and `403` are produced by the security filter chain, so they carry **no body**. Every other
-error carries an `ErrorResponse`.
+`401` and `403` are produced by the security filter chain and carry **no body**. Every other error
+carries an `ErrorResponse`.
 
-There are no rate limits. A <code>{QUOTA.httpStatusWhenExhausted.value}</code> always means a quota.
+A <code>{QUOTA.httpStatusWhenExhausted.value}</code> always indicates an exhausted quota; the API
+does not apply rate limits.
 
-## The error body
+## Error body
 
 ```json
 {
@@ -47,13 +48,13 @@ There are no rate limits. A <code>{QUOTA.httpStatusWhenExhausted.value}</code> a
 
 | Field | Type | Always present | Meaning |
 |---|---|---|---|
-| `status` | integer | yes | The HTTP status, repeated |
+| `status` | integer | yes | The HTTP status |
 | `error` | string | yes | The HTTP reason phrase |
-| `code` | string | yes | A stable machine-readable code, such as `WORKSPACE_NOT_FOUND` or `NOT_FOUND`. Branch on this, not on `message` |
-| `message` | string | yes | Human-readable, may change wording |
+| `code` | string | yes | A stable machine-readable code, such as `WORKSPACE_NOT_FOUND` or `NOT_FOUND`. Base your logic on this field, not on `message` |
+| `message` | string | yes | Human-readable text; its wording may change |
 | `path` | string | yes | The request path |
 | `timestamp` | date-time | yes | When the error was produced |
-| `traceId` | string | no | Quote it when you contact us; it finds the request in our logs |
+| `traceId` | string | no | Include it when you contact support; it locates the request in our logs |
 | `quota` | `QuotaViolation` | no | Only on <code>{QUOTA.httpStatusWhenExhausted.value}</code> |
 
 ### `QuotaViolation`
@@ -72,31 +73,32 @@ There are no rate limits. A <code>{QUOTA.httpStatusWhenExhausted.value}</code> a
 
 | Field | Type | Meaning |
 |---|---|---|
-| `dimension` | string | Which quota: the number of envelopes, or the storage used |
+| `dimension` | string | The affected quota: number of envelopes or storage used |
 | `current` | integer | The organization's usage when the request was refused |
 | `limit` | integer | The quota's limit |
 
-Quotas are set by the platform administrator and are visible to org admins in the UI; see
+The platform administrator sets quotas and org admins view them in the UI; see
 [Quotas](/en/sign/concepts/quotas/).
 
-## 404, not 403
+## 404 instead of 403
 
-<Aside type="note" title="Across a tenant boundary, nothing exists">
-  An envelope or workspace that belongs to another organization, or sits in a workspace your
-  credential holds no role in, answers `404`, the same answer as an id that was never issued. A `403`
-  there would confirm the id exists, which is information a tenant must not have about another.
-  Within your own organization, a workspace you cannot create in answers `404 WORKSPACE_NOT_FOUND`,
-  and envelopes in workspaces you cannot read never appear in lists.
+<Aside type="note" title="Isolation between organizations">
+  An envelope or workspace that belongs to another organization, or sits in a workspace where the
+  credential holds no role, returns `404`, the same as an id that was never issued. This way, one
+  organization cannot confirm that another's resources exist. Within your own organization, a
+  workspace the credential cannot create in returns `404 WORKSPACE_NOT_FOUND`, and envelopes in
+  workspaces it cannot read do not appear in lists.
 </Aside>
 
-`403` is reserved for organization-scope denials: the token lacks a permission the operation needs,
-or lacks the org claim altogether.
+`403` is reserved for organization-level denials: the token lacks a permission the operation
+requires, or does not carry the org claim.
 
-## How the SDKs surface errors
+## Errors in the SDKs
 
-Both SDKs turn every non-2xx into one exception type carrying the status, and nothing else: not the
-`Response` object, not the headers, so logging the error cannot leak your `Authorization` header.
-Messages never contain your secret or access token, including when bb-sign's response does.
+Both SDKs turn every non-2xx response into a single exception type that carries the status and
+nothing else: neither the `Response` object nor the headers. Logging the error therefore does not
+expose your `Authorization` header. Messages never include your secret or access token, even when
+bb-sign's response contains them.
 
 | | JavaScript | Java |
 |---|---|---|
@@ -124,8 +126,8 @@ try {
 }
 ```
 
-A `POST` whose response was never seen is **never retried** by either SDK: the envelope may exist,
-and these are legal agreements sent to real people. `GET` requests are retried on 5xx and transport
-failures; <code>{QUOTA.httpStatusWhenExhausted.value}</code> and `503` are retried for every method,
-because they mean the server explicitly did not process the request. The
-[walkthrough](/en/sign/developers/envelope-walkthrough/) shows the list-before-you-retry pattern.
+Neither SDK retries a `POST` whose response was not received: the envelope may already exist, and
+these are agreements sent to real people. `GET` requests are retried on 5xx errors and transport
+failures; <code>{QUOTA.httpStatusWhenExhausted.value}</code> and `503` are retried for every
+method, because they indicate the server did not process the request. The
+[walkthrough](/en/sign/developers/envelope-walkthrough/) shows how to list before retrying.

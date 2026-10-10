@@ -1,11 +1,11 @@
 ---
 title: Plataforma para desarrolladores
-description: Mapa de la sección para desarrolladores (inicio rápido, autenticación, webhooks, SDKs, referencia de la API), las URL de producción y qué cubre el contrato público.
+description: Integre bb-sign en sus sistemas con la API HTTP, los webhooks firmados y los SDKs de JavaScript y Java. URL de producción y alcance del contrato.
 product: sign
 audience: developer
 ---
 
-import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { URLS, AUTH } from '../../../facts/sign';
 import openapi from '../../../sync/sign/openapi.json';
@@ -13,9 +13,9 @@ import openapi from '../../../sync/sign/openapi.json';
 export const pathCount = Object.keys(openapi.paths).length;
 export const operationCount = Object.values(openapi.paths).reduce((n, p) => n + Object.keys(p).length, 0);
 
-bb-sign expone una API HTTP pequeña para el flujo del sobre, webhooks firmados para lo que ocurre
-después, y dos SDKs que envuelven ambos. Esta página es el mapa de la sección: qué existe, dónde
-vive y en qué orden leerlo.
+Con la API de bb-sign, sus sistemas crean y envían sobres, reciben un aviso firmado cada vez que
+cambia su estado y descargan el documento firmado sin intervención manual. Los SDKs de JavaScript
+y Java cubren la API y la verificación de webhooks.
 
 ## URL de producción
 
@@ -24,52 +24,47 @@ vive y en qué orden leerlo.
 | URL base de la API | <Fact of={URLS.api} /> |
 | URL del token (OAuth2 client credentials) | <Fact of={URLS.tokenUrl} /> |
 | Contrato OpenAPI | <a href={URLS.api.value + URLS.openapiPath.value}><Fact of={URLS.api} /><Fact of={URLS.openapiPath} /></a> |
-| Referencia de la API renderizada | [/sign/api/](/sign/api/) |
+| Referencia de la API | [/sign/api/](/sign/api/) |
 
-Define las dos primeras como variables de entorno en todo lo que llame a bb-sign. Un token vive
-<Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; los dos SDKs lo obtienen y lo renuevan por ti.
+Defina las dos primeras como variables de entorno en cada servicio que llame a bb-sign. Un token
+es válido durante <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; ambos SDKs lo obtienen y lo
+renuevan automáticamente.
 
-## Qué cubre el contrato público
+## Alcance del contrato público
 
 La versión <code>{openapi.info.version}</code> del contrato tiene {pathCount} rutas ({operationCount}
-operaciones) en cinco áreas:
+operaciones) organizadas en cinco áreas:
 
-| Área | Qué hace | Necesita credencial |
+| Área | Operaciones | Requiere credencial |
 |---|---|---|
-| Documentos | Subir un PDF antes de que exista un sobre | Sí |
-| Sobres | Crear, listar, leer, adjuntar documentos, añadir firmantes, enviar, cancelar, contar por estado | Sí |
-| Ceremonia de firma | Abrir un enlace, pedir y verificar un código de un solo uso, firmar, descargar la copia firmada, balizas de apertura y cierre | No: el token del enlace es la credencial |
-| Verificación | Comprobar un sello desde el código QR de un documento firmado | No |
-| Espacios de trabajo | Listar los espacios de trabajo a los que llega la credencial | Sí |
+| Documentos | Subir un PDF antes de crear el sobre | Sí |
+| Sobres | Crear, listar, consultar, adjuntar documentos, agregar firmantes, enviar, cancelar, contar por estado | Sí |
+| Ceremonia de firma | Abrir un enlace, solicitar y verificar un código de un solo uso, firmar, descargar la copia firmada, registrar apertura y cierre | No: el token del enlace es la credencial |
+| Verificación | Comprobar un sello a partir del código QR de un documento firmado | No |
+| Espacios de trabajo | Listar los espacios de trabajo a los que tiene acceso la credencial | Sí |
 
-Todo lo que una credencial puede llamar está limitado a su organización por el token, y dentro de
-la organización por sus **roles de espacio de trabajo**.
-[Autenticación de máquinas](/sign/developers/authentication/) explica ambas cosas.
+El token limita cada llamada a la organización de la credencial y, dentro de ella, a sus **roles
+de espacio de trabajo**. [Autenticación de máquinas](/sign/developers/authentication/) explica
+ambos niveles.
 
-## Qué no está en la API
+## Operaciones de administración
 
-Administrar organizaciones, usuarios, certificados, cuotas, credenciales de API, webhooks y
-espacios de trabajo son **operaciones de la interfaz**: las hace un administrador de la
-organización en **Configuración**, y no forman parte del contrato público. Las páginas de
-[Administrar la organización](/sign/admin/) las documentan. En particular, un webhook se registra
-en **Configuración**, pestaña **Webhooks**, no a través de un endpoint.
-
-<Aside type="note" title="Solo lo que está en producción">
-  No hay plantillas, ni envíos masivos, ni campos de formulario, ni límites de tasa, ni más SDKs
-  que JavaScript y Java. Si una página de aquí no lo describe, no existe todavía.
-</Aside>
+La gestión de organizaciones, usuarios, certificados, cuotas, credenciales de API, webhooks y
+espacios de trabajo se realiza en **Configuración**, a cargo de un administrador de la
+organización. Las páginas de [Administrar la organización](/sign/admin/) describen cada una. Los
+webhooks, en particular, se registran en **Configuración**, pestaña **Webhooks**.
 
 ## Por dónde empezar
 
 <CardGrid>
-  <LinkCard title="Inicio rápido" href="/sign/developers/quickstart/" description="Un 201 de POST /api/v1/envelopes, en curl, JavaScript o Java." />
-  <LinkCard title="Autenticación de máquinas" href="/sign/developers/authentication/" description="Client credentials, qué lleva el token, a qué llega, cuánto vive." />
-  <LinkCard title="De la credencial al documento firmado" href="/sign/developers/envelope-walkthrough/" description="Subir, crear, añadir un firmante, enviar, recibir el webhook, descargar el PDF firmado." />
-  <LinkCard title="Webhooks" href="/sign/developers/webhooks/" description="Los seis eventos, los tres headers, verificar la firma, entrega y reintentos." />
-  <LinkCard title="Especificación de firma de webhooks" href="/sign/developers/webhook-signature-spec/" description="El esquema normativo: gramática del header, qué se firma, tolerancia, el algoritmo, el payload." />
-  <LinkCard title="Errores" href="/sign/developers/errors/" description="Cada estado que responde la API, el cuerpo del error y la regla del 404 y no 403." />
-  <LinkCard title="SDK de JavaScript" href="/sign/sdks/javascript/" description="Cliente ESM para Node, con verificación de webhooks en una subruta solo de servidor." />
-  <LinkCard title="SDK de Java" href="/sign/sdks/java/" description="Cliente Retrofit con un jar de entrega, y Webhooks.verify sobre arreglos de bytes." />
-  <LinkCard title="Referencia de la API" href="/sign/api/" description="Cada operación y esquema, generados desde el contrato." />
-  <LinkCard title="Migrar desde Adobe Acrobat Sign" href="/sign/developers/migrating-from-adobe/" description="Mapa de conceptos, y dónde no hay equivalente." />
+  <LinkCard title="Inicio rápido" href="/sign/developers/quickstart/" description="Obtenga un 201 de POST /api/v1/envelopes con curl, JavaScript o Java." />
+  <LinkCard title="Autenticación de máquinas" href="/sign/developers/authentication/" description="Client credentials: contenido del token, alcance y vigencia." />
+  <LinkCard title="De la credencial al documento firmado" href="/sign/developers/envelope-walkthrough/" description="Subir, crear, agregar un firmante, enviar, recibir el webhook y descargar el PDF firmado." />
+  <LinkCard title="Webhooks" href="/sign/developers/webhooks/" description="Los seis eventos, los tres encabezados, la verificación de la firma, la entrega y los reintentos." />
+  <LinkCard title="Especificación de firma de webhooks" href="/sign/developers/webhook-signature-spec/" description="El esquema normativo: gramática del encabezado, contenido firmado, tolerancia, algoritmo y payload." />
+  <LinkCard title="Errores" href="/sign/developers/errors/" description="Cada estado que responde la API, el cuerpo del error y la regla de 404 en lugar de 403." />
+  <LinkCard title="SDK de JavaScript" href="/sign/sdks/javascript/" description="Cliente ESM para Node, con verificación de webhooks en una subruta exclusiva de servidor." />
+  <LinkCard title="SDK de Java" href="/sign/sdks/java/" description="Cliente Retrofit distribuido como jar, con Webhooks.verify sobre arreglos de bytes." />
+  <LinkCard title="Referencia de la API" href="/sign/api/" description="Cada operación y esquema, generados a partir del contrato." />
+  <LinkCard title="Migrar desde Adobe Acrobat Sign" href="/sign/developers/migrating-from-adobe/" description="Equivalencia de conceptos entre Adobe Acrobat Sign y bb-sign." />
 </CardGrid>

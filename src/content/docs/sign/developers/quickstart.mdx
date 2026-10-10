@@ -1,6 +1,6 @@
 ---
 title: Inicio rápido
-description: Tu primer sobre, un 201 de POST /api/v1/envelopes, con una credencial de Configuración, en curl, JavaScript o Java, y qué revisar si falla.
+description: Cree su primer sobre con la API de bb-sign y obtenga un 201 de POST /api/v1/envelopes con curl, JavaScript o Java.
 product: sign
 audience: developer
 source: docs/api/quickstart.md
@@ -10,47 +10,42 @@ import { Aside, Tabs, TabItem, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { URLS, AUTH, SDK } from '../../../facts/sign';
 
-**Meta: un `201` de `POST /api/v1/envelopes`, en menos de 30 minutos, sin preguntarle a nadie.**
+Esta guía lleva su integración desde una credencial nueva hasta un `201` de
+`POST /api/v1/envelopes`: un sobre creado en su organización.
 
-No es una forma de hablar. Esta página se mide: a un desarrollador que nunca ha visto esta API se
-le toma el tiempo mientras la sigue, y si tiene que hacer una pregunta, esta página tiene un
-defecto. Si algo de lo que sigue no está claro, vale la pena decírnoslo. Es la única
-retroalimentación que la mejora.
+Requisitos: una cuenta de bb-sign con el rol de **administrador de la organización** (o el apoyo
+de alguien que lo tenga), y Java <Fact of={SDK.java.minJava} /> o superior, o Node <Fact of={SDK.js.minNode} /> o superior.
 
-Necesitas: una cuenta de bb-sign con el rol de **administrador de la organización** (o alguien que
-lo tenga), y Java <Fact of={SDK.java.minJava} /> o superior, o Node <Fact of={SDK.js.minNode} /> o superior.
+## 1. Obtener una credencial
 
-## 1. Obtén una credencial (5 minutos)
+Una credencial de API permite que un sistema llame a bb-sign en nombre de su organización, con
+acceso limitado a esa organización.
 
-Una credencial de API permite que un sistema llame a bb-sign en nombre de tu organización. Está
-limitada a tu organización y no puede ver nada fuera de ella.
-
-1. Inicia sesión en bb-sign y abre **Configuración**, pestaña **Credenciales de API**.
-2. **Nueva credencial**. Dale una etiqueta que describa qué la va a usar: «Sistema de facturación»,
-   no «prueba».
-3. En **Acceso**, deja el espacio de trabajo y el rol predeterminados a menos que sepas que
-   necesitas otros. El formulario lo dice: «General con Gestor es la opción predeterminada».
-4. Copia el **ID de cliente** y el **Secreto de cliente**.
+1. Inicie sesión en bb-sign y abra **Configuración**, pestaña **Credenciales de API**.
+2. Seleccione **Nueva credencial**. Asígnele una etiqueta que identifique el sistema que la usará,
+   por ejemplo «Sistema de facturación».
+3. En **Acceso**, conserve el espacio de trabajo y el rol predeterminados, salvo que necesite
+   otros: «General con Gestor es la opción predeterminada».
+4. Copie el **ID de cliente** y el **Secreto de cliente**.
 
 <Aside type="caution" title="El secreto se muestra una sola vez">
-  Se guarda únicamente en Keycloak; bb-sign no conserva ninguna copia y no puede mostrarlo de
-  nuevo. Si lo pierdes tienes que **Rotar**, y la rotación no tiene periodo de gracia: «El secreto
-  actual deja de funcionar de inmediato. Cualquier integración que lo use fallará hasta que la
-  vuelvas a desplegar con el nuevo secreto».
+  Se almacena únicamente en Keycloak y bb-sign no conserva copia. Si lo pierde, use **Rotar**; la
+  rotación no tiene periodo de gracia: «El secreto actual deja de funcionar de inmediato. Cualquier
+  integración que lo use fallará hasta que la vuelvas a desplegar con el nuevo secreto».
 </Aside>
 
-Si no ves **Configuración** en la barra lateral, no tienes el rol de administrador de la
-organización. Pídele a quien administre tu organización en bb-sign que cree la credencial y te
+**Configuración** aparece en la barra lateral para los administradores de la organización. Si no
+tiene ese rol, pida al administrador de su organización en bb-sign que cree la credencial y le
 envíe los dos valores.
 
-También necesitas dos URL. En producción son:
+Además, necesita dos URL. En producción son:
 
 | | Valor |
 |---|---|
 | URL base de la API | <Fact of={URLS.api} /> |
 | URL del token | <Fact of={URLS.tokenUrl} /> |
 
-Defínelas como variables de entorno, no en el código fuente:
+Defínalas como variables de entorno, fuera del código fuente:
 
 ```bash
 export BBSIGN_BASE_URL="https://sign-api.binarybridges.co"
@@ -59,9 +54,9 @@ export BBSIGN_CLIENT_ID="..."
 export BBSIGN_CLIENT_SECRET="..."
 ```
 
-## 2. Comprueba que la credencial funciona (2 minutos)
+## 2. Verificar la credencial
 
-Antes de escribir código, confirma que la credencial puede obtener un token:
+Antes de escribir código, confirme que la credencial obtiene un token:
 
 ```bash
 curl -s -X POST "$BBSIGN_TOKEN_URL" \
@@ -70,34 +65,33 @@ curl -s -X POST "$BBSIGN_TOKEN_URL" \
   -d client_secret="$BBSIGN_CLIENT_SECRET"
 ```
 
-Deberías recibir un JSON que contiene `access_token`. Si recibes `invalid_client`, el id o el
-secreto están mal: cópialos de nuevo, o rota y vuelve a intentar.
+La respuesta es un JSON con `access_token`. Si recibe `invalid_client`, el id o el secreto son
+incorrectos: cópielos de nuevo, o rote el secreto y vuelva a intentarlo.
 
-**Vale la pena hacer esto primero.** Cualquier fallo posterior es más fácil de diagnosticar cuando
-sabes que la credencial en sí está bien.
+Con la credencial verificada, cualquier fallo posterior es más fácil de diagnosticar.
 
-## 3. Instala un SDK (5 minutos)
+## 3. Instalar un SDK
 
-No tienes que usar un SDK. La API es HTTP sin más y la [referencia](/sign/api/) la documenta. Pero
-los SDKs se encargan de renovar el token, de los reintentos y de verificar la firma de los
-webhooks, que es casi todo lo que de otro modo escribirías tú.
+La API es HTTP estándar y la [referencia](/sign/api/) la documenta por completo, de modo que el
+SDK es opcional. Los SDKs se encargan de renovar el token, de los reintentos y de verificar la
+firma de los webhooks.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
-    No hay nada que instalar. Los ejemplos usan `curl` y `jq`.
+    No requiere instalación. Los ejemplos usan `curl` y `jq`.
   </TabItem>
   <TabItem label="JavaScript">
-    Recibirás un tarball:
+    El SDK se entrega como un tarball:
 
     ```bash
     npm install ./binarybridges-bb-sign-sdk-0.1.0.tgz
     ```
 
-    Node <Fact of={SDK.js.minNode} /> o superior, y el paquete es **solo ESM**: usa `import`, no
-    `require`. Detalles en [SDK de JavaScript](/sign/sdks/javascript/).
+    Requiere Node <Fact of={SDK.js.minNode} /> o superior, y el paquete es **solo ESM**: use
+    `import` en lugar de `require`. Más detalles en [SDK de JavaScript](/sign/sdks/javascript/).
   </TabItem>
   <TabItem label="Java">
-    Recibirás cuatro archivos. Instala el jar en tu repositorio local de Maven:
+    El SDK se entrega en cuatro archivos. Instale el jar en su repositorio local de Maven:
 
     ```bash
     shasum -a 256 -c bb-sign-sdk-java-0.1.0-SNAPSHOT.jar.sha256
@@ -107,9 +101,9 @@ webhooks, que es casi todo lo que de otro modo escribirías tú.
       -DpomFile=bb-sign-sdk-java-0.1.0-SNAPSHOT.pom
     ```
 
-    **`-DpomFile` es obligatorio.** Sin él, Maven escribe un pom sin dependencias; la instalación
-    funciona, tu compilación funciona, y tu primera llamada a la API falla en tiempo de ejecución
-    con `NoClassDefFoundError`.
+    **`-DpomFile` es obligatorio.** Sin él, Maven genera un pom sin dependencias: la instalación y
+    la compilación terminan sin errores, pero la primera llamada a la API falla en tiempo de
+    ejecución con `NoClassDefFoundError`.
 
     ```xml
     <dependency>
@@ -119,11 +113,11 @@ webhooks, que es casi todo lo que de otro modo escribirías tú.
     </dependency>
     ```
 
-    Detalles en [SDK de Java](/sign/sdks/java/).
+    Más detalles en [SDK de Java](/sign/sdks/java/).
   </TabItem>
 </Tabs>
 
-## 4. Crea un sobre (5 minutos)
+## 4. Crear un sobre
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -196,15 +190,15 @@ webhooks, que es casi todo lo que de otro modo escribirías tú.
   </TabItem>
 </Tabs>
 
-**Ese `201` es la meta.** Ahora existe un sobre en `DRAFT`.
+La respuesta `201` confirma que el sobre existe, en estado `DRAFT`.
 
 ### Elegir un espacio de trabajo
 
-Cada sobre vive en un **espacio de trabajo**, y una credencial solo llega a los espacios que se le
-concedieron. Una credencial nueva es **Gestor** en el espacio **General** de tu organización, a
-menos que tu administrador haya elegido otra cosa. Sin `workspaceId` el sobre se archiva en
-General. Para archivarlo en otro, lista los espacios a los que llega tu credencial y pasa el `id`
-de uno:
+Cada sobre pertenece a un **espacio de trabajo**, y una credencial accede a los espacios que se le
+asignaron. Una credencial nueva es **Gestor** en el espacio **General** de su organización, salvo
+que el administrador haya elegido otro. Sin `workspaceId`, el sobre se archiva en General. Para
+archivarlo en otro espacio, liste los espacios disponibles para la credencial y envíe el `id` de
+uno:
 
 ```bash
 curl -s "$BBSIGN_BASE_URL/api/v1/workspaces" -H "Authorization: Bearer $TOKEN"
@@ -215,44 +209,43 @@ curl -s -X POST "$BBSIGN_BASE_URL/api/v1/envelopes" \
   -d '{"title": "Offer letter", "workspaceId": "a2d9...", "signers": [{"email": "someone@example.com", "name": "Someone"}]}'
 ```
 
-Un espacio de trabajo en el que tu credencial no puede crear responde `404 WORKSPACE_NOT_FOUND`,
-la misma respuesta que uno que no existe. Los sobres de espacios a los que no llegas responden
-`404 NOT_FOUND` y nunca aparecen en las listas.
+Un espacio de trabajo en el que la credencial no puede crear responde `404 WORKSPACE_NOT_FOUND`,
+igual que uno que no existe. Los sobres de espacios sin acceso responden `404 NOT_FOUND` y no
+aparecen en las listas.
 
-## 5. Qué sigue
+## 5. Enviar el sobre a firma
 
-Un sobre en `DRAFT` no se ha enviado a nadie. Para que de verdad lo firmen:
+Un sobre en `DRAFT` todavía no se ha enviado. Para que los firmantes lo reciban:
 
-1. **Adjunta un documento**: `POST /api/v1/envelopes/{id}/documents` (multipart), o súbelo antes
-   con `POST /api/v1/documents` y pasa los ids como `documentIds` al crear el sobre.
-2. **Envíalo**: `POST /api/v1/envelopes/{id}/send`. Esto envía por correo un enlace a cada firmante
-   y devuelve sus tokens de firma. Es el punto sin retorno: los documentos y los firmantes quedan
-   congelados.
-3. **Entérate de lo que pasó**: configura un [webhook](/sign/developers/webhooks/) en lugar de
-   consultar periódicamente.
+1. **Adjunte un documento**: `POST /api/v1/envelopes/{id}/documents` (multipart), o súbalo antes
+   con `POST /api/v1/documents` y envíe los ids como `documentIds` al crear el sobre.
+2. **Envíelo**: `POST /api/v1/envelopes/{id}/send`. bb-sign envía por correo un enlace a cada
+   firmante y devuelve sus tokens de firma. A partir de este momento, los documentos y los
+   firmantes quedan fijos.
+3. **Reciba los cambios de estado**: configure un [webhook](/sign/developers/webhooks/) en lugar
+   de consultar periódicamente.
 
 [De la credencial al documento firmado](/sign/developers/envelope-walkthrough/) muestra cada una
-de esas llamadas en los tres lenguajes.
+de estas llamadas en los tres lenguajes.
 
-## Si algo salió mal
+## Solución de problemas
 
-| Qué viste | Qué significa | Qué hacer |
+| Síntoma | Significado | Acción |
 |---|---|---|
-| `invalid_client` desde la URL del token | El id o el secreto de cliente están mal | Cópialos de nuevo; rota si tienes dudas |
-| `401` desde la API | El token fue rechazado o caducó (un token vive <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />) | Si armaste la petición a mano, revisa el prefijo `Bearer `; pide un token nuevo |
-| `403` | La credencial es válida pero la operación no es una que una credencial pueda llamar | Confirma que estás llamando a una operación de la [referencia de la API](/sign/api/); la administración se hace en la interfaz, no en la API |
-| `404 WORKSPACE_NOT_FOUND` | La credencial no tiene un rol que le permita crear en ese espacio de trabajo, o el espacio no existe | Omite `workspaceId`, o pídele a tu administrador que le dé a la credencial un rol en ese espacio desde **Configuración**, pestaña **Espacios de trabajo** |
-| `400` sin detalle | Casi siempre un cuerpo mal formado | Compara campo por campo con el ejemplo de arriba; `expiresAt` debe ser ISO-8601 |
-| `NoClassDefFoundError` en tiempo de ejecución (Java) | Se omitió `-DpomFile` al instalar | Reinstala con él |
-| `ERR_REQUIRE_ESM` (JavaScript) | El paquete es solo ESM | Usa `import` |
+| `invalid_client` desde la URL del token | El id o el secreto de cliente son incorrectos | Cópielos de nuevo o rote el secreto |
+| `401` desde la API | El token fue rechazado o expiró (un token es válido durante <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />) | Si construyó la solicitud manualmente, revise el prefijo `Bearer `; solicite un token nuevo |
+| `403` | La credencial es válida, pero la operación no está disponible para credenciales | Confirme que la operación figura en la [referencia de la API](/sign/api/); la administración se realiza en la interfaz |
+| `404 WORKSPACE_NOT_FOUND` | La credencial no tiene un rol que le permita crear en ese espacio de trabajo, o el espacio no existe | Omita `workspaceId`, o pida al administrador que asigne a la credencial un rol en ese espacio desde **Configuración**, pestaña **Espacios de trabajo** |
+| `400` sin detalle | Por lo general, un cuerpo mal formado | Compárelo campo por campo con el ejemplo; `expiresAt` debe estar en ISO-8601 |
+| `NoClassDefFoundError` en tiempo de ejecución (Java) | Se omitió `-DpomFile` en la instalación | Reinstale con ese parámetro |
+| `ERR_REQUIRE_ESM` (JavaScript) | El paquete es solo ESM | Use `import` |
 
-¿Nada de esto menciona tu problema? **Cuéntanos qué estabas haciendo.** Una pregunta que esta
-página no puede responder es un defecto de esta página, y eso es exactamente lo que queremos saber.
+Si su caso no aparece en la tabla, escríbanos con una descripción de lo que estaba haciendo.
 
 ## Referencia
 
-- **[Referencia de la API](/sign/api/)**: cada endpoint, generado desde el contrato.
-- **[Webhooks](/sign/developers/webhooks/)**: recibir eventos, y verificar que vinieron de nosotros.
-- **[Migrar desde Adobe Acrobat Sign](/sign/developers/migrating-from-adobe/)**: mapa de conceptos.
+- **[Referencia de la API](/sign/api/)**: cada endpoint, generado a partir del contrato.
+- **[Webhooks](/sign/developers/webhooks/)**: recibir eventos y verificar su origen.
+- **[Migrar desde Adobe Acrobat Sign](/sign/developers/migrating-from-adobe/)**: equivalencia de conceptos.
 - <a href={URLS.api.value + URLS.openapiPath.value}><code>openapi.json</code></a>: el contrato
-  legible por máquinas, si prefieres generar tu propio cliente.
+  legible por máquinas, para generar su propio cliente.

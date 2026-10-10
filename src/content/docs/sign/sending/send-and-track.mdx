@@ -1,6 +1,6 @@
 ---
 title: Enviar y seguir
-description: Los estados de un sobre y de cada firmante, los filtros de la lista de Sobres, qué muestra la página de detalle, las cifras del Panel y los recordatorios automáticos.
+description: Siga cada sobre hasta su firma. Estados del sobre y de los firmantes, filtros de la lista, página de detalle, Panel y recordatorios automáticos.
 product: sign
 audience: user
 ---
@@ -9,97 +9,89 @@ import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { ENVELOPE, REMINDERS } from '../../../facts/sign';
 
-Una vez enviado, un sobre avanza solo: cada firmante recibe su enlace, firma, y bb-sign registra
-cada paso. Tu trabajo es seguirlo. Esta página explica qué significa cada estado, cómo encontrar un
-sobre en la lista, qué muestra su página de detalle y qué hace bb-sign por su cuenta para que los
-firmantes no se olviden.
+Una vez enviado, el sobre avanza por sí mismo: cada firmante recibe su enlace, firma, y bb-sign
+registra cada paso y envía recordatorios a quienes aún no han firmado. Desde la lista de Sobres, la
+página de detalle y el Panel, usted sabe en todo momento en qué punto está cada sobre.
 
-## Estados
+## Estados del sobre
 
-El estado del sobre aparece como etiqueta en la lista, en el Panel y en la página de detalle:
+El estado aparece en la lista, en el Panel y en la página de detalle:
 
-| Estado | Significa |
+| Estado | Significado |
 |---|---|
-| Borrador | Creado pero no enviado. Nadie tiene enlace. |
-| Enviado | Enviado; ningún firmante ha firmado todavía. |
-| En Progreso | Al menos un firmante firmó y falta alguno. |
-| Completado | Todos firmaron. Los PDF firmados se generan a continuación. |
-| Cancelado | Lo canceló un gestor o un administrador. Los enlaces no funcionan. |
-| Expirado | Pasó la fecha de "Expira el" sin completarse. Los enlaces no funcionan. |
+| **Borrador** | Creado y pendiente de envío. Ningún firmante tiene enlace. |
+| **Enviado** | Enviado; ningún firmante ha firmado aún. |
+| **En Progreso** | Al menos un firmante ha firmado y faltan otros. |
+| **Completado** | Todos firmaron. A continuación se generan los PDF firmados. |
+| **Cancelado** | Un gestor o un administrador lo canceló. Los enlaces están cerrados. |
+| **Expirado** | Llegó la fecha de **Expira el** sin completarse. Los enlaces están cerrados. |
 
-Cada firmante tiene su propio estado: "Pendiente" (aún no tiene enlace, propio de la firma en
-orden), "Notificado" (recibió el correo), "Visto" (abrió el enlace) y "Firmado". El recorrido
-completo está en [Sobres y firmantes](/sign/concepts/envelopes-and-signers/).
+Cada firmante tiene además su propio estado: **Pendiente** (aún sin enlace, en la firma en orden),
+**Notificado** (recibió el correo), **Visto** (abrió el enlace) y **Firmado**. El ciclo completo
+se describe en [Sobres y firmantes](/sign/concepts/envelopes-and-signers/).
 
-## La lista de Sobres
+## Encontrar un sobre en la lista
 
-"Sobres" muestra los sobres de los espacios de trabajo a los que tienes acceso, los más recientes
-primero, diez por página. Junto al título está el total ("N sobres en total"); cuando hay más de
-<Fact of={ENVELOPE.listCountCap} />, la cifra se muestra con un signo más, como
-"<Fact of={ENVELOPE.listCountCap} />+ sobres", y el contador deja de ser exacto.
+**Sobres** muestra los sobres de los espacios de trabajo a los que usted tiene acceso, del más
+reciente al más antiguo, diez por página. Junto al título aparece el total ("N sobres en total");
+a partir de <Fact of={ENVELOPE.listCountCap} /> sobres, la cifra se muestra como
+"<Fact of={ENVELOPE.listCountCap} />+ sobres".
 
-Los filtros se combinan:
+Los filtros se pueden combinar:
 
 | Filtro | Control |
 |---|---|
-| Espacio de trabajo | Selector "Espacio de trabajo", con "Todos los espacios de trabajo" por defecto. Solo aparece si tienes acceso a más de un espacio. |
-| Estado | Selector "Filtrar por estado": Todos, Borrador, Enviado, En Progreso, Completado, Cancelado, Expirado. |
-| Título | Campo "Buscar por título...". Busca mientras escribes. |
-| Fechas | "Fecha desde" hasta "Fecha hasta", sobre la fecha de creación. |
-| Etiquetas | "Filtrar por etiqueta...": elige la clave, escribe el valor y añade. Se pueden apilar varias. |
+| Espacio de trabajo | Selector **Espacio de trabajo**, con **Todos los espacios de trabajo** por defecto. Aparece cuando usted tiene acceso a más de un espacio. |
+| Estado | Selector **Filtrar por estado**: Todos, Borrador, Enviado, En Progreso, Completado, Cancelado, Expirado. |
+| Título | Campo **Buscar por título...**, que busca mientras escribe. |
+| Fechas | **Fecha desde** y **Fecha hasta**, sobre la fecha de creación. |
+| Etiquetas | **Filtrar por etiqueta...**: elija la clave, escriba el valor y añádalo. Puede combinar varias. |
 
-Cada filtro activo aparece como una ficha que puedes quitar; "Limpiar todo" las quita todas. Si
-nada coincide, verás "Ningún sobre coincide con tus filtros."; si no hay ningún sobre, "Aún no hay
-sobres." con el enlace "Crea el primero". Cada fila muestra el título, hasta dos etiquetas, el
-espacio de trabajo, el número de firmantes, la fecha de creación y el estado.
+Cada filtro activo aparece como una ficha que puede quitar por separado; **Limpiar todo** las quita
+todas. Cada fila muestra el título, hasta dos etiquetas, el espacio de trabajo, el número de
+firmantes, la fecha de creación y el estado.
 
-## La página de detalle
+## Consultar la página de detalle
 
-Al abrir un sobre ves su título, su identificador, el espacio de trabajo y tu rol en él, y las
-etiquetas (que puedes cambiar con "+ Añadir etiqueta" si eres colaborador o gestor). Debajo, por
-secciones:
+Al abrir un sobre verá su título, su identificador, el espacio de trabajo, su rol en él y las
+etiquetas, que los colaboradores y gestores pueden modificar con **+ Añadir etiqueta**. La página
+se organiza en secciones:
 
-- **Campos.** "Estado", "OTP Requerido" (Sí o No), "Creado" y, si la pusiste, "Expira"; cuando la
-  fecha ya pasó, lleva el sufijo "(Expirado)".
-- **"Documentos (N)".** Cada archivo con los botones "PDF Original" y, en un sobre completado,
-  "PDF Firmado". Mientras el firmado se genera, verás "Procesando el PDF firmado...". Sin permiso de
-  descarga, el nombre aparece pero no los botones, con la explicación "Puedes ver el nombre de este
-  documento, pero no descargarlo. Pide acceso de auditor a un administrador." Ver
-  [Descargar documentos firmados](/sign/sending/download-signed-documents/).
-- **"Firmantes (N)".** El modo ("Firma secuencial" o "Firma en paralelo" con su explicación) y, por
-  firmante, nombre, correo, "Orden n.º N", la fecha de firma si firmó y su estado.
-- **"Registro de auditoría (N eventos)".** Cada evento con su tipo, quién lo causó (el correo del
-  firmante o "Sistema"), la fecha y hora y su hash. Solo para auditores y gestores del espacio; los
-  demás ven "El registro de auditoría está disponible para los auditores y gestores de este espacio
-  de trabajo." Ver [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
-- **Acciones.** El botón "Cancelar Sobre", solo para quien puede cancelar y solo en Borrador,
-  Enviado o En Progreso. Ver [Cancelar un sobre](/sign/sending/cancel/).
+| Sección | Contenido |
+|---|---|
+| Datos del sobre | **Estado**, **OTP Requerido** (Sí o No), **Creado** y, si se definió, **Expira**, con el sufijo **(Expirado)** cuando la fecha ya pasó. |
+| **Documentos (N)** | Cada archivo con **PDF Original** y, en un sobre completado, **PDF Firmado**. Mientras se genera el PDF firmado se muestra **Procesando el PDF firmado...**. Consulte [Descargar documentos firmados](/sign/sending/download-signed-documents/). |
+| **Firmantes (N)** | El modo (**Firma secuencial** o **Firma en paralelo**) y, por firmante, nombre, correo, **Orden n.º N**, fecha de firma y estado. |
+| **Registro de auditoría (N eventos)** | Cada evento con su tipo, quién lo originó (el correo del firmante o **Sistema**), la fecha y hora y su hash. Disponible para auditores y gestores del espacio. Consulte [Evidencia y auditoría](/sign/concepts/evidence-and-audit/). |
+| Acciones | **Cancelar Sobre**, para quienes pueden cancelar, en sobres en Borrador, Enviado o En Progreso. Consulte [Cancelar un sobre](/sign/sending/cancel/). |
 
-Si abres un sobre que no existe o que no puedes ver, la respuesta es la misma: "Sobre no encontrado,
-o no tienes acceso a él." bb-sign no distingue los dos casos a propósito.
+Si un sobre no existe o usted no tiene acceso a él, la aplicación muestra "Sobre no encontrado, o
+no tienes acceso a él." Por seguridad, la respuesta es la misma en ambos casos.
 
-## El Panel
+## Ver el resumen en el Panel
 
-El Panel resume los sobres que puedes ver en cuatro cifras: "Sobres totales", "Completados",
-"En progreso" (que suma los sobres en Enviado y en En Progreso) y "Borradores". Debajo, "Sobres
-recientes" lista los últimos cuatro con su estado, y "+ Nuevo" abre el asistente.
+El **Panel** resume los sobres que usted puede ver en cuatro cifras: **Sobres totales**,
+**Completados**, **En progreso** (que reúne los sobres en Enviado y en En Progreso) y
+**Borradores**. Debajo, **Sobres recientes** muestra los últimos cuatro con su estado, y
+**+ Nuevo** abre el asistente.
 
 ## Recordatorios automáticos
 
-No tienes que perseguir a los firmantes. Cada día a las <Fact of={REMINDERS.dailyRunTime} />,
-bb-sign envía `Reminder: please sign {title}` a cada firmante que recibió su invitación hace más de
-<Fact of={REMINDERS.thresholdHours} unit="horas" /> y todavía no ha firmado, con un mínimo de
-<Fact of={REMINDERS.cooldownHours} unit="horas" /> entre dos recordatorios a la misma persona. Los
-recordatorios cesan cuando firma, o cuando el sobre se completa, se cancela o expira.
+bb-sign recuerda a los firmantes que tienen una firma pendiente. Cada día a las
+<Fact of={REMINDERS.dailyRunTime} />, envía `Reminder: please sign {title}` a cada firmante que
+recibió su invitación hace más de <Fact of={REMINDERS.thresholdHours} unit="horas" /> y aún no ha
+firmado, con un intervalo mínimo de <Fact of={REMINDERS.cooldownHours} unit="horas" /> entre dos
+recordatorios a la misma persona. Los recordatorios terminan cuando el firmante firma o cuando el
+sobre se completa, se cancela o expira.
 
-No hay forma de enviar un recordatorio a mano ni de reenviar el enlace. Si un firmante dice que no
-recibió nada, pídele que revise el correo no deseado y que busque los asuntos anteriores; el
-remitente es siempre el mismo. Ver [El correo de invitación](/sign/signing/receiving-the-email/).
+Si un firmante no encuentra el correo, pídale que revise la carpeta de correo no deseado y que
+busque los asuntos indicados en esta página. Consulte
+[El correo de invitación](/sign/signing/receiving-the-email/).
 
-<Aside type="note" title="bb-sign no te avisa cuando un sobre se completa">
-  Hoy no existe un correo al remitente al completarse un sobre. Para enterarte, revisa la lista de
-  Sobres o el Panel. Si tu organización integra sistemas, un administrador puede configurar un
-  webhook para el evento `envelope.completed`; ver [Webhooks](/sign/admin/webhooks/).
+<Aside type="tip" title="Saber cuándo se completa un sobre">
+  Consulte la lista de Sobres o el Panel para ver los sobres completados. Si su organización integra
+  otros sistemas, un administrador puede configurar un webhook para el evento `envelope.completed`;
+  consulte [Webhooks](/sign/admin/webhooks/).
 </Aside>
 
-<LinkCard title="Descargar documentos firmados" href="/sign/sending/download-signed-documents/" description="PDF original y firmado, cuánto dura un enlace y quién puede descargar." />
+<LinkCard title="Descargar documentos firmados" href="/sign/sending/download-signed-documents/" description="PDF original y firmado, vigencia del enlace de descarga y quién puede descargar." />

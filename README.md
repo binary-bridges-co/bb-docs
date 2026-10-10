@@ -60,6 +60,12 @@ source: docs/api/webhooks.md   # optional: the product-repo file this page was d
 ---
 ```
 
+Voice: product documentation written by the product team, clear and confident, neither chatty nor
+technical on non-developer pages. Spanish is the primary language, written natively (not translated) and
+in **usted**. Lead with what the reader can do; state a limit only when it changes what the reader does,
+once. Legal citations (Ley 527, Decreto 2364) belong on the Legal pages only. No meta-commentary about the
+documentation, no lists of features that do not exist.
+
 Rules, enforced by `tests/unit/content.test.ts` where a test can:
 
 - **No fact without a source.** Numbers, limits and defaults come from `src/content/facts/<product>.ts`,

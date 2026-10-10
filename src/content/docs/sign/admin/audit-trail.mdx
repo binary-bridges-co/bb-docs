@@ -1,73 +1,60 @@
 ---
 title: Auditoría
-description: "Qué registra la auditoría de un sobre y quién la ve, qué eventos de la organización quedan registrados, cómo funciona la cadena de hashes y qué no se registra hoy."
+description: "Qué registra la auditoría de cada sobre, quién puede consultarla, qué cambios de configuración quedan registrados y cómo se protege el registro."
 product: sign
 audience: admin
 ---
 
-import { Aside, LinkCard } from '@astrojs/starlight/components';
+import { LinkCard } from '@astrojs/starlight/components';
 
-**Quién:** administrador de la organización (también los administradores de plataforma). **Dónde:**
-la sección «Registro de auditoría» del detalle de cada sobre (`/envelopes/id`).
+bb-sign registra lo que ocurre con cada sobre durante la firma: quién abrió el enlace, quién firmó,
+cuándo y desde qué dirección IP. Cada evento queda encadenado al anterior, de modo que cualquier
+alteración del registro se detecta. Así usted cuenta con la trazabilidad completa de cada documento.
 
-bb-sign anota en un registro inalterable lo que ocurre con cada sobre mientras se firma, y también
-algunos cambios de configuración de la organización. Esta página dice qué hay en ese registro, quién
-lo ve y qué no está. El valor probatorio de la evidencia está en
-[Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+**Quién:** administradores de la organización y administradores de plataforma. **Dónde:** sección
+**Registro de auditoría** en el detalle de cada sobre.
 
-## El registro de un sobre
+## Consultar el registro de un sobre
 
-En el detalle del sobre, la sección «Registro de auditoría (N eventos)» lista cada evento con su
-tipo, quién lo causó (el correo del actor o «Sistema»), la fecha y hora, y su hash («hash: …»).
+En el detalle del sobre, la sección **Registro de auditoría** lista cada evento con su tipo, quién lo
+originó (el correo de la persona o «Sistema»), la fecha y hora, y su hash.
 
-Lo ven los Auditores, Colaboradores y Gestores del espacio del sobre, y todos los administradores.
-Un Lector ve en su lugar «El registro de auditoría está disponible para los auditores y gestores de
-este espacio de trabajo».
+Pueden consultarlo los Auditores, Colaboradores y Gestores del espacio del sobre, además de todos los
+administradores. Para que un Lector lo consulte, asígnele el rol Auditor en
+[Espacios y miembros](/sign/admin/workspaces-and-members/).
 
-| Evento | Cuándo se anota |
+| Evento | Cuándo se registra |
 | --- | --- |
-| `SIGNING_LINK_CLICKED` | Un firmante abrió su enlace. |
+| `SIGNING_LINK_CLICKED` | Un firmante abrió su enlace de firma. |
 | `SIGNING_VIEW_OPENED`, `SIGNING_VIEW_CLOSED` | Un firmante abrió o cerró la vista de los documentos. |
-| `SIGNER_ELIGIBLE` | En firma secuencial, le tocó el turno a un firmante. |
-| `SIGNER_SIGNED` | Un firmante firmó, con su dirección IP. |
+| `SIGNER_ELIGIBLE` | En la firma secuencial, llegó el turno de un firmante. |
+| `SIGNER_SIGNED` | Un firmante firmó; se registra su dirección IP. |
 | `ENVELOPE_COMPLETED` | Firmó el último firmante. |
-| `SIGNED_COPY_ACCESSED` | Alguien descargó la copia firmada desde el enlace del firmante. |
+| `SIGNED_COPY_ACCESSED` | Se descargó la copia firmada desde el enlace del firmante. |
 | `EMAIL_SENT`, `EMAIL_DELIVERED`, `EMAIL_OPENED`, `EMAIL_BOUNCED` | Un correo del sobre se envió, se entregó, se abrió o rebotó. |
 
-## Eventos de la organización
+El estado general del sobre (creado, enviado, cancelado o vencido) se consulta en el propio sobre y
+llega a sus sistemas por [webhooks](/sign/admin/webhooks/).
 
-El mismo registro guarda cambios de configuración que no pertenecen a ningún sobre:
+## Cambios de configuración de la organización
 
-| Evento | Cuándo se anota |
-| --- | --- |
-| `API_CREDENTIAL_CREATED`, `API_CREDENTIAL_REVOKED` | Se creó o se revocó una credencial de API. |
-| `WEBHOOK_SUBSCRIPTION_CREATED`, `WEBHOOK_SUBSCRIPTION_SECRET_ROTATED`, `WEBHOOK_SUBSCRIPTION_DELETED` | Se creó un webhook, se rotó su secreto o se eliminó. |
-| `WORKSPACE_CREATED`, `WORKSPACE_RENAMED`, `WORKSPACE_DELETED` | Se creó, renombró o eliminó un espacio de trabajo. |
-| `WORKSPACE_MEMBER_GRANTED`, `WORKSPACE_MEMBER_REVOKED` | Se dio o se quitó un rol de espacio a una persona o clave de API. |
+bb-sign también registra los cambios de configuración que afectan el acceso a su organización:
 
-Hoy la aplicación no tiene una pantalla que liste estos eventos. Se conservan y pertenecen a tu
-organización; si los necesitas, pídelos al soporte de Binary Bridges.
+- La creación y la revocación de credenciales de API.
+- La creación, la rotación del secreto y la eliminación de webhooks.
+- La creación, el cambio de nombre y la eliminación de espacios de trabajo.
+- La asignación y el retiro de roles de espacio a personas y claves de API.
 
-## La cadena de hashes
+Estos eventos pertenecen a su organización. Para obtenerlos, solicítelos al soporte de Binary Bridges.
 
-Cada evento tiene un hash SHA-256 calculado sobre su contenido: identificador, sobre, organización,
-tipo, fecha, actor, dirección IP, metadatos y el hash del evento anterior del mismo sobre. Como cada
-hash incluye el anterior, modificar, insertar o borrar un evento rompe la cadena a partir de ese
-punto y la alteración es detectable. Los eventos de la organización llevan su hash, pero no se
-encadenan entre sí.
+## Cómo se protege el registro
 
-## Lo que no se registra hoy
+Cada evento lleva un hash SHA-256 calculado sobre su contenido y sobre el hash del evento anterior del
+mismo sobre. Por eso, modificar, insertar o borrar un evento rompe la cadena desde ese punto y la
+alteración se hace evidente. Los eventos de configuración de la organización llevan también su
+propio hash.
 
-- La creación, el envío, la cancelación y el vencimiento de un sobre. Esos cambios de estado se ven
-  en el propio sobre y llegan por [webhooks](/sign/admin/webhooks/), pero no están en el registro.
-- La verificación del código de un solo uso.
-- La rotación de una credencial, la activación o desactivación de un webhook y los cambios en las
-  claves de etiqueta.
+Si necesita presentar la evidencia de un sobre ante un tercero, solicítela al soporte de Binary
+Bridges.
 
-<Aside type="note" title="No hay exportación de evidencia">
-  Hoy no existe un certificado de evidencia ni una exportación del registro. Lo que puedes consultar
-  es lo que ves en pantalla. Si necesitas la evidencia de un sobre para un tercero, pídela al
-  soporte de Binary Bridges.
-</Aside>
-
-<LinkCard title="Evidencia y auditoría" href="/sign/concepts/evidence-and-audit/" description="Qué prueba cada pieza de evidencia y cómo verificar un documento firmado." />
+<LinkCard title="Evidencia y auditoría" href="/sign/concepts/evidence-and-audit/" description="Qué demuestra cada elemento de evidencia y cómo verificar un documento firmado." />

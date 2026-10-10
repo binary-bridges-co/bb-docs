@@ -1,50 +1,46 @@
 ---
 title: Migrar desde Adobe Acrobat Sign
-description: Para equipos con una integración de Acrobat Sign. Mapea acuerdos, participantes, claves de integración y webhooks sobre bb-sign, y dice dónde no hay equivalente.
+description: Guía para equipos con una integración de Acrobat Sign. Equivalencias de acuerdos, participantes, claves de integración, webhooks y endpoints en bb-sign.
 product: sign
 audience: developer
 source: docs/api/migrating-from-adobe.md
 ---
 
-import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { AUTH, DOCUMENTS } from '../../../facts/sign';
 
-Para equipos que ya tienen una integración con Acrobat Sign. Mapea su vocabulario sobre el nuestro
-y, más útil aún, dice dónde no hay equivalente, para que lo descubras aquí y no tres días después.
+Si su equipo ya tiene una integración con Acrobat Sign, esta guía le permite trasladarla a bb-sign
+con un mapa claro de conceptos, autenticación, webhooks y endpoints. Toma como referencia la API v6
+de Acrobat Sign.
 
-<Aside type="note" title="Escrita contra la API v6 de Acrobat Sign">
-  Si algo de lo que sigue ya no coincide con lo que ves de su lado, avísanos; esta página es una
-  traducción y las traducciones envejecen.
-</Aside>
+## Equivalencia de conceptos
 
-## Conceptos
-
-| Acrobat Sign | bb-sign | No es exactamente lo mismo porque |
+| Acrobat Sign | bb-sign | Cómo se traslada |
 |---|---|---|
-| **Agreement** | **Sobre** | Lo bastante cercano para traducirlo directamente |
-| **Participant set** / destinatario | **Firmante** | No tenemos *conjuntos* de participantes. Cada firmante es un individuo con un `signOrder`; no existe «cualquiera de estos tres puede firmar» |
-| **Transient document** | Subida a `POST /api/v1/documents`, luego referencia por id | El nuestro no es transitorio mientras está adjunto: persiste con el sobre y cuenta contra tu cuota de almacenamiento. Las subidas sin adjuntar se eliminan tras <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> |
-| **Library document / template** | *Sin equivalente* | Cada sobre lleva sus propios documentos. Si envías el mismo contrato repetidamente, guarda la plantilla de tu lado |
-| **Agreement state** `OUT_FOR_SIGNATURE` | `SENT`, luego `IN_PROGRESS` cuando firma el primer firmante | |
-| **Agreement state** `SIGNED` | `COMPLETED` | El nuestro significa que firmaron *todos* los firmantes. Que un solo firmante termine es el evento `signer.signed`, no un estado |
-| **Integration key** | **Credencial de cliente** | Ver abajo; la diferencia importa |
-| **Webhook** con el apretón de manos de eco | **Webhook** con firma HMAC | Ver abajo; este es el cambio más grande |
-| **Megasign / bulk send** | *Sin equivalente* | Crea sobres en un bucle. No hay endpoint masivo |
-| **Custom workflow** | *Sin equivalente* | Firma secuencial o en paralelo es un booleano del sobre, no un flujo diseñable |
-| **Form fields / anchors** | Un marcador de texto en el PDF | El sello cae donde el PDF contiene <code>{DOCUMENTS.placementMarker.value}</code> (N es el orden del firmante); sin marcador, los sellos se apilan en la última página. Nada es direccionable a través de la API. Ver [Documentos](/sign/concepts/documents/) |
+| **Agreement** | **Sobre** | Equivalencia directa |
+| **Participant set** / destinatario | **Firmante** | Cada firmante es una persona con un `signOrder`. Para varias personas, agregue un firmante por cada una |
+| **Transient document** | Subida a `POST /api/v1/documents` y referencia por id | Una vez adjunto, el documento se conserva con el sobre y cuenta para su cuota de almacenamiento. Las subidas sin adjuntar se eliminan tras <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> |
+| **Library document / template** | Documentos propios de cada sobre | Conserve el contrato base en su sistema y súbalo al crear cada sobre |
+| **Agreement state** `OUT_FOR_SIGNATURE` | `SENT`, y luego `IN_PROGRESS` cuando firma el primer firmante | |
+| **Agreement state** `SIGNED` | `COMPLETED` | Indica que firmaron *todos* los firmantes. La firma de un firmante individual se notifica con el evento `signer.signed` |
+| **Integration key** | **Credencial de cliente** | Ver [Autenticación](#autenticación-de-la-clave-de-integración-a-client-credentials) |
+| **Webhook** con verificación por eco | **Webhook** con firma HMAC | Ver [Webhooks](#webhooks-de-la-verificación-por-eco-a-la-firma-hmac); es el cambio principal |
+| **Megasign / bulk send** | Un sobre por destinatario | Cree los sobres en un ciclo con `POST /api/v1/envelopes` |
+| **Custom workflow** | Firma secuencial o en paralelo | Se define con el booleano `sequentialSigning` del sobre y el `signOrder` de cada firmante |
+| **Form fields / anchors** | Un marcador de texto en el PDF | El sello se ubica donde el PDF contiene <code>{DOCUMENTS.placementMarker.value}</code> (N es el orden del firmante); sin marcador, los sellos se ubican en la última página. Consulte [Documentos](/sign/concepts/documents/) |
 
 ## Autenticación: de la clave de integración a client credentials
 
-La clave de integración de Acrobat Sign es un bearer token de larga vida que pegas en un header. La
-nuestra es un par de client credentials OAuth2 que intercambias por un token de corta vida.
+La clave de integración de Acrobat Sign es un bearer token de larga duración que se envía en un
+encabezado. En bb-sign, un par de client credentials de OAuth2 se intercambia por un token de corta
+duración.
 
 | | Acrobat Sign | bb-sign |
 |---|---|---|
-| Qué tienes | Una clave de integración | Un id y un secreto de cliente |
-| Qué envías | La clave en sí | Un bearer token que obtuviste con ellos |
-| Vida | Hasta que se revoca | El token caduca a los <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; la credencial dura hasta que se revoca |
-| De dónde sale | La consola de administración de Adobe | **Configuración**, pestaña **Credenciales de API**, autoservicio para un administrador de la organización |
+| Credencial | Una clave de integración | Un id y un secreto de cliente |
+| Valor enviado | La clave | Un bearer token obtenido con ellos |
+| Vigencia | Hasta que se revoca | El token expira a los <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; la credencial dura hasta que se revoca |
+| Origen | La consola de administración de Adobe | **Configuración**, pestaña **Credenciales de API**, en autoservicio para un administrador de la organización |
 
 ```bash
 curl -X POST "$BBSIGN_TOKEN_URL" \
@@ -53,51 +49,43 @@ curl -X POST "$BBSIGN_TOKEN_URL" \
   -d client_secret="$BBSIGN_CLIENT_SECRET"
 ```
 
-Los dos SDKs lo hacen por ti, guardan el token en caché y lo renuevan antes de que caduque. Si
-escribes tu propio cliente, guárdalo en caché: acuñar uno por petición es mucha carga evitable
-sobre el proveedor de identidad.
+Ambos SDKs obtienen el token, lo guardan en caché y lo renuevan antes de que expire. Si escribe su
+propio cliente, guarde el token en caché en lugar de solicitar uno por cada llamada.
 
-**La revocación no es instantánea, y esto toma a la gente por sorpresa.** Revocar detiene de
-inmediato los tokens *nuevos*, pero un token ya emitido sigue funcionando hasta que caduca, hasta
-<Fact of={AUTH.tokenLifetimeSeconds} unit="s" />. El panel de configuración indica la ventana
-exacta antes de que confirmes, y muestra la credencial revocada como **Revocada — en expiración**
-hasta que transcurre. Si estás respondiendo a una filtración, trata la credencial como activa hasta
-que haya pasado ese tiempo.
+**Revocación.** Revocar detiene de inmediato la emisión de tokens *nuevos*; un token ya emitido
+sigue siendo válido hasta que expira, como máximo <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
+El panel de configuración indica la ventana exacta antes de confirmar y muestra la credencial como
+**Revocada — en expiración** hasta que transcurre. Ante una filtración, considere la credencial
+activa hasta que haya pasado ese tiempo.
 
-## Webhooks: del apretón de manos de eco a la firma HMAC
+## Webhooks: de la verificación por eco a la firma HMAC
 
-Esta es la mayor diferencia de comportamiento, y la que más probablemente te cueste una tarde.
+Este es el cambio de comportamiento más importante de la migración.
 
-**Acrobat Sign** verifica tu endpoint enviando un `clientId` en la petición y exigiendo que lo
-devuelvas en la respuesta. El registro y la verificación son el mismo mecanismo.
+**Acrobat Sign** verifica su endpoint enviando un `clientId` en la solicitud y exigiendo que se
+devuelva en la respuesta. El registro y la verificación usan el mismo mecanismo.
 
-**bb-sign** firma cada entrega con un HMAC-SHA256 sobre el cuerpo en crudo, en un header
-`X-BBSign-Signature`. No hay apretón de manos, ni eco, ni nada que devolver en el cuerpo de la
-respuesta.
-
-Lo que eso significa en la práctica:
+**bb-sign** firma cada entrega con un HMAC-SHA256 sobre el cuerpo original, en el encabezado
+`X-BBSign-Signature`. Su endpoint verifica la firma y responde 2xx, sin devolver ningún valor.
 
 | | Acrobat Sign | bb-sign |
 |---|---|---|
-| Probar que una petición es genuina | Devolver el `clientId` | Verificar la firma HMAC |
-| Qué devuelves | Un cuerpo JSON con el id | Nada. Un 2xx |
-| Por petición o por registro | Por petición, el mismo valor cada vez | Por petición, distinto cada vez |
-| Si lo omites | Adobe deja de entregar | **Nosotros seguimos entregando, y tú aceptas cualquier cosa que cualquiera te envíe** |
+| Cómo se comprueba que una solicitud es auténtica | Devolver el `clientId` | Verificar la firma HMAC |
+| Respuesta del endpoint | Un cuerpo JSON con el id | Un 2xx sin cuerpo |
+| Valor por solicitud | El mismo en cada solicitud | Distinto en cada solicitud |
+| Responsabilidad del receptor | Responder con el eco | **Verificar la firma en cada entrega** |
 
-Esa última fila es la importante. El apretón de manos de Adobe falla a gritos si lo haces mal. **El
-nuestro falla en silencio**: un endpoint que nunca comprueba la firma funciona perfectamente y está
-abierto de par en par. Cualquiera que conozca tu URL puede publicar un `envelope.completed` falso.
+La última fila es la clave: la seguridad de la integración depende de que su endpoint verifique la
+firma antes de procesar el evento. Ambos SDKs incluyen la verificación, y los
+<a href="/sync/sign/webhook-signature-vectors.json">vectores de prueba</a> permiten validar una
+implementación propia. La [guía de webhooks](/sign/developers/webhooks/) detalla los tres
+requisitos que debe cumplir un verificador.
 
-No escribas la verificación tú mismo a menos que quieras. Los dos SDKs la tienen, y hay
-<a href="/sync/sign/webhook-signature-vectors.json">vectores de prueba</a> si lo haces. La
-[guía de webhooks](/sign/developers/webhooks/) tiene los tres errores que vale la pena conocer.
+**Contenido del evento.** bb-sign entrega un evento compacto y tipado: id del sobre, título,
+estado y, en los eventos `signer.*`, el firmante. Para obtener más datos, consulte la API. Así los
+payloads se mantienen pequeños y el contrato del webhook permanece estable.
 
-**También distinto:** Adobe entrega una instantánea completa del acuerdo. Nosotros entregamos un
-evento pequeño y tipado: id del sobre, título, estado, y el firmante en los eventos `signer.*`. Si
-necesitas más, consúltalo. Eso mantiene los payloads pequeños y evita que el cuerpo del webhook se
-convierta en una API accidental.
-
-## Mapa aproximado de endpoints
+## Equivalencia de endpoints
 
 | Acrobat Sign | bb-sign |
 |---|---|
@@ -107,25 +95,21 @@ convierta en una API accidental.
 | `GET /agreements/{id}` | `GET /api/v1/envelopes/{id}` |
 | `GET /agreements/{id}/documents` | `GET /api/v1/envelopes/{id}/documents` |
 | `PUT /agreements/{id}/state` a `CANCELLED` | `POST /api/v1/envelopes/{id}/cancel` |
-| `POST /webhooks` | **Configuración**, pestaña **Webhooks** (solo interfaz; la administración de webhooks no está en la API pública) |
+| `POST /webhooks` | **Configuración**, pestaña **Webhooks** (los webhooks se administran en la interfaz) |
 
-**Crear y enviar son dos llamadas, no una.** Un sobre se crea en `DRAFT`, adjuntas documentos y
-luego envías. Adobe te deja hacerlo en una; nosotros deliberadamente no, para que un acuerdo
-abandonado a medio construir sea un borrador y no algo que ya le llegó por correo a un firmante.
+**Crear y enviar son dos llamadas.** El sobre se crea en `DRAFT`, se le adjuntan los documentos y
+luego se envía. De este modo, un acuerdo que queda a medio construir permanece como borrador y no
+llega a ningún firmante.
 
-Ver la [referencia de la API](/sign/api/) para la superficie completa.
+La [referencia de la API](/sign/api/) describe la superficie completa.
 
-## Cosas que vale la pena revisar antes de empezar
+## Antes de migrar
 
-- **No hay plantillas.** Si tu integración actual depende de library documents, esa lógica pasa a
-  tu lado.
-- **No hay envío masivo.** Un bucle sobre `POST /api/v1/envelopes` es la respuesta, y las cuotas
-  aplican por organización.
-- **No hay colocación de campos de formulario.** Si hoy posicionas bloques de firma por programa,
-  la única palanca es el marcador de texto en el propio PDF.
-- **El orden de firma es un número, no un flujo.** `signOrder` más un booleano `sequentialSigning`.
-- **Cada sobre vive en un espacio de trabajo.** Una credencial solo llega a los espacios que se le
-  concedieron; ver [Autenticación de máquinas](/sign/developers/authentication/).
-
-Si alguno de estos te bloquea, dilo pronto. Son vacíos, no descuidos, y saber cuál necesitas cambia
-qué se construye después.
+- **Contratos base.** Guárdelos en su sistema y súbalos con cada sobre.
+- **Envíos a muchos destinatarios.** Cree un sobre por destinatario con `POST /api/v1/envelopes`;
+  las cuotas se aplican por organización.
+- **Ubicación de la firma.** Agregue el marcador de texto al PDF en el lugar donde debe ir cada
+  sello.
+- **Orden de firma.** Use `signOrder` y el booleano `sequentialSigning`.
+- **Espacios de trabajo.** Cada sobre pertenece a un espacio de trabajo, y una credencial accede a
+  los espacios que se le asignaron; consulte [Autenticación de máquinas](/sign/developers/authentication/).

@@ -1,6 +1,6 @@
 ---
 title: "Estados"
-description: Todos los estados de sobres, firmantes, entregas de webhooks y credenciales de API, con la etiqueta que muestra la aplicación para cada uno.
+description: "Los estados de sobres, firmantes, entregas de webhooks y credenciales de API, con la etiqueta que muestra la aplicación para cada uno."
 product: sign
 audience: all
 ---
@@ -10,26 +10,26 @@ import StatusFlow from '../../../../components/facts/StatusFlow.astro';
 import { AUTH, DELIVERY_STATUSES, WEBHOOKS } from '../../../facts/sign';
 
 export const DELIVERY = {
-  PENDING_RENDER: { label: 'Preparando', meaning: 'bb-sign está construyendo el contenido de la entrega. Aún no se ha intentado enviar nada.' },
+  PENDING_RENDER: { label: 'Preparando', meaning: 'bb-sign está preparando el contenido de la entrega. El envío comienza cuando esté listo.' },
   PENDING_SEND: { label: 'Enviando', meaning: 'El contenido está listo y hay un intento en curso o programado. La fila muestra "Próximo intento a las" con la hora.' },
-  DELIVERED: { label: 'Entregado', meaning: 'Tu endpoint respondió con un código 2xx. No habrá más intentos.' },
-  FAILED_PERMANENT: { label: 'No se pudo construir', meaning: 'bb-sign no pudo construir el contenido de la entrega. No se intentó enviar.' },
-  SKIPPED: { label: 'No enviado', meaning: 'El endpoint estaba desactivado cuando ocurrió el evento. Nada se envió; por eso hay un hueco en lo que recibiste.' },
-  DEAD_LETTERED: { label: 'Abandonado', meaning: 'Se agotaron todos los reintentos sin una respuesta 2xx. bb-sign no volverá a intentar esta entrega.' },
+  DELIVERED: { label: 'Entregado', meaning: 'Su endpoint respondió con un código 2xx. La entrega quedó completa.' },
+  FAILED_PERMANENT: { label: 'No se pudo construir', meaning: 'bb-sign no pudo generar el contenido de la entrega, por lo que no se realizó ningún envío.' },
+  SKIPPED: { label: 'No enviado', meaning: 'El endpoint estaba desactivado cuando ocurrió el evento, así que este evento no se envió. Explica un vacío en los eventos recibidos.' },
+  DEAD_LETTERED: { label: 'Abandonado', meaning: 'Se agotaron los reintentos sin una respuesta 2xx. La entrega queda cerrada.' },
 };
 
-Esta página es la referencia de cada estado que la aplicación y la API muestran, con el nombre
-interno (el que viaja en la API y en los webhooks) y la etiqueta que ves en pantalla en español. Los
-conceptos detrás de los estados de sobres y firmantes están en
+Use esta referencia para interpretar cada estado que muestran la aplicación y la API. Cada estado
+aparece con su nombre en la API y los webhooks y con la etiqueta que la aplicación muestra en español.
+Los conceptos detrás de los estados de sobres y firmantes se explican en
 [Sobres y firmantes](/sign/concepts/envelopes-and-signers/).
 
 ## Estados del sobre
 
 <StatusFlow locale="es" of="envelope" />
 
-Un sobre pasa a `EXPIRED` solo si se le fijó una fecha de vencimiento al crearlo. Cancelar es la única
-transición que inicia una persona después del envío; vencer y completar las produce el propio flujo.
-No existen los estados "rechazado" ni "anulado": hoy un firmante no puede declinar.
+Un sobre pasa a `EXPIRED` cuando se le fijó una fecha de vencimiento al crearlo y esa fecha llega.
+Después del envío, la cancelación es la transición que inicia una persona; el vencimiento y la
+finalización ocurren automáticamente.
 
 ## Estados del firmante
 
@@ -62,18 +62,18 @@ intentos. La página **Configuración**, pestaña **Webhooks**, muestra el histo
   </tbody>
 </table>
 
-Los reintentos siguen la escalera {WEBHOOKS.retryLadder.value.join(', ')} con una variación aleatoria
+Los reintentos siguen la escalera {WEBHOOKS.retryLadder.value.join(', ')}, con una variación aleatoria
 de <Fact of={WEBHOOKS.retryJitterPct} unit="%" />. Tras <Fact of={WEBHOOKS.disableAfterLadders} />
-escaleras agotadas seguidas, bb-sign desactiva el endpoint y avisa por correo a los administradores.
+escaleras agotadas consecutivas, bb-sign desactiva el endpoint y avisa por correo a los administradores.
 Ver [Webhooks](/sign/admin/webhooks/).
 
 ### Resultado de cada intento
 
 | Resultado | Etiqueta en la aplicación | Qué significa |
 |---|---|---|
-| `SUCCESS` | Aceptado | Tu endpoint respondió 2xx. |
-| `HTTP_ERROR` | Rechazado | Tu endpoint respondió, pero con un código distinto de 2xx. Revisa tus registros con el `X-BBSign-Event-Id` de la entrega. |
-| `TRANSPORT_ERROR` | Inaccesible | No hubo respuesta: DNS, conexión rechazada, TLS inválido o tiempo de espera agotado. Comprueba que la URL sea pública y HTTPS. |
+| `SUCCESS` | Aceptado | Su endpoint respondió con un código 2xx. |
+| `HTTP_ERROR` | Rechazado | Su endpoint respondió con un código distinto de 2xx. Busque en sus registros el `X-BBSign-Event-Id` de la entrega. |
+| `TRANSPORT_ERROR` | Inaccesible | No hubo respuesta por un error de DNS, una conexión rechazada, un certificado TLS inválido o un tiempo de espera agotado. Compruebe que la URL sea pública y use HTTPS. |
 
 ## Credenciales de API
 
@@ -82,8 +82,8 @@ Las credenciales aparecen en **Configuración**, pestaña **Credenciales de API*
 | Estado | Etiqueta en la aplicación | Qué significa |
 |---|---|---|
 | Activa | Activa | La credencial puede obtener tokens y llamar a la API. |
-| Revocada, en expiración | Revocada — en expiración | Acabas de revocarla. No puede obtener tokens nuevos, pero los tokens que ya emitió siguen valiendo hasta que caducan, como máximo <Fact of={AUTH.tokenLifetimeSeconds} unit="segundos" /> después de emitidos. La fila muestra "Los tokens que esta credencial ya emitió dejan de funcionar a las" con la hora. |
-| Revocada | Revocada | Ningún token de esta credencial funciona. Sigue en la lista durante <Fact of={AUTH.revokedCredentialListedDays} unit="días" /> y luego desaparece. |
+| Revocada, en expiración | Revocada — en expiración | La credencial se revocó recientemente. No obtiene tokens nuevos, y los que ya emitió siguen siendo válidos hasta caducar, como máximo <Fact of={AUTH.tokenLifetimeSeconds} unit="segundos" /> después de emitidos. La fila muestra "Los tokens que esta credencial ya emitió dejan de funcionar a las" con la hora. |
+| Revocada | Revocada | Ningún token de esta credencial es válido. La credencial permanece en la lista durante <Fact of={AUTH.revokedCredentialListedDays} unit="días" /> y luego se retira. |
 
 Rotar una credencial no cambia su estado: el secreto anterior deja de funcionar de inmediato y el
 nuevo se muestra una sola vez. Ver [Credenciales de API](/sign/admin/api-credentials/).
