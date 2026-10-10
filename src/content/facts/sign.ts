@@ -302,52 +302,6 @@ export const EMAILS: readonly EmailFact[] = [
   { template: 'keycloak: email verification', subject: '(realm template) verify your email', recipient: 'user', trigger: 'realm flow', source: 'bb-sign/infrastructure/configs/keycloak/themes/bbsign/email/' },
 ];
 
-// -------------------------------------------------------------- limits ---
-
-export interface LimitRow {
-  readonly key: string;
-  readonly value: string;
-  readonly source: string;
-}
-
-/** One table of every number, for `/sign/reference/limits-and-defaults/`. Labels are translated by the page. */
-export const LIMITS: readonly LimitRow[] = [
-  { key: 'linkTtl', value: `${ENVELOPE.linkTtlHoursDefault.value} h`, source: ENVELOPE.linkTtlHoursDefault.source },
-  { key: 'expirySweep', value: `${ENVELOPE.expirySweepMinutes.value} min`, source: ENVELOPE.expirySweepMinutes.source },
-  { key: 'otpDigits', value: `${OTP.digits.value}`, source: OTP.digits.source },
-  { key: 'otpValidity', value: `${OTP.validitySeconds.value / 60} min`, source: OTP.validitySeconds.source },
-  { key: 'otpAttempts', value: `${OTP.maxAttempts.value}`, source: OTP.maxAttempts.source },
-  { key: 'otpResend', value: `${OTP.resendCooldownSeconds.value} s`, source: OTP.resendCooldownSeconds.source },
-  { key: 'otpVerifiedValidity', value: `${OTP.verifiedValidityMinutes.value} min`, source: OTP.verifiedValidityMinutes.source },
-  { key: 'uploadMax', value: `${DOCUMENTS.maxUploadMb.value} MB`, source: DOCUMENTS.maxUploadMb.source },
-  { key: 'unassignedMax', value: `${DOCUMENTS.maxUnassignedPerOrgMb.value} MB`, source: DOCUMENTS.maxUnassignedPerOrgMb.source },
-  { key: 'unassignedRetention', value: `${DOCUMENTS.unassignedRetentionHours.value} h`, source: DOCUMENTS.unassignedRetentionHours.source },
-  { key: 'downloadUrl', value: `${ENVELOPE.downloadUrlSeconds.value / 60} min`, source: ENVELOPE.downloadUrlSeconds.source },
-  { key: 'archiveAfter', value: `${ENVELOPE.archiveAfterDays.value} d`, source: ENVELOPE.archiveAfterDays.source },
-  { key: 'reminderThreshold', value: `${REMINDERS.thresholdHours.value} h`, source: REMINDERS.thresholdHours.source },
-  { key: 'reminderCooldown', value: `${REMINDERS.cooldownHours.value} h`, source: REMINDERS.cooldownHours.source },
-  { key: 'labelKeyName', value: `${LABELS.keyNameMaxChars.value}`, source: LABELS.keyNameMaxChars.source },
-  { key: 'labelValue', value: `${LABELS.valueMaxChars.value}`, source: LABELS.valueMaxChars.source },
-  { key: 'listCap', value: `${ENVELOPE.listCountCap.value}`, source: ENVELOPE.listCountCap.source },
-  { key: 'tokenLifetime', value: `${AUTH.tokenLifetimeSeconds.value} s`, source: AUTH.tokenLifetimeSeconds.source },
-  { key: 'credentialsPerOrg', value: `${AUTH.maxCredentialsPerOrg.value}`, source: AUTH.maxCredentialsPerOrg.source },
-  { key: 'revokedListed', value: `${AUTH.revokedCredentialListedDays.value} d`, source: AUTH.revokedCredentialListedDays.source },
-  { key: 'invitationLink', value: `${AUTH.invitationLinkHours.value} h`, source: AUTH.invitationLinkHours.source },
-  { key: 'membershipsPerPrincipal', value: `${AUTH.maxWorkspaceMembershipsPerPrincipal.value}`, source: AUTH.maxWorkspaceMembershipsPerPrincipal.source },
-  { key: 'webhooksPerOrg', value: `${WEBHOOKS.maxPerOrg.value}`, source: WEBHOOKS.maxPerOrg.source },
-  { key: 'webhookTolerance', value: `${WEBHOOKS.toleranceSeconds.value} s`, source: WEBHOOKS.toleranceSeconds.source },
-  { key: 'webhookRetries', value: WEBHOOKS.retryLadder.value.join(', '), source: WEBHOOKS.retryLadder.source },
-  { key: 'webhookDisable', value: `${WEBHOOKS.disableAfterLadders.value}`, source: WEBHOOKS.disableAfterLadders.source },
-  { key: 'webhookRotationGrace', value: `${WEBHOOKS.secretRotationGraceHours.value} h`, source: WEBHOOKS.secretRotationGraceHours.source },
-  { key: 'webhookLog', value: `${WEBHOOKS.deliveryLogRetentionDays.value} d`, source: WEBHOOKS.deliveryLogRetentionDays.source },
-  { key: 'certFile', value: `${CERTIFICATE.maxFileMb.value} MB`, source: CERTIFICATE.maxFileMb.source },
-  { key: 'certKeyBits', value: `${CERTIFICATE.minKeyBits.value}`, source: CERTIFICATE.minKeyBits.source },
-  { key: 'certCache', value: `${CERTIFICATE.cacheMinutes.value} min`, source: CERTIFICATE.cacheMinutes.source },
-  { key: 'quotaWarning', value: `${QUOTA.warningThresholdPct.value} %`, source: QUOTA.warningThresholdPct.source },
-  { key: 'retentionPolicy', value: `${RETENTION_POLICY.retentionDays.value} d`, source: RETENTION_POLICY.retentionDays.source },
-  { key: 'archivePolicy', value: `${RETENTION_POLICY.archiveAfterDays.value} d`, source: RETENTION_POLICY.archiveAfterDays.source },
-];
-
 /** Features that exist in planning documents but not on bb-sign `main`. Never documented as available. */
 export const NOT_SHIPPED: readonly string[] = [
   'templates',

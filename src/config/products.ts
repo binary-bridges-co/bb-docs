@@ -173,7 +173,6 @@ export const PRODUCTS: readonly Product[] = [
       {
         label: { es: 'Referencia', en: 'Reference' },
         pages: [
-          page('sign/reference/limits-and-defaults', 'Límites y valores por defecto', 'Limits and defaults'),
           page('sign/reference/statuses', 'Estados', 'Statuses'),
           page('sign/reference/emails', 'Correos que envía bb-sign', 'Emails bb-sign sends'),
           page('sign/reference/glossary', 'Glosario', 'Glossary'),

@@ -5,7 +5,7 @@ product: sign
 audience: all
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
 import Fact from '../../../components/facts/Fact.astro';
 import { RETENTION_POLICY, URLS } from '../../facts/sign';
 
@@ -68,7 +68,3 @@ Cada sección está dirigida a una audiencia, indicada en la etiqueta al inicio 
 [Conceptos](/sign/concepts/organizations-workspaces-roles/) explican el modelo de bb-sign
 (organizaciones, espacios, roles, sobres, firmantes, sello y evidencia) y son útiles para todos. La
 sección [Legal](/sign/legal/terms/) reúne los términos del servicio y la política de conservación.
-En [Referencia](/sign/reference/limits-and-defaults/) encontrará todos los límites y valores por
-defecto en una sola tabla.
-
-<LinkCard title="Límites y valores por defecto" href="/sign/reference/limits-and-defaults/" description="Todos los límites y valores por defecto de bb-sign, reunidos en una tabla." />
