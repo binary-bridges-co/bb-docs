@@ -143,8 +143,8 @@ both SDKs are tested against that same file; test your verifier against it as we
 valid and process the event asynchronously.
 
 **Retries.** A failed delivery is retried on a backoff schedule spanning roughly
-<Fact of={WEBHOOKS.retryLadderHoursApprox} unit="hours" />; the exact delays are in
-[Limits and defaults](/en/sign/reference/limits-and-defaults/). Any 2xx counts as success; any
+<Fact of={WEBHOOKS.retryLadderHoursApprox} unit="hours" />, with delays of
+<code>{WEBHOOKS.retryLadder.value.join(', ')}</code>. Any 2xx counts as success; any
 other response counts as a failure.
 
 **Automatic disabling.** After <Fact of={WEBHOOKS.disableAfterLadders} /> consecutive deliveries

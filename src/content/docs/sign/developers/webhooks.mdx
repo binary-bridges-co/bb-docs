@@ -145,8 +145,8 @@ ambos SDKs se prueban contra ese mismo archivo; pruebe también su verificador c
 válida y procese el evento de forma asíncrona.
 
 **Reintentos.** Una entrega fallida se reintenta con una secuencia de esperas que abarca
-aproximadamente <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="horas" />; los tiempos exactos
-figuran en [Límites y valores por defecto](/sign/reference/limits-and-defaults/). Cualquier 2xx
+aproximadamente <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="horas" />, con esperas de
+<code>{WEBHOOKS.retryLadder.value.join(', ')}</code>. Cualquier 2xx
 cuenta como éxito; cualquier otra respuesta, como fallo.
 
 **Desactivación automática.** Tras <Fact of={WEBHOOKS.disableAfterLadders} /> entregas

@@ -6,7 +6,6 @@ import {
   ENVELOPE,
   ENVELOPE_STATUSES,
   ENVELOPE_TRANSITIONS,
-  LIMITS,
   NOT_SHIPPED,
   ORG_API_NEVER,
   ORG_PERMISSIONS,
@@ -35,7 +34,6 @@ describe('bb-sign fact sheet', () => {
       return [];
     };
     expect(walk({ AUTH, ENVELOPE, OTP, WEBHOOKS, CERTIFICATE, RETENTION_POLICY, RETENTION_IMPLEMENTED }, 'facts')).toEqual([]);
-    for (const row of LIMITS) expect(row.source.length).toBeGreaterThan(10);
     for (const email of EMAILS) expect(email.source.length).toBeGreaterThan(10);
   });
 
@@ -99,12 +97,7 @@ describe('bb-sign fact sheet', () => {
     expect(NOT_SHIPPED).toContain('full certificate chain in the seal');
   });
 
-  test('the limits table covers the policy and the auth facts', () => {
-    const keys = LIMITS.map((r) => r.key);
-    for (const key of ['retentionPolicy', 'archivePolicy', 'tokenLifetime', 'credentialsPerOrg', 'otpValidity', 'linkTtl']) {
-      expect(keys).toContain(key);
-    }
-    expect(new Set(keys).size).toBe(keys.length);
+  test('webhook tolerance matches the access-token lifetime', () => {
     expect(AUTH.tokenLifetimeSeconds.value).toBe(WEBHOOKS.toleranceSeconds.value);
   });
 });

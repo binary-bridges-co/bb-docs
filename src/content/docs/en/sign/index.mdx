@@ -5,7 +5,7 @@ product: sign
 audience: all
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import { RETENTION_POLICY, URLS } from '../../../facts/sign';
 
@@ -66,8 +66,4 @@ trusted, we recommend configuring your [own certificate](/en/sign/admin/own-cert
 Each section is for one audience, shown in the badge at the top of every page. The
 [Concepts](/en/sign/concepts/organizations-workspaces-roles/) explain the bb-sign model
 (organizations, workspaces, roles, envelopes, signers, seal and evidence) and are useful to everyone.
-The [Legal](/en/sign/legal/terms/) section holds the terms of service and the retention policy. In
-[Reference](/en/sign/reference/limits-and-defaults/) you will find every limit and default in one
-table.
-
-<LinkCard title="Limits and defaults" href="/en/sign/reference/limits-and-defaults/" description="Every bb-sign limit and default, gathered in one table." />
+The [Legal](/en/sign/legal/terms/) section holds the terms of service and the retention policy.
