@@ -136,6 +136,8 @@ export const ENVELOPE = {
 export const OTP = {
   digits: fact(6, 'bb-sign/auth-challenge-service/.../usecase/GenerateOtpUseCase.kt:30'),
   validitySeconds: fact(900, 'bb-sign/auth-challenge-service/src/main/resources/application.yml:45'),
+  /** The same validity in minutes, for signer-facing pages. `facts.test.ts` keeps the two equal. */
+  validityMinutes: fact(15, 'bb-sign/auth-challenge-service/src/main/resources/application.yml:45 (900 s)'),
   maxAttempts: fact(3, 'bb-sign/auth-challenge-service/.../db/migration/V002 (max_attempts DEFAULT 3)'),
   resendCooldownSeconds: fact(60, 'bb-sign/edge-api/src/main/resources/application.yml:180'),
   /** Minutes a verified code stays valid for signing. */

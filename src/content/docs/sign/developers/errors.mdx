@@ -1,8 +1,134 @@
 ---
-title: "Errores"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Errores
+description: Cada estado que responde la API de bb-sign, los cuerpos ErrorResponse y QuotaViolation, la regla del 404 y no 403, y cómo los SDKs exponen los fallos.
 product: sign
 audience: developer
 ---
 
-Contenido en construcción.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { AUTH, QUOTA } from '../../../facts/sign';
+
+La API responde un conjunto pequeño de estados, y cada uno significa una sola cosa. Esta página los
+lista, muestra el cuerpo que viene con ellos y explica la regla que sorprende a la gente: un sobre
+que no puedes ver es un `404`, no un `403`.
+
+## Códigos de estado
+
+| Estado | Significado | Qué hacer |
+|---|---|---|
+| `400` | Mal formado o falló la validación | Compara el cuerpo con el esquema de la [referencia de la API](/sign/api/); las fechas deben ser ISO-8601 |
+| `401` | Credenciales rechazadas: sin token, uno caducado (un token vive <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />), o uno que el realm no valida | Pide un token nuevo; revisa el prefijo `Bearer `. Los dos SDKs renuevan y reintentan una vez antes de exponer esto |
+| `403` | Autenticado, pero esta credencial no tiene el permiso de organización | Estás llamando a una operación de administración que es solo de la interfaz, o el token no tiene `bb_sign_org_id`. Ver [Autenticación de máquinas](/sign/developers/authentication/) |
+| `404` | No existe ese recurso, o pertenece a otra organización o a un espacio de trabajo que no puedes ver. Indistinguible a propósito | Revisa el id; si el problema es el espacio de trabajo, pide a un administrador que le dé un rol ahí a la credencial |
+| `409` | No está en un estado que permita esto, por ejemplo enviar un sobre ya enviado | Lee primero el sobre y actúa según su `status` |
+| `422` | Una regla de dominio rechazó la petición, por ejemplo enviar sin documento o sin firmante | Corrige el sobre y reintenta |
+| <code>{QUOTA.httpStatusWhenExhausted.value}</code> | Una cuota de la organización está agotada. El cuerpo dice cuál | Pide al administrador de plataforma que amplíe o renueve la cuota; los SDKs reintentan este estado |
+| `0` (solo SDKs) | La petición nunca recibió respuesta: no llegó a bb-sign, o la respuesta se perdió | Para un `POST`, **lista antes de reintentar**; ver abajo |
+
+`401` y `403` los produce la cadena de filtros de seguridad, así que **no llevan cuerpo**. Todos los
+demás errores llevan un `ErrorResponse`.
+
+No hay límites de tasa. Un <code>{QUOTA.httpStatusWhenExhausted.value}</code> siempre significa una cuota.
+
+## El cuerpo del error
+
+```json
+{
+  "status": 404,
+  "error": "Not Found",
+  "code": "WORKSPACE_NOT_FOUND",
+  "message": "Workspace not found",
+  "path": "/api/v1/envelopes",
+  "timestamp": "2026-10-10T14:22:31Z",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+| Campo | Tipo | Siempre presente | Significado |
+|---|---|---|---|
+| `status` | entero | sí | El estado HTTP, repetido |
+| `error` | cadena | sí | La frase de razón HTTP |
+| `code` | cadena | sí | Un código estable legible por máquinas, como `WORKSPACE_NOT_FOUND` o `NOT_FOUND`. Ramifica según este, no según `message` |
+| `message` | cadena | sí | Legible por personas; la redacción puede cambiar |
+| `path` | cadena | sí | La ruta de la petición |
+| `timestamp` | fecha y hora | sí | Cuándo se produjo el error |
+| `traceId` | cadena | no | Cítalo cuando nos contactes; localiza la petición en nuestros logs |
+| `quota` | `QuotaViolation` | no | Solo en <code>{QUOTA.httpStatusWhenExhausted.value}</code> |
+
+### `QuotaViolation`
+
+```json
+{
+  "status": 429,
+  "error": "Too Many Requests",
+  "code": "QUOTA_EXCEEDED",
+  "message": "Organization quota exhausted",
+  "path": "/api/v1/envelopes",
+  "timestamp": "2026-10-10T14:22:31Z",
+  "quota": { "dimension": "envelopes", "current": 500, "limit": 500 }
+}
+```
+
+| Campo | Tipo | Significado |
+|---|---|---|
+| `dimension` | cadena | Qué cuota: el número de sobres, o el almacenamiento usado |
+| `current` | entero | El uso de la organización cuando se rechazó la petición |
+| `limit` | entero | El límite de la cuota |
+
+Las cuotas las fija el administrador de plataforma y los administradores de la organización las ven
+en la interfaz; ver [Cuotas](/sign/concepts/quotas/).
+
+## 404, no 403
+
+<Aside type="note" title="Al otro lado de la frontera entre inquilinos, nada existe">
+  Un sobre o espacio de trabajo que pertenece a otra organización, o que está en un espacio en el
+  que tu credencial no tiene rol, responde `404`, la misma respuesta que un id que nunca se emitió.
+  Un `403` ahí confirmaría que el id existe, que es información que un inquilino no debe tener
+  sobre otro. Dentro de tu propia organización, un espacio de trabajo en el que no puedes crear
+  responde `404 WORKSPACE_NOT_FOUND`, y los sobres de espacios que no puedes leer nunca aparecen en
+  las listas.
+</Aside>
+
+`403` se reserva para las negativas con alcance de organización: el token no tiene un permiso que
+la operación necesita, o no tiene el claim de organización en absoluto.
+
+## Cómo exponen los errores los SDKs
+
+Los dos SDKs convierten cada respuesta no 2xx en un único tipo de excepción que lleva el estado, y
+nada más: ni el objeto `Response`, ni los headers, así que registrar el error en un log no puede
+filtrar tu header `Authorization`. Los mensajes nunca contienen tu secreto ni tu token de acceso,
+incluso cuando la respuesta de bb-sign sí lo hace.
+
+| | JavaScript | Java |
+|---|---|---|
+| Tipo | `BbSignError` | `BbSignException` |
+| Estado | `error.statusCode` | `e.statusCode()` |
+| Sin respuesta | `statusCode === 0` | `statusCode() == 0` |
+
+```js
+try {
+  await client.envelopes.createEnvelope({ createEnvelopeRequest: request })
+} catch (error) {
+  if (error.statusCode === 0) {
+    // Never reached bb-sign, or the answer was lost. List before you send again.
+  }
+}
+```
+
+```java
+try {
+    client.execute(client.envelopes().createEnvelope(request));
+} catch (BbSignException e) {
+    if (e.statusCode() == 0) {
+        // Never reached bb-sign, or the answer was lost. List before you send again.
+    }
+}
+```
+
+Un `POST` cuya respuesta nunca se vio **nunca se reintenta** en ninguno de los dos SDKs: el sobre
+puede existir, y se trata de acuerdos legales enviados a personas reales. Las peticiones `GET` se
+reintentan ante 5xx y fallos de transporte; <code>{QUOTA.httpStatusWhenExhausted.value}</code> y
+`503` se reintentan para cualquier método, porque significan que el servidor explícitamente no
+procesó la petición. El [recorrido completo](/sign/developers/envelope-walkthrough/) muestra el
+patrón de listar antes de reintentar.

@@ -1,8 +1,356 @@
 ---
-title: "Especificación de firma de webhooks v1"
-description: "Página en construcción. Esta descripción es un marcador de posición que se reemplaza cuando se escribe el contenido real."
+title: Especificación de firma de webhooks
+description: Esquema normativo v1 de la firma de webhooks de bb-sign (headers, gramática, qué se firma, tolerancia, algoritmo, contrato de fallo, vectores de prueba) y el payload.
 product: sign
 audience: developer
+source: docs/api/webhook-signature-spec.md
 ---
 
-Contenido en construcción.
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { WEBHOOKS } from '../../../facts/sign';
+
+**Estado: NORMATIVO.** Este documento es la única fuente de verdad del esquema de firma de webhooks
+de bb-sign. El dispatcher, el SDK de Java y el SDK de JavaScript lo implementan y citan esta página
+en lugar de repetirla. La parte 1 define cómo se firma una entrega; la parte 2 define qué hay
+dentro.
+
+## 1. Headers
+
+| Header | Valor | Notas |
+|---|---|---|
+| `X-BBSign-Signature` | `t=<unix-seconds>,v1=<hex>` | Ver la gramática en la sección 2 |
+| `X-BBSign-Event-Id` | UUID v4 | **Estable en cada reenvío del mismo evento.** La clave de deduplicación del receptor |
+| `X-BBSign-Event-Type` | p. ej. `envelope.completed` | Informativo; nunca confíes en él por encima del payload |
+
+## 2. Gramática del header de firma
+
+```text
+signature-header = element *( "," element )
+element          = scheme "=" value
+scheme           = "t" / "v1" / <future scheme>
+```
+
+- Los elementos van separados por comas **sin espacios**. Aun así, los receptores **deben** tolerar
+  espacios.
+- `t` aparece exactamente una vez: **segundos** Unix, en base 10, sin parte fraccionaria.
+
+<Aside type="caution" title="t es la hora de envío de este intento, nunca la hora del evento">
+  La escalera de reintentos dura aproximadamente
+  <Fact of={WEBHOOKS.retryLadderHoursApprox} unit="horas" /> mientras que la ventana de tolerancia
+  es de <Fact of={WEBHOOKS.toleranceSeconds} unit="s" /> (sección 4). Si `t` fuera la hora en que
+  ocurrió el evento, **todo reintento posterior a la ventana de tolerancia sería permanentemente
+  inverificable**: el receptor rechazaría exactamente las entregas que el mecanismo de reintentos
+  existe para hacer llegar, y el fallo parecería un error de firma y no uno de reloj.
+
+  Por tanto: **cada intento de entrega se firma de nuevo, con `t` fijado en el momento en que ese
+  intento sale del dispatcher.** Un reenvío lleva un `t` *distinto* y un `v1` *distinto*, pero el
+  **mismo** `X-BBSign-Event-Id`. Esa es la división del trabajo: `t` prueba la frescura del
+  *intento*, `X-BBSign-Event-Id` identifica el *evento*. Confundirlos rompe la protección contra
+  reproducción o los reintentos.
+
+  Consecuencia para el dispatcher: la firma no se puede calcular una vez y guardar con la fila de la
+  entrega. Se calcula por intento.
+</Aside>
+
+- `v1` puede aparecer **más de una vez** durante la rotación del secreto. Un receptor **debe**
+  aceptar el payload si **cualquier** valor `v1` coincide. Los verificadores que leen solo el primer
+  `v1` rompen la rotación.
+- Los esquemas desconocidos **deben** ignorarse, no rechazarse. Eso es lo que hace que un futuro
+  `v2` no rompa nada.
+
+## 3. Qué se firma
+
+```text
+signed_string = <t> + "." + <raw_request_body>
+signature     = HMAC-SHA256(key = subscription_secret, message = signed_string)
+v1            = lowercase hex encoding of signature   // 64 chars
+```
+
+- **`<t>` es el mismo valor que va en el header.** Firmarlo es lo que derrota la reproducción;
+  firmar solo el cuerpo no lo hace.
+- **`raw_request_body` son los bytes exactos que viajan por la red**, antes de cualquier parseo,
+  reserialización o conversión de charset. No un objeto recodificado. No una forma con formato
+  bonito.
+- La codificación es **hex en minúsculas**, no base64. Los receptores deberían comparar sin
+  distinguir mayúsculas.
+- El cuerpo es JSON UTF-8, pero la verificación se define sobre **bytes**, no sobre texto.
+
+<Aside type="caution" title="El cuerpo en crudo es la causa número uno de verificaciones fallidas">
+  La mayoría de los frameworks web descartan los bytes en crudo en cuanto parsean el JSON.
+  `JSON.stringify(req.body)` **no** es el cuerpo en crudo: el orden de las claves, los espacios y el
+  formato numérico difieren, y el HMAC no coincidirá.
+
+  - **Express**: `express.json({ verify: (req,_res,buf) => { req.rawBody = buf } })`
+  - **Next.js (app router)**: `await req.text()` antes de `JSON.parse`
+  - **Fastify**: `addContentTypeParser` conservando el buffer
+  - **Spring**: `ContentCachingRequestWrapper`, o un `@RequestBody byte[]`
+
+  Las páginas de ambos SDKs lo muestran para su ecosistema. No es un tema avanzado; es lo primero
+  con lo que tropieza un integrador.
+</Aside>
+
+## 4. Ventana de tolerancia
+
+<strong><Fact of={WEBHOOKS.toleranceSeconds} unit="segundos" />.</strong> Normativa, no sugerida.
+
+Un receptor rechaza cuando `abs(now - t) > 300`. Simétrica, para tolerar desfase de reloj en ambas
+direcciones.
+
+<Aside type="note" title="Los verificadores deben aceptar un reloj inyectable">
+  Un vector con un `t` fijo queda fuera de la ventana minutos después de escribirlo. Sin una costura
+  para el reloj, cada vector positivo se degrada hasta convertirse en un fallo **indistinguible del
+  negativo de marca de tiempo caducada**: la suite seguiría en verde el día en que dejó de probar
+  algo.
+
+  Por eso ambos SDKs exponen la ventana y la hora actual como parámetros opcionales, con la
+  tolerancia de arriba y «ahora» como valores por defecto:
+
+  - Java: `Webhooks.verify(signature, body, secret, Duration tolerance, Instant now)`, con una
+    sobrecarga de tres argumentos que delega en `(..., Duration.ofSeconds(300), Instant.now())`
+  - JavaScript: `verifyWebhookSignature(signature, body, secret, { toleranceSeconds = 300, nowSeconds = Date.now()/1000 })`
+
+  La forma de tres argumentos es la que escribe un cliente. La forma con reloj es la que corren los
+  vectores, y es API pública, no andamiaje solo para pruebas.
+</Aside>
+
+## 5. Algoritmo de verificación
+
+Los receptores, en orden:
+
+1. Parse the header. Malformed: **return false** (section 6).
+2. Extract `t`; non-integer: return false.
+3. Check `abs(now - t) <= 300`; else return false.
+4. Compute the expected signature over `<t> + "." + raw_body`.
+5. Compare against **each** `v1` using a **constant-time** comparison. Any match: true.
+
+**La comparación en tiempo constante es obligatoria.** Una comparación byte a byte con salida
+temprana filtra el prefijo correcto de la firma a lo largo de intentos repetidos.
+
+- Java: `MessageDigest.isEqual`
+- Node: `crypto.timingSafeEqual`
+
+## 5b. Firmas públicas de los helpers (normativo)
+
+Ambos SDKs exponen la misma forma, para que quien lee uno pueda leer el otro:
+
+| | Java | JavaScript |
+|---|---|---|
+| Simple | `Webhooks.verify(String signature, byte[] body, String secret)` | `verifyWebhookSignature(signature, body, secret)`; la bolsa de opciones **debe** tener valor por defecto (`opts = {}`), o la forma de tres argumentos lanza una excepción |
+| Con reloj | `Webhooks.verify(sig, body, secret, Duration tolerance, Instant now)` | `verifyWebhookSignature(sig, body, secret, { toleranceSeconds, nowSeconds })` |
+| Devuelve | `boolean` | `boolean` |
+| Lanza | nunca (sección 6) | nunca (sección 6) |
+| Primitiva de tiempo constante | `MessageDigest.isEqual` | `crypto.timingSafeEqual` |
+
+`body` son **bytes**, no un objeto parseado; ver la sección 3.
+
+## 6. Contrato de fallo: los verificadores nunca lanzan excepciones
+
+`verify(...)` **devuelve un booleano y no lanza excepciones con ninguna entrada.** Los headers mal
+formados los controla el atacante, y una excepción lanzada es a la vez un 500 en la ruta del
+cliente y un canal lateral.
+
+En concreto:
+
+| Entrada | Comportamiento requerido |
+|---|---|
+| Header ausente o vacío | `false` |
+| Header sin `t` o sin `v1` | `false` |
+| `t` no es un entero | `false` |
+| `t` textualmente entero pero **fuera de rango** (`t=99999999999999999999`) | `false`. `Long.parseLong` de Java **lanza una excepción** donde `Number()` de JS devuelve en silencio un flotante; esto cae de lleno dentro del contrato de nunca lanzar, y los lenguajes divergen por defecto. Parsea a la defensiva y acota `t` a un rango de época razonable |
+| `v1` no tiene 64 caracteres hex | `false`; **valida la forma antes de decodificar** |
+| `v1` de longitud impar o no hex | `false`. Ten en cuenta que `Buffer.from(x,'hex')` **trunca en silencio** la entrada inválida, y `timingSafeEqual` **lanza una excepción** si las longitudes no coinciden. Ambos casos deben manejarse antes de comparar |
+| Forma correcta, valor incorrecto | `false` |
+| Marca de tiempo caducada | `false` |
+
+## 7. Vectores de prueba
+
+**Ubicación: <a href="/sync/sign/webhook-signature-vectors.json">webhook-signature-vectors.json</a>**,
+el archivo contra el que se prueban los dos SDKs y el servidor, sin cambios. Ningún SDK puede
+definir los suyos: los vectores divergentes son la forma en que dos SDKs llegan a discrepar
+mientras ambos pasan sus propias pruebas.
+
+Formato:
+
+```json
+{
+  "version": 1,
+  "cases": [
+    {
+      "name": "valid-signature",
+      "secret": "<base64>",
+      "bodyUtf8": "{\"eventId\":\"...\",\"type\":\"envelope.completed\"}",
+      "header": "t=1754400000,v1=<hex>",
+      "now": 1754400060,
+      "expected": true
+    }
+  ]
+}
+```
+
+**Contrato de campos: los cinco son obligatorios, y no hay un sexto.**
+
+| Campo | Significado |
+|---|---|
+| `name` | identificador del caso |
+| `secret` | base64; decodifícalo a bytes antes de usarlo como clave HMAC |
+| `bodyUtf8` | el cuerpo de la petición **como cadena UTF-8**; las implementaciones lo codifican a bytes. Se llama así por la codificación, porque la sección 3 define la firma sobre bytes y «body» a solas lo dejaba ambiguo |
+| `header` | el valor **literal** de `X-BBSign-Signature`, no campos estructurados. Esto es lo que permite expresar los casos de rotación y de espacios |
+| `now` | el valor de reloj que se pasa al verificador (sección 4) |
+| `expected` | booleano |
+
+**Deliberadamente no hay un campo `timestamp` separado.** Un borrador anterior llevaba uno junto a
+`header`, y una implementación que leyera `timestamp` en lugar de parsear `header` habría pasado
+todos los vectores estando **equivocada en la red**. La única fuente de `t` es el header.
+
+Casos obligatorios, <Fact of={WEBHOOKS.testVectorCount} /> en total; cada implementación corre todos:
+
+| Caso | `expected` |
+|---|---|
+| firma válida, marca de tiempo fresca | `true` |
+| válida, exactamente a `+300s` | `true` |
+| válida, a +301s | `false` |
+| válida, a -301s | `false` |
+| cuerpo manipulado, un byte cambiado | `false` |
+| secreto incorrecto | `false` |
+| dos valores `v1`, el segundo correcto (rotación) | `true` |
+| esquema desconocido `v2=` presente junto a un `v1` válido | `true` |
+| header con espacios después de las comas | `true` |
+| header ausente | `false` |
+| falta `t` | `false` |
+| `v1` no es hex | `false` |
+| `v1` con longitud incorrecta | `false` |
+| cuerpo vacío | según el vector |
+| cuerpo con UTF-8 no ASCII | `true` |
+| `t` fuera del rango numérico | `false` |
+
+## 8. Comparación con Adobe Acrobat Sign
+
+Adobe verifica un webhook exigiendo que el endpoint devuelva `X-AdobeSign-ClientId` al
+registrarlo, y **no firma los payloads en absoluto**. Cualquiera que conozca la URL puede publicar
+una falsificación convincente.
+
+Este esquema es estrictamente más fuerte, y
+[Migrar desde Adobe Acrobat Sign](/sign/developers/migrating-from-adobe/) lo dice.
+
+## 9. Cambiar este documento
+
+El esquema está congelado. Un cambio significa un nuevo identificador de esquema (`v2=`) emitido
+junto a `v1` durante una ventana de deprecación, nunca una redefinición de `v1`. Que los receptores
+ignoren los esquemas desconocidos (sección 2) es lo que lo hace posible.
+
+## Parte 2. El payload del evento
+
+**Estado: NORMATIVO.** La parte 1 dice a los receptores que «nunca confíen en el header por encima
+del payload»; esta parte define el payload. Sin definirlo, las clases internas de eventos se
+convertirían por omisión en un contrato público de red: un cliente sabría *que* un sobre se
+completó y nada más, y añadir un campo a un evento interno cambiaría en silencio un contrato
+público, que es como las refactorizaciones internas se convierten en caídas para los clientes.
+
+### P1. El payload de salida es un DTO deliberado, nunca el evento interno
+
+El dispatcher mapea cada evento interno a un DTO `WebhookEvent` que pertenece a la superficie
+pública. No hay ningún camino por el que una clase interna llegue a la red. Añadir un campo a un
+evento interno **no** tiene efecto sobre los clientes a menos que alguien edite también el DTO; esa
+asimetría es todo el propósito.
+
+### P2. Envoltorio
+
+Cada entrega tiene la misma forma externa, para que un receptor pueda enrutar antes de poder
+parsear los detalles:
+
+```json
+{
+  "id": "3f8c1c2e-7d0a-4f3b-9d2a-0a1b2c3d4e5f",
+  "type": "envelope.completed",
+  "apiVersion": "2026-08-09",
+  "createdAt": "2026-08-09T14:22:31Z",
+  "data": { }
+}
+```
+
+| Campo | Notas |
+|---|---|
+| `id` | Coincide exactamente con el header `X-BBSign-Event-Id`. Estable entre reenvíos; la clave de deduplicación |
+| `type` | Nombre público del evento. **Sin sufijo `.v1`**; el tipo interno del evento no es este campo |
+| `apiVersion` | Sello fechado del contrato. **Solo informativo en v1**: una suscripción no tiene campo de versión, así que un receptor no puede fijar una y esto no puede comportarse como una versión negociada. Le dice al receptor qué contrato produjo el payload |
+| `createdAt` | Cuándo ocurrió el **evento**. Distinto del `t` de la firma, que es cuándo se envió este *intento* (sección 2) |
+| `data` | Por tipo, abajo |
+
+`orgId` está deliberadamente **ausente**: una suscripción pertenece a exactamente una
+organización, así que devolverlo no le dice al receptor nada que no sepa y filtra un identificador
+interno en cada payload.
+
+### P3. Tipos de evento y su `data`
+
+Exactamente seis. Los nombres son públicos y estables; **no** son las claves internas de
+enrutamiento.
+
+| `type` | `data` |
+|---|---|
+| `envelope.sent` | `envelope` |
+| `envelope.completed` | `envelope` |
+| `envelope.cancelled` | `envelope` |
+| `envelope.expired` | `envelope` |
+| `signer.signed` | `envelope` + `signer` |
+| `signer.viewed` | `envelope` + `signer` |
+
+```json
+"data": {
+  "envelope": {
+    "id": "uuid", "title": "string", "status": "SENT|COMPLETED|CANCELLED|EXPIRED",
+    "createdAt": "iso8601", "expiresAt": "iso8601|null"
+  },
+  "signer": {
+    "id": "uuid", "email": "string", "name": "string",
+    "signOrder": 1, "status": "PENDING|SIGNED", "signedAt": "iso8601|null"
+  }
+}
+```
+
+Suficiente para actuar sin una llamada de vuelta, que es el propósito de un webhook. **Excluido
+deliberadamente:** el contenido de los documentos y las URL de descarga (las URL prefirmadas dentro
+de un payload sobreviven a la entrega), `ipAddress` y `userAgent` de los eventos de firma
+(internos, y no son asunto del suscriptor), y cualquier cosa no listada arriba.
+
+<Aside type="tip" title="Cómo obtiene un cliente el documento firmado">
+  `envelope.completed` es justo el momento en que un integrador quiere el archivo, y este payload
+  deliberadamente no lo lleva. **Llama a `GET /api/v1/envelopes/{id}/documents`**: tiene alcance de
+  organización, está en la superficie publicada y devuelve `signedUrl` solo cuando el sobre está
+  `COMPLETED`. Las URL de corta vida obtenidas bajo demanda son mejores que las de larga vida
+  incrustadas en un payload que puede quedarse meses en un log.
+</Aside>
+
+### P3b. El cuerpo se materializa una vez, no por intento
+
+A lo largo de la escalera de reintentos, el mismo `X-BBSign-Event-Id` podría llevar de otro modo
+**bytes distintos**: un `envelope.sent` reintentado después de que el sobre se completara
+informaría `status: COMPLETED`, describiendo un estado que no existía cuando se disparó el evento,
+y un receptor que deduplica por id de evento se quedaría con la copia que llegara primero,
+arbitrariamente.
+
+**El cuerpo se renderiza en el primer envío y se guarda tal cual en la fila de la entrega. Cada
+reintento reenvía exactamente esos bytes.** Solo la firma se recalcula por intento (sección 2: `t`
+es la hora del intento; el cuerpo es la hora del evento). Un reenvío es **idéntico byte a byte**,
+no solo del mismo id de evento.
+
+### P3c. `data` se lee del estado actual al renderizar
+
+Los eventos internos llevan solo identificadores, así que el dispatcher carga el sobre (y, para
+`signer.*`, el firmante) al renderizar. Renderizar lee el estado actual, y precisamente por eso P3b
+lo fija al primer envío.
+
+### P4. Solo aditivo
+
+Los receptores **deben** ignorar los campos desconocidos. Pueden aparecer campos nuevos y tipos de
+evento nuevos sin cambiar `apiVersion`; una suscripción solo recibe los tipos que seleccionó.
+Quitar un campo o cambiar su tipo rompe el contrato y acuña un nuevo `apiVersion`.
+
+### P5. Dónde vive cada parte
+
+| Artefacto | Dónde |
+|---|---|
+| Esta especificación | Esta página, reflejada desde el repositorio de bb-sign |
+| `WebhookEvent`, `WebhookEventData`, `WebhookEventEnvelope`, `WebhookEventSigner` | `components/schemas` del contrato OpenAPI, para que ambos SDKs generen eventos **tipados**; ver la [referencia de la API](/sign/api/) |
+| Los vectores de prueba | <a href="/sync/sign/webhook-signature-vectors.json">webhook-signature-vectors.json</a> |
+| La guía de los seis tipos | [Webhooks](/sign/developers/webhooks/), que cita esta página en lugar de repetirla |

@@ -21,7 +21,7 @@ for the JavaScript and Java tabs, a `client` built as in the quickstart.
 ## 1. Get a token
 
 Both SDKs fetch and refresh tokens on their own. You still need a raw token for `curl` and for the
-upload in step 2, which goes over plain HTTP. A token lives
+upload in step 2, which is a plain HTTP request without the SDK. A token lives
 <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
 
 <Tabs syncKey="lang">

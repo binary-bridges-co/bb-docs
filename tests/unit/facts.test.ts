@@ -41,6 +41,7 @@ describe('bb-sign fact sheet', () => {
 
   test('an OTP outlives its resend cooldown and its verified window fits the link', () => {
     expect(OTP.validitySeconds.value).toBeGreaterThan(OTP.resendCooldownSeconds.value);
+    expect(OTP.validityMinutes.value * 60).toBe(OTP.validitySeconds.value);
     expect(OTP.verifiedValidityMinutes.value * 60).toBeLessThanOrEqual(OTP.validitySeconds.value);
     expect(OTP.verifiedValidityMinutes.value).toBeLessThan(ENVELOPE.linkTtlHoursDefault.value * 60);
   });

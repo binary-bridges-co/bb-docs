@@ -33,7 +33,7 @@ Si el sobre exige verificar tu identidad, al pulsar "He revisado el documento" b
 un código por correo y pasas a la pantalla "Verifica tu identidad", que dice "Se ha enviado un
 código OTP a tu correo." y cuánto falta para que caduque.
 
-- El código tiene <Fact of={OTP.digits} unit="dígitos" /> y vale <Fact of={OTP.validitySeconds} unit="s" />.
+- El código tiene <Fact of={OTP.digits} unit="dígitos" /> y vale <Fact of={OTP.validityMinutes} unit="minutos" />.
 - Tienes <Fact of={OTP.maxAttempts} unit="intentos" /> por código.
 - Puedes pedir otro con "Reenviar código" cuando pasen <Fact of={OTP.resendCooldownSeconds} unit="s" />
   desde el último; mientras tanto el botón muestra "Reenviar código en" y una cuenta atrás.

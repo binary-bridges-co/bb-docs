@@ -32,7 +32,7 @@ These terms form part of the service agreement signed between Binary Bridges S.A
 
 **2.4** The lack of a certificate of its own does not prevent sending envelopes; in that case the documents are sealed with the testing certificate.
 
-**2.5** bb-sign stores the certificate file and its password encrypted, and uses them to seal that organization's documents and the evidence bb-sign generates for them, and for no other purpose.
+**2.5** bb-sign stores the certificate file and its password encrypted, and uses them exclusively to seal that organization's documents.
 
 ## Version history
 
@@ -46,10 +46,10 @@ These terms form part of the service agreement signed between Binary Bridges S.A
   numbering is provisional.
 </Aside>
 
-**3.1** The signed documents and the evidence of each envelope are kept for a **fixed, non-configurable** period of <Fact of={RETENTION_POLICY.retentionDays} unit="days" />, counted from the date the envelope completed. When that period ends, they are deleted.
+**3.1** The signed documents and the evidence of each envelope are kept for a **fixed, non-configurable** period of <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. When that period ends, they are deleted.
 
 **3.2** Files older than <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> move to archive storage and **cannot be downloaded immediately**. They are restored at the customer's request and sent to the requester when available, usually within hours and without a guaranteed time.
 
 **3.3** Conservation beyond the period in clause 3.1 is the customer's responsibility, under article 12 of Ley 527 de 1999 and the customer's own archiving rules. Binary Bridges recommends archiving each envelope on completion, through the `envelope.completed` webhook event and the API. The procedure is in [Scope and retention](/en/sign/legal/retention/).
 
-**3.4** Each customer is the data controller for the personal data of its signers and must hold the data-processing authorization required by Ley 1581 de 2012. Binary Bridges acts as data processor on the customer's behalf.
+**3.4** Each customer is the data controller for the personal data of its signers and must keep an active data-processing authorization published in bb-sign.

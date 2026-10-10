@@ -32,7 +32,7 @@ If the envelope requires identity verification, pressing "I have reviewed the do
 bb-sign email you a code and takes you to the "Verify Your Identity" screen, which says "An OTP
 code has been sent to your email." and how long until it expires.
 
-- The code has <Fact of={OTP.digits} unit="digits" /> and is valid for <Fact of={OTP.validitySeconds} unit="s" />.
+- The code has <Fact of={OTP.digits} unit="digits" /> and is valid for <Fact of={OTP.validityMinutes} unit="minutes" />.
 - You have <Fact of={OTP.maxAttempts} unit="attempts" /> per code.
 - You can ask for another with "Resend code" once <Fact of={OTP.resendCooldownSeconds} unit="s" />
   have passed since the last one; meanwhile the button shows "Resend code in" and a countdown.

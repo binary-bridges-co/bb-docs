@@ -32,7 +32,7 @@ Estos términos hacen parte del contrato de prestación de servicios suscrito en
 
 **2.4** La falta de un certificado propio no impide enviar sobres; en ese caso los documentos se sellan con el certificado de pruebas.
 
-**2.5** bb-sign guarda el archivo del certificado y su contraseña cifrados, y los usa para sellar los documentos de esa organización y la evidencia que bb-sign genera para ellos, y para ningún otro fin.
+**2.5** bb-sign guarda el archivo del certificado y su contraseña cifrados, y los usa exclusivamente para sellar los documentos de esa organización.
 
 ## Historial de versiones
 
@@ -46,10 +46,10 @@ Estos términos hacen parte del contrato de prestación de servicios suscrito en
   texto vigente. La numeración es provisional.
 </Aside>
 
-**3.1** Los documentos firmados y la evidencia de cada sobre se conservan durante un plazo **fijo y no configurable** de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />, contados desde la fecha en que se completó el sobre. Vencido ese plazo, se eliminan.
+**3.1** Los documentos firmados y la evidencia de cada sobre se conservan durante un plazo **fijo y no configurable** de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. Vencido ese plazo, se eliminan.
 
 **3.2** Los archivos con más de <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" /> pasan a un almacenamiento de archivo y **no pueden descargarse de inmediato**. Se restauran a solicitud del cliente y se envían al solicitante cuando están disponibles, normalmente en cuestión de horas y sin un tiempo garantizado.
 
 **3.3** La conservación posterior al plazo del numeral 3.1 es responsabilidad del cliente, conforme al artículo 12 de la Ley 527 de 1999 y a sus propias reglas de archivo. Binary Bridges recomienda archivar cada sobre al completarse, mediante el evento `envelope.completed` de los webhooks y la API. El procedimiento está en [Alcance y conservación](/sign/legal/retention/).
 
-**3.4** Cada cliente es el responsable del tratamiento de los datos personales de sus firmantes y debe contar con la autorización de tratamiento que exige la Ley 1581 de 2012. Binary Bridges actúa como encargado del tratamiento por cuenta del cliente.
+**3.4** Cada cliente es el responsable del tratamiento de los datos personales de sus firmantes y debe mantener publicada en bb-sign una autorización de tratamiento de datos vigente.
