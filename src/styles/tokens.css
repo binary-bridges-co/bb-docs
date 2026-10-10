@@ -1,0 +1,85 @@
+/**
+ * Binary Bridges tokens.
+ *
+ * Copied verbatim from bb-homepage (src/styles/tokens.css), which ported them
+ * from bb-sign (frontend/src/styles/tokens.css) — same names, same measured
+ * values, so the parent brand and its products are one family. Keep them in
+ * sync: when bb-sign nudges a value for contrast, nudge it here too.
+ *
+ * Two rules carried over, and they are not stylistic:
+ *   - `seal` (brass) means evidence. On this site it only appears inside
+ *     bb-sign pages that talk about the seal, evidence and verification.
+ *   - Text on a filled token surface uses `on-fill`, never white: dark-mode
+ *     fills are lifted colours and white on them fails AA.
+ *
+ * Starlight's own chrome reads `--sl-*` variables; the mapping from these
+ * tokens lives in starlight-theme.css.
+ */
+@theme {
+  --color-ink: #16192b;
+  --color-paper: #fbfaf8;
+  --color-surface: #ffffff;
+  --color-muted: #5f6376; /* 5.70:1 on paper */
+  --color-line: #e2e0dc;
+  --color-accent: #2c46c4;
+  --color-seal: #916216;
+  --color-on-fill: #ffffff;
+  /* Semantic state — only for status examples. */
+  --color-valid: #17794c;
+  --color-pending: #915e08;
+  --color-danger: #b3261e;
+
+  /* Bands stay ink in light mode: depth without a second palette. */
+  --color-band: #16192b;
+  --color-on-band: #f2f0ec;
+  --color-band-muted: #969aaf;
+  --color-band-line: #2b3049;
+  --color-band-accent: #8595ff;
+  --color-on-band-accent: #16192b; /* ink on the lifted accent: 6.1:1 */
+  /* Code on bands. No brass: it is reserved for evidence. */
+  --color-code-string: #e8dcc4;
+  --color-code-variable: #b3bcff;
+  --color-code-ok: #4abe87;
+
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  /* Four radii with assigned meaning (bb-sign DESIGN-GUIDELINES §5). */
+  --radius-pill: 999px;
+  --radius-ctl: 10px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
+
+  --text-hero: clamp(2.5rem, 1.1rem + 4.4vw, 5rem);
+  --text-hero--line-height: 1.02;
+  --text-display: clamp(1.875rem, 1.1rem + 2.8vw, 3.25rem);
+  --text-display--line-height: 1.08;
+  --text-lead: clamp(1.0625rem, 0.95rem + 0.45vw, 1.3125rem);
+  --text-lead--line-height: 1.55;
+
+  --spacing-section: clamp(5rem, 3rem + 6vw, 9.5rem);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-reveal: 800ms;
+}
+
+/* Starlight sets `data-theme`; dark is the default without it. The homepage
+   keys on prefers-color-scheme; here the attribute wins so the toggle works. */
+:root:not([data-theme='light']) {
+  --color-ink: #f2f0ec;
+  --color-paper: #16192b;
+  --color-surface: #1d2136;
+  --color-muted: #969aaf;
+  --color-line: #2b3049;
+  --color-accent: #8595ff;
+  --color-seal: #e0a94a;
+  --color-on-fill: #16192b;
+  --color-valid: #4abe87;
+  --color-pending: #d69e3e;
+  --color-danger: #f0746c;
+
+  /* In dark mode the page is already ink: the band lifts to surface. */
+  --color-band: #1d2136;
+  --color-band-line: #353b5c;
+}

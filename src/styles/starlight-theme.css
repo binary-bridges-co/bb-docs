@@ -1,0 +1,129 @@
+/*
+ * Maps the Binary Bridges tokens onto Starlight's theme variables.
+ *
+ * Starlight's dark theme is `:root`; light is `:root[data-theme='light']`.
+ * Every pair below is a token value from tokens.css (same hex), so the docs,
+ * the homepage and bb-sign read as one family. Contrast was measured on the
+ * homepage; new pairs (accent-low/high, gray-4/6/7) are derived and checked by
+ * the axe e2e in both themes.
+ */
+:root {
+  --sl-color-accent-low: #1d2136;
+  --sl-color-accent: #8595ff;
+  --sl-color-accent-high: #b3bcff;
+  --sl-color-white: #f2f0ec;
+  --sl-color-gray-1: #e2e0dc;
+  --sl-color-gray-2: #b4b7c6; /* 9.6:1 on bg */
+  --sl-color-gray-3: #969aaf; /* 5.7:1 on bg: the quietest text Starlight paints (TOC links) */
+  --sl-color-gray-4: #353b5c;
+  --sl-color-gray-5: #2b3049;
+  --sl-color-gray-6: #1d2136;
+  --sl-color-black: #16192b;
+
+  --sl-color-text: #f2f0ec;
+  --sl-color-text-accent: #b3bcff;
+  --sl-color-bg: #16192b;
+  --sl-color-bg-nav: #1d2136;
+  --sl-color-bg-sidebar: #1d2136;
+  --sl-color-bg-inline-code: #2b3049;
+  --sl-color-hairline: #2b3049;
+  --sl-color-hairline-light: #353b5c;
+  --sl-color-hairline-shade: #2b3049;
+
+  --sl-font: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sl-font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  /* Semantic state, from tokens.css: Starlight and the OpenAPI plugin read these for "required", asides, badges. */
+  --sl-color-red: #f0746c;
+  --sl-color-green: #4abe87;
+  --sl-color-orange: #d69e3e;
+
+  /* Brass: evidence, seal and verification only. */
+  --bb-seal: #e0a94a;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #e8ebff;
+  --sl-color-accent: #2c46c4;
+  --sl-color-accent-high: #1b2c84;
+  --sl-color-white: #16192b;
+  --sl-color-gray-1: #2b3049;
+  --sl-color-gray-2: #434861; /* 8.3:1 on paper */
+  --sl-color-gray-3: #5f6376; /* 5.7:1 on paper, the homepage's `muted` */
+  --sl-color-gray-4: #c9c7c2;
+  --sl-color-gray-5: #e2e0dc;
+  --sl-color-gray-6: #f4f2ee;
+  --sl-color-gray-7: #fbfaf8;
+  --sl-color-black: #ffffff;
+
+  --sl-color-text: #16192b;
+  --sl-color-text-accent: #2c46c4;
+  --sl-color-bg: #fbfaf8;
+  --sl-color-bg-nav: #ffffff;
+  --sl-color-bg-sidebar: #ffffff;
+  --sl-color-bg-inline-code: #efede8;
+  --sl-color-hairline: #e2e0dc;
+  --sl-color-hairline-light: #e2e0dc;
+  --sl-color-hairline-shade: #e2e0dc;
+
+  --sl-color-red: #b3261e;
+  --sl-color-green: #17794c;
+  --sl-color-orange: #915e08;
+
+  --bb-seal: #916216;
+}
+
+/* ----- typography details carried over from the homepage ----- */
+body {
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+.sl-markdown-content :is(h1, h2, h3) {
+  letter-spacing: -0.025em;
+}
+
+/* Hashes, ids, timestamps and codes: a role, not a decoration (bb-sign DESIGN-GUIDELINES §5). */
+code,
+kbd,
+.bb-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----- evidence aside: brass, used only on seal/verification content ----- */
+.starlight-aside.bb-seal {
+  border-inline-start-color: var(--bb-seal);
+  background-color: color-mix(in oklab, var(--bb-seal) 10%, transparent);
+}
+.starlight-aside.bb-seal .starlight-aside__title {
+  color: var(--bb-seal);
+}
+
+/* ----- the legal banner ----- */
+.bb-legal-header {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--radius-card, 16px);
+  font-family: var(--sl-font-mono);
+  font-size: 0.8125rem;
+  color: var(--sl-color-gray-2);
+}
+.bb-legal-header strong {
+  color: var(--sl-color-text);
+}
+
+/* ----- audience badge in the page header ----- */
+.bb-audience {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--sl-color-hairline-light);
+  border-radius: 999px;
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-2);
+}

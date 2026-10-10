@@ -1,0 +1,19 @@
+{
+  "repo": "binary-bridges-co/bb-sign",
+  "ref": "local:bb-sign",
+  "commit": "d1badc513f9c4434f7ca3ef62d866ab20bed33cf",
+  "syncedAt": "2026-10-10",
+  "rewrites": [
+    "servers[0].url"
+  ],
+  "files": {
+    "openapi.json": {
+      "source": "docs/api/openapi.json",
+      "sha256": "d1e3720408ddf1e85686ba666a4c7a6f47d5878a54de7bd008fef012b6efb47c"
+    },
+    "webhook-signature-vectors.json": {
+      "source": "docs/api/webhook-signature-vectors.json",
+      "sha256": "290fb600616ffe8a458a3566f80a03b92cf2a2d5e93b4ca5f2d3b2511c6f3549"
+    }
+  }
+}

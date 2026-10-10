@@ -1,0 +1,106 @@
+---
+/**
+ * The permission catalog as two tables: org-scope permissions by org role,
+ * and workspace-scope permissions by workspace role. Cells carry a word, not
+ * only a mark, so the tables read in a screen reader and in print.
+ */
+import { ORG_API_NEVER, ORG_PERMISSIONS, ORG_ROLES, WORKSPACE_PERMISSIONS, WORKSPACE_ROLES } from '../../content/facts/sign';
+
+interface Props {
+  locale: 'es' | 'en';
+  /** `org`, `workspace` or both. */
+  show?: 'org' | 'workspace' | 'both';
+}
+
+const { locale, show = 'both' } = Astro.props;
+const t = {
+  es: { permission: 'Permiso', yes: 'Sí', no: 'No', never: 'Nunca', orgCaption: 'Permisos de organización por rol', wsCaption: 'Permisos de espacio por rol de espacio' },
+  en: { permission: 'Permission', yes: 'Yes', no: 'No', never: 'Never', orgCaption: 'Organization permissions by role', wsCaption: 'Workspace permissions by workspace role' },
+}[locale];
+---
+
+{
+  (show === 'org' || show === 'both') && (
+    <table class="bb-matrix">
+      <caption>{t.orgCaption}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{t.permission}</th>
+          {ORG_ROLES.map((role) => (
+            <th scope="col">
+              <code>{role}</code>
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {ORG_PERMISSIONS.map((p) => (
+          <tr>
+            <th scope="row">
+              <code>{p.key}</code>
+            </th>
+            {ORG_ROLES.map((role) => {
+              const never = role === 'org_api' && ORG_API_NEVER.includes(p.key);
+              const held = p.holders.includes(role);
+              return <td data-held={held ? 'yes' : never ? 'never' : 'no'}>{held ? t.yes : never ? t.never : t.no}</td>;
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+{
+  (show === 'workspace' || show === 'both') && (
+    <table class="bb-matrix">
+      <caption>{t.wsCaption}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{t.permission}</th>
+          {WORKSPACE_ROLES.map((role) => (
+            <th scope="col">
+              <code>{role}</code>
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {WORKSPACE_PERMISSIONS.map((p) => (
+          <tr>
+            <th scope="row">
+              <code>{p.key}</code>
+            </th>
+            {WORKSPACE_ROLES.map((role) => {
+              const held = p.roles.includes(role);
+              return <td data-held={held ? 'yes' : 'no'}>{held ? t.yes : t.no}</td>;
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+<style>
+  .bb-matrix caption {
+    caption-side: top;
+    text-align: left;
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+    padding-bottom: 0.5rem;
+  }
+  .bb-matrix td[data-held='yes'] {
+    font-weight: 600;
+  }
+  .bb-matrix td[data-held='no'] {
+    color: var(--sl-color-gray-3);
+  }
+  .bb-matrix td[data-held='never'] {
+    color: var(--sl-color-red);
+    font-weight: 600;
+  }
+</style>

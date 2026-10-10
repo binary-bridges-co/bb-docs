@@ -1,0 +1,34 @@
+---
+/**
+ * The header every legal text carries (LV contract D-17): version, date and
+ * the "Pendiente de revisión jurídica" notice until counsel approves it.
+ * `tests/unit/legal.test.ts` checks every legal page renders it.
+ */
+interface Props {
+  locale: 'es' | 'en';
+  /** From the page's `legalVersion` frontmatter: "Versión 1 · 2026-10-07". */
+  version: string;
+  /** Repo-relative path of the canonical file in the product repository. */
+  source?: string;
+}
+
+const { locale, version, source } = Astro.props;
+const t = {
+  es: {
+    pending: 'Pendiente de revisión jurídica.',
+    canonical: 'Texto canónico en bb-sign:',
+    prevails: '',
+  },
+  en: {
+    pending: 'Pending legal review.',
+    canonical: 'Canonical text in bb-sign:',
+    prevails: 'This is a courtesy translation. The Spanish text prevails.',
+  },
+}[locale];
+---
+
+<div class="bb-legal-header" data-legal-version={version}>
+  <span><strong>{version}</strong> · <strong>{t.pending}</strong></span>
+  {source && <span>{t.canonical} <code>{source}</code></span>}
+  {t.prevails && <span>{t.prevails}</span>}
+</div>

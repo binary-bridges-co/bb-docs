@@ -1,0 +1,105 @@
+---
+/**
+ * Envelope and signer status flows as an accessible list of transitions.
+ * Text, not colour: these label legal document states and get read in
+ * greyscale, by screen readers and in print (bb-sign DESIGN-GUIDELINES §3).
+ */
+import { ENVELOPE_STATUSES, ENVELOPE_TRANSITIONS, SIGNER_STATUSES } from '../../content/facts/sign';
+
+interface Props {
+  locale: 'es' | 'en';
+  of: 'envelope' | 'signer';
+}
+
+const { locale, of } = Astro.props;
+
+const BY = {
+  es: { send: 'enviar', 'first signature': 'primera firma', 'last signature': 'última firma', 'only signature': 'única firma', cancel: 'cancelar', 'expiry sweep': 'barrido de vencimiento' },
+  en: { send: 'send', 'first signature': 'first signature', 'last signature': 'last signature', 'only signature': 'only signature', cancel: 'cancel', 'expiry sweep': 'expiry sweep' },
+}[locale] as Record<string, string>;
+
+const STATUS_LABEL: Record<string, { es: string; en: string }> = {
+  DRAFT: { es: 'Borrador', en: 'Draft' },
+  SENT: { es: 'Enviado', en: 'Sent' },
+  IN_PROGRESS: { es: 'En progreso', en: 'In progress' },
+  COMPLETED: { es: 'Completado', en: 'Completed' },
+  CANCELLED: { es: 'Cancelado', en: 'Cancelled' },
+  EXPIRED: { es: 'Vencido', en: 'Expired' },
+  PENDING: { es: 'Pendiente', en: 'Pending' },
+  NOTIFIED: { es: 'Notificado', en: 'Notified' },
+  VIEWED: { es: 'Visto', en: 'Viewed' },
+  SIGNED: { es: 'Firmado', en: 'Signed' },
+};
+
+const signerTransitions = [
+  { from: 'PENDING', to: 'NOTIFIED', by: { es: 'el sobre se envía y el firmante recibe su enlace', en: 'the envelope is sent and the signer gets a link' } },
+  { from: 'NOTIFIED', to: 'VIEWED', by: { es: 'el firmante abre el enlace', en: 'the signer opens the link' } },
+  { from: 'VIEWED', to: 'SIGNED', by: { es: 'el firmante envía su firma', en: 'the signer submits the signature' } },
+];
+
+const t = {
+  es: { statuses: 'Estados', transitions: 'Transiciones', to: 'pasa a', when: 'cuando' },
+  en: { statuses: 'Statuses', transitions: 'Transitions', to: 'becomes', when: 'when' },
+}[locale];
+
+const statuses = of === 'envelope' ? ENVELOPE_STATUSES : SIGNER_STATUSES;
+const transitions =
+  of === 'envelope'
+    ? ENVELOPE_TRANSITIONS.map((tr) => ({ from: tr.from, to: tr.to, by: BY[tr.by] ?? tr.by }))
+    : signerTransitions.map((tr) => ({ from: tr.from, to: tr.to, by: tr.by[locale] }));
+---
+
+<div class="bb-flow" data-flow={of}>
+  <p class="bb-flow__label">{t.statuses}</p>
+  <ol class="bb-flow__statuses">
+    {
+      statuses.map((s) => (
+        <li>
+          <code>{s}</code> <span>{STATUS_LABEL[s]?.[locale]}</span>
+        </li>
+      ))
+    }
+  </ol>
+  <p class="bb-flow__label">{t.transitions}</p>
+  <ul class="bb-flow__transitions">
+    {
+      transitions.map((tr) => (
+        <li>
+          <code>{tr.from}</code> {t.to} <code>{tr.to}</code> {t.when} {tr.by}
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .bb-flow {
+    margin-block: 1rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: var(--radius-card, 16px);
+  }
+  .bb-flow__label {
+    margin: 0 0 0.5rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+  }
+  .bb-flow__statuses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+  }
+  .bb-flow__transitions {
+    margin: 0;
+    padding-left: 1.25rem;
+  }
+  .bb-flow__transitions li + li {
+    margin-top: 0.35rem;
+  }
+</style>

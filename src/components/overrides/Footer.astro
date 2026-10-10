@@ -1,0 +1,60 @@
+---
+/**
+ * Starlight `Footer` override: Starlight's own footer (last updated, pager)
+ * plus the Binary Bridges line, as on the homepage.
+ */
+import Default from '@astrojs/starlight/components/Footer.astro';
+import { CONTACT_EMAIL, HOMEPAGE_URL, LEGAL_NAME } from '../../config/site';
+import { productById } from '../../config/products';
+
+const { entry, locale } = Astro.locals.starlightRoute;
+const year = new Date().getFullYear();
+const product = productById(entry.data.product ?? '');
+const strings = {
+  es: { rights: 'Todos los derechos reservados.', app: 'Abrir' },
+  en: { rights: 'All rights reserved.', app: 'Open' },
+}[locale === 'en' ? 'en' : 'es'];
+---
+
+<Default><slot /></Default>
+<div class="bb-footer">
+  <p class="bb-footer__legal">&copy; {year} {LEGAL_NAME} {strings.rights}</p>
+  <ul class="bb-footer__links">
+    <li><a href={HOMEPAGE_URL}>binarybridges.co</a></li>
+    <li><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></li>
+    {product && <li><a href={product.appUrl} rel="noopener">{strings.app} {product.name}</a></li>}
+  </ul>
+</div>
+
+<style>
+  .bb-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--sl-color-hairline);
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-2);
+  }
+  .bb-footer__legal {
+    margin: 0;
+  }
+  .bb-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .bb-footer__links a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+  }
+  .bb-footer__links a:hover {
+    color: var(--sl-color-text);
+  }
+</style>

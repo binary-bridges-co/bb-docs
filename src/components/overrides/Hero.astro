@@ -1,0 +1,80 @@
+---
+/**
+ * Starlight `Hero` override. The hub pages (`index.mdx` per locale) use the
+ * `splash` template and render one card per product from the registry;
+ * every other splash page keeps Starlight's default hero.
+ */
+import Default from '@astrojs/starlight/components/Hero.astro';
+import ProductCard from '../hub/ProductCard.astro';
+import { PRODUCTS, type Locale } from '../../config/products';
+
+const { entry, locale } = Astro.locals.starlightRoute;
+const isHub = entry.id === '' || entry.id === 'index' || entry.id === 'en' || entry.id === 'en/index';
+const current: Locale = locale === 'en' ? 'en' : 'es';
+const hero = entry.data.hero;
+const strings = {
+  es: { products: 'Productos' },
+  en: { products: 'Products' },
+}[current];
+---
+
+{
+  isHub && hero ? (
+    <section class="hub" aria-labelledby="hub-title">
+      <p class="hub__label">{strings.products}</p>
+      <h1 id="hub-title" class="hub__title" set:html={hero.title} />
+      {hero.tagline && <p class="hub__tagline" set:html={hero.tagline} />}
+      <ul class="hub__cards" data-hub-products>
+        {PRODUCTS.map((product) => (
+          <ProductCard product={product} locale={current} />
+        ))}
+      </ul>
+    </section>
+  ) : (
+    <Default><slot /></Default>
+  )
+}
+
+<style>
+  .hub {
+    display: grid;
+    gap: 1rem;
+    max-width: 60rem;
+    padding-block: clamp(2rem, 1rem + 4vw, 5rem);
+  }
+  .hub__label {
+    margin: 0;
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-2);
+  }
+  .hub__title {
+    margin: 0;
+    font-size: var(--text-display, clamp(1.875rem, 1.1rem + 2.8vw, 3.25rem));
+    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  .hub__tagline {
+    margin: 0;
+    max-width: 44rem;
+    font-size: var(--text-lead, 1.125rem);
+    line-height: 1.55;
+    color: var(--sl-color-gray-2);
+  }
+  .hub__cards {
+    display: grid;
+    gap: 1.25rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 720px) {
+    .hub__cards {
+      grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    }
+  }
+</style>
