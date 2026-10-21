@@ -1,13 +1,13 @@
 ---
 title: Firmar y descargar
-description: Cómo dibujar o escribir su firma, qué información queda registrada, cómo descargar la copia firmada y durante cuánto tiempo está disponible.
+description: Cómo dibujar o escribir su firma, qué queda registrado, cómo descargar la copia firmada y su certificado de evidencia, y cuánto tiempo están disponibles.
 product: sign
 audience: signer
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE } from '../../../facts/sign';
+import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY } from '../../../facts/sign';
 
 En la pantalla **Añade tu firma** usted firma el documento y, una vez que todas las personas han
 firmado, descarga su copia sellada.
@@ -29,10 +29,15 @@ Al enviar la firma, bb-sign registra junto a su nombre y su correo:
 - la imagen de su firma;
 - la fecha y la hora;
 - la dirección IP desde la que firmó;
-- el navegador que utilizó.
+- el navegador que utilizó;
+- cómo se identificó: solo con el enlace de su correo, o con el enlace y el código de verificación,
+  con el canal, el destino enmascarado y la hora en que se aceptó el código;
+- la huella SHA-256 del conjunto de documentos que firmó, que vincula su firma a esos documentos
+  exactos.
 
-Esta información forma parte de la evidencia del sobre. Su nombre, su correo y la fecha también
-aparecen en el sello del documento.
+Esta información forma parte de la evidencia del sobre y aparece en su certificado de evidencia. Su
+nombre, su correo y la fecha también aparecen en el sello del documento. La copia del certificado que
+usted descarga enmascara los correos y no incluye su IP, su navegador ni el destino del código.{!EVIDENCE.signerCopyIncludesAuditTrail.value && ' Tampoco incluye el registro de auditoría del sobre; si lo necesita, pídaselo a quien le envió el documento.'}
 
 <Aside type="caution" title="La firma enviada es definitiva">
   Al registrarse la firma, el sobre avanza al siguiente paso. Si firmó por error o los datos no
@@ -42,7 +47,8 @@ aparecen en el sello del documento.
 
 ## Pantalla de confirmación
 
-Después de enviar verá **¡Documento firmado correctamente!** y uno de estos estados:
+Después de enviar verá **¡Documento firmado correctamente!** y, según el momento, uno de estos estados
+de su copia firmada:
 
 | Lo que ve | Qué significa |
 |---|---|
@@ -51,20 +57,51 @@ Después de enviar verá **¡Documento firmado correctamente!** y uno de estos e
 | "Tu copia firmada aún se está preparando. Te enviamos un enlace por correo — podrás descargarla desde ahí cuando esté lista." | El sellado está tomando más tiempo. Puede cerrar la página y descargar la copia desde el correo de finalización. |
 | Sin botón de descarga | Otras personas aún deben firmar. La copia estará disponible cuando todas hayan firmado. |
 
+Cuando la copia está lista, la página ofrece además su certificado de evidencia:
+
+| Lo que ve | Qué significa |
+|---|---|
+| "Preparando tu certificado de evidencia — esto puede tardar unos minutos." | bb-sign está emitiendo el certificado. La página se actualiza automáticamente. |
+| **Descargar tu certificado de evidencia** | El certificado está listo. |
+| "No se pudo descargar el certificado de evidencia. Inténtalo de nuevo." | La descarga no comenzó. Pulse de nuevo el botón. |
+
+Si el sobre se completó antes de que existieran los certificados de evidencia, la página no ofrece
+certificado.
+
 ## Correo de finalización
 
 Cuando todas las personas firman, recibe el correo `Signing complete: {title}` con el enlace a su
-copia. El enlace abre la pantalla de confirmación con el mensaje "Este sobre está completo. Puedes
-descargar tu copia firmada abajo." Puede usarlo las veces que necesite mientras la copia esté
-disponible.
+copia. Normalmente sale cuando su certificado de evidencia está listo y, si este tarda, sin esperarlo
+más de <Fact of={EVIDENCE.degradedAfterHours} unit="horas" />; el correo indica si el certificado
+está listo o en preparación. El enlace abre la pantalla de confirmación con el mensaje "Este sobre
+está completo. Puedes descargar tu copia firmada abajo." Puede usarlo las veces que necesite mientras
+la copia esté disponible.
 
 ## Disponibilidad de la copia
 
-La copia se puede descargar desde su enlace durante
-<Fact of={ENVELOPE.archiveAfterDays} unit="días" /> contados desde la creación del sobre. Después,
-el sobre se archiva y la página muestra "Este documento ya no está disponible para descarga. Por
-favor contacta al administrador." En ese caso, solicite el documento a quien se lo envió. Le
-recomendamos guardar su copia en cuanto la descargue.
+Su copia firmada y su certificado de evidencia se pueden descargar desde su enlace durante
+<Fact of={RETENTION_POLICY.retentionDays} unit="días" /> desde que el sobre se completó, aunque el
+plazo para firmar haya vencido y aunque el sobre ya esté archivado. Le recomendamos guardar su copia en
+cuanto la descargue.
+
+Si su copia llegara a estar en almacenamiento de archivo, la página lo indica y le permite pedirla.
+Hoy bb-sign no traslada ninguna copia a ese almacenamiento, pero si ocurre, verá:
+
+| Lo que ve | Qué significa | Qué hacer |
+|---|---|---|
+| "Tu copia firmada está archivada. Solicítala y te la enviaremos por correo cuando esté disponible." y **Solicitar mi copia** | Su copia está en almacenamiento de archivo. | Pulse **Solicitar mi copia**. |
+| "Tu copia firmada se está restaurando. Solicítala para que te la enviemos por correo cuando esté disponible." | Otra persona ya pidió la copia. | Pulse **Solicitar mi copia** para recibir también el correo. |
+| "Te enviaremos tu copia por correo cuando esté disponible, normalmente en unas horas." | Su solicitud quedó registrada. | Espere el correo `Tu solicitud de restauración de documentos / Your document restore request` y abra su enlace. La copia restaurada se puede descargar durante <Fact of={RESTORE.days} unit="días" />{RESTORE.requestableAgainAfterWindow.value && <>; después puede volver a pulsar <strong>Solicitar mi copia</strong></>}. |
+| "Recibimos muchas solicitudes desde este enlace o tu conexión. Si ya la solicitaste, te llegará el correo; si no, inténtalo de nuevo en unos minutos." | Se alcanzó el límite de <Fact of={RATE_LIMITS.signerRestorePerLink} /> solicitudes por enlace, o de <Fact of={RATE_LIMITS.signerRestorePerIp} /> por conexión, en <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutos" />. | Si ya la solicitó, espere el correo. Si no, vuelva a intentarlo en unos minutos. |
+| "No pudimos solicitar tu copia. Inténtalo de nuevo en unos minutos." | La solicitud no se completó. | Vuelva a intentarlo en unos minutos. |
+
+Su certificado de evidencia nunca se archiva: se sigue descargando directamente mientras espera su
+copia.
+
+Pasado el plazo de conservación, la página muestra "Tu copia firmada ya no está disponible: se cumplió
+su plazo de conservación de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />." En ese caso,
+solicite el documento a quien se lo envió: desde entonces, conservarlo es responsabilidad de la
+organización que lo envió.
 
 ## Contenido del sello
 
@@ -73,7 +110,9 @@ Cada documento firmado lleva un sello, en la posición que definió quien lo env
 su firma, su nombre, su correo, la fecha de firma (año-mes-día, en UTC), un código QR y un patrón
 circular generado a partir de la huella de la firma.
 
-El PDF también lleva el sello del certificado de la organización, visible en el panel de firmas
-del lector de PDF. Para comprobar una firma, consulte
+El PDF también lleva el sello del certificado de la organización, con su cadena de certificados,
+visible en el panel de firmas del lector de PDF. La huella del sello incluye la huella del conjunto
+de documentos que usted firmó y la del certificado que selló, de modo que el sello sigue
+verificándose aunque la organización cambie de certificado después. Para comprobar una firma, consulte
 [Verificar un documento firmado](/sign/signing/verify-a-document/). La relación entre su firma y el
 sello del certificado se explica en [Firma electrónica y sello](/sign/concepts/signature-and-seal/).

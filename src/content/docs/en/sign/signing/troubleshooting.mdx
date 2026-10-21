@@ -1,16 +1,18 @@
 ---
 title: If something goes wrong
-description: The messages the signing page can show, what each one means and what to do to continue with your signature.
+description: The messages you can see while signing, downloading or verifying your copy, what each one means and what to do to continue.
 product: sign
 audience: signer
 ---
 
 import Fact from '../../../../../components/facts/Fact.astro';
-import { ENVELOPE, OTP } from '../../../../facts/sign';
+import { DOCUMENTS, ENVELOPE, OTP, RATE_LIMITS, RESTORE, RETENTION_POLICY, URLS } from '../../../../facts/sign';
 
-This table lists the messages the signing page can show and the action that resolves each case.
-When the envelope needs a change, the person who sent you the document can review it, correct it
-or send you a new one.
+export const verifyUrl = `${URLS.app.value}${URLS.verifyPath.value}`;
+
+This table lists the messages you can see while signing, downloading your copy and verifying it, and
+the action that resolves each case. When the envelope needs a change, the person who sent you the
+document can review it, correct it or send you a new one.
 
 ## Messages and solutions
 
@@ -27,8 +29,16 @@ or send you a new one.
 | "Please draw your signature." or "Please type your name." | You pressed **Submit Signature** with the box empty. | Draw or type your signature and submit it again. |
 | "Signing failed. Please try again." | The signature could not be recorded. | Press **Submit Signature** again. |
 | "Your identity check has expired. Please request a new code." | More than <Fact of={OTP.verifiedValidityMinutes} unit="minutes" /> have passed since verification. | Reload the page and request a new code. |
-| "This document is no longer available for download. Please contact the administrator." | The envelope was archived <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after it was created. | Request the document from the person who sent it; the organization keeps a copy. |
+| "The documents changed while you were reviewing them. Please review them again before signing." | The documents changed after the page loaded them, so bb-sign did not record your signature. | Open each document again, review it and sign again. |
 | "Your signed copy is still being prepared. We have emailed you a link — you can download it from there once it is ready." | Sealing is taking longer. | Close the page and download the copy later from the `Signing complete: {title}` email. |
+| "Could not download the evidence certificate. Please try again." | The certificate download did not start. | Press **Download Your Evidence Certificate** again. |
+| "Your signed copy is archived. Request it and we will email it to you when it is available." | Your copy is in archive storage. | Press **Request my copy**. The restore usually takes a few hours; then you receive an email with the link. |
+| "Your signed copy is being restored. Request it and we will email it to you when it is available." | Someone else has already asked for the copy and the restore is in progress. | Press **Request my copy** to receive the email too. |
+| "We received many requests from this link or your connection. If you already asked, the email will arrive; if not, try again in a few minutes." | The limit of <Fact of={RATE_LIMITS.signerRestorePerLink} /> requests per link or <Fact of={RATE_LIMITS.signerRestorePerIp} /> per connection within <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutes" /> was reached. | If you already asked, wait for the email. If not, try again in a few minutes. |
+| "We could not request your copy. Try again in a few minutes." | The request did not complete. | Press **Request my copy** again in a few minutes. |
+| The restore email says "The restore took longer than expected; you can request it again." or "It could not be restored." | The restore did not finish within <Fact of={RESTORE.timeoutHours} unit="hours" />, or it failed. | Open your link and press **Request my copy** again. If it fails again, contact the person who sent you the document. |
+| "Your signed copy is no longer available: its <Fact of={RETENTION_POLICY.retentionDays} />-day retention period has ended." | Your copy's retention period, counted from the envelope's completion, has passed and it was deleted. | Request the document from the person who sent it: from then on, their organization is responsible for keeping it. |
+| **Invalid Signature** when scanning the QR code on the seal | If the envelope has already moved to **Archived** (<Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after its creation), the QR check currently fails even though the document is intact. | If the document was signed since bb-sign <Fact of={DOCUMENTS.signedSha256Since} />, check it with **Check a file** at <a href={verifyUrl}>{verifyUrl}</a>. If it was signed earlier, or if that check does not confirm it either, open the PDF in a reader and look at its signature panel. If in doubt, ask the person who sent you the document. See [Verify a signed document](/en/sign/signing/verify-a-document/). |
 
 ## If you do not wish to sign
 

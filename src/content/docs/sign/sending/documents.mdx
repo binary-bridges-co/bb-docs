@@ -7,11 +7,18 @@ audience: user
 
 import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { DOCUMENTS } from '../../../facts/sign';
+import { DOCUMENTS, RETENTION_POLICY } from '../../../facts/sign';
 
 En el paso **Documentos** del asistente **Crear Sobre** usted adjunta los archivos que se van a
 firmar. Cada documento se sube en el momento y queda fijo al enviar el sobre, de modo que todos los
 firmantes firman exactamente el mismo contenido.
+
+## La huella de cada documento
+
+Al subir cada archivo, bb-sign calcula su huella SHA-256 y la registra. La huella aparece en la
+página del sobre ("SHA-256 del original:"), el firmante la ve junto a cada documento mientras los
+revisa y el certificado de evidencia la incluye. Cada firma queda vinculada a las huellas de los
+documentos que el firmante vio: si un documento cambiara, la firma no se registraría.
 
 ## Subir los documentos
 
@@ -30,6 +37,12 @@ Si un archivo no se puede subir, la aplicación muestra su nombre y la causa:
 | "Tu organización se ha quedado sin almacenamiento de documentos." | Su organización alcanzó el límite de documentos sin sobre o la cuota de almacenamiento del plan. | Envíe los sobres pendientes o espere a que se liberen los documentos sin sobre. Si continúa, pida a su administrador que amplíe el límite. |
 | El archivo no es un PDF | El formato admitido es <code>{DOCUMENTS.contentType.value}</code>. | Convierta el documento a PDF y súbalo. |
 
+Al enviar el sobre puede aparecer además este mensaje:
+
+| Mensaje | Qué pasó | Qué hacer |
+|---|---|---|
+| "Uno de los documentos aún no tiene su huella digital registrada, así que el sobre no se puede enviar todavía. Espera unos minutos o vuelve a subirlo." | Un documento todavía no tiene su huella SHA-256 registrada, y bb-sign no envía un sobre sin ella. El sobre queda en **Borrador**. | Espere unos minutos y pulse de nuevo **Enviar sobre**. Si el mensaje continúa, cancele el borrador y cree el sobre de nuevo con el documento subido otra vez. |
+
 ## Preparar el PDF
 
 bb-sign firma documentos PDF. Convierta antes a PDF cualquier documento de texto, imagen u hoja de
@@ -43,6 +56,7 @@ se coloca sobre el documento cuando el sobre se completa.
 | Tamaño máximo por archivo | <Fact of={DOCUMENTS.maxUploadMb} unit="MB" /> |
 | Documentos sin sobre por organización | <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" /> |
 | Conservación de un documento sin sobre | <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> |
+| Conservación de cada archivo de un sobre | <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. Consulte [Conservación y restauración](/sign/sending/retention-and-restore/). |
 
 Un sobre puede incluir tantos documentos como necesite. Cada uno cuenta para la cuota de
 almacenamiento de su organización cuando se crea el sobre. Consulte [Cuotas](/sign/concepts/quotas/).

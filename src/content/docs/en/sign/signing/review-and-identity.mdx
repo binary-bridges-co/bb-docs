@@ -6,7 +6,7 @@ audience: signer
 ---
 
 import Fact from '../../../../../components/facts/Fact.astro';
-import { OTP } from '../../../../facts/sign';
+import { OTP, SIGNER } from '../../../../facts/sign';
 
 Before signing, you review each document and, if the envelope requires it, confirm your identity
 with a code sent to your email. The indicator at the top shows which step you are on: **Review**,
@@ -27,6 +27,20 @@ to continue earlier, you see the message "Open every document before you continu
 If your browser cannot display the PDF, you see "Your browser cannot display this PDF inline." Use
 **Download the document** to open it; that download also counts as a review.
 
+## Each document's fingerprint
+
+Next to each document you see its fingerprint, "Fingerprint (SHA-256):", with the first and last
+<Fact of={SIGNER.fingerprintShownChars} /> characters; hover over it to see it in full. It is the fingerprint bb-sign recorded when the document
+was uploaded, and your signature will be bound to it. You can compare it later with the one in your
+evidence certificate.
+
+If the documents change while you are reviewing them, bb-sign does not record the signature and the
+page shows:
+
+| Message | What happened | What to do |
+|---|---|---|
+| "The documents changed while you were reviewing them. Please review them again before signing." | The recorded documents are no longer the ones the page showed you, so your signature was not recorded. The page returns to the **Review** step with the current documents. | Open each document again, review it and sign again. |
+
 ## Verify your identity
 
 When the envelope requires verification, pressing **I have reviewed the document** makes bb-sign
@@ -38,6 +52,7 @@ remains valid.
 - You can request another with **Resend code** <Fact of={OTP.resendCooldownSeconds} unit="s" />
   after the last one was sent; until then, the button shows a countdown.
 - The page always accepts the most recent code.
+- Each code works only for you: a code sent to another signer is not valid on your link.
 
 Enter the code and press **Verify & Continue**.
 
@@ -55,5 +70,6 @@ Enter the code and press **Verify & Continue**.
 ## After verifying
 
 Once the code is verified, you have <Fact of={OTP.verifiedValidityMinutes} unit="minutes" /> to
-sign. If that time runs out, reload the page, open the documents again and request a new code.
+sign. The verification is recorded (the method, the channel, the masked destination and the time the
+code was accepted) and appears in the envelope's evidence certificate. If that time runs out, reload the page, open the documents again and request a new code.
 Continue with [Sign and download](/en/sign/signing/sign-and-download/).

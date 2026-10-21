@@ -1,0 +1,70 @@
+---
+title: "Guide: configuring your organization's own certificate"
+description: "Guide that accompanies the bb-sign terms: which certificate to buy, how to export it with its chain, upload it, renew it and check a sealed PDF."
+product: sign
+audience: legal
+source: docs/guias/certificado-propio.md
+legal: true
+---
+
+This guide accompanies the [Terms and conditions of service](/en/sign/legal/terms).
+
+As long as your organization has not configured its own certificate, bb-sign seals signed documents with a testing certificate. It is useful for trying the service, but validators show it as untrusted. Follow this guide to configure yours.
+
+## 1. What the organization's certificate is for
+
+The certificate seals each signed document: it guarantees that the document did not change after it was signed and lets a third party trust who sealed it. It is not the digital signature of the people who sign; they sign with bb-sign's electronic signature mechanism.
+
+## 2. What to buy
+
+- A certificate in the organization's name (for a legal entity or for a public function; the commercial name varies by entity), issued by a Digital Certification Entity listed in the ONAC directory.
+- It must be delivered as a **PKCS#12 file (.p12 or .pfx) with an exportable private key**. A key on a USB token or a key that exists only in the cloud does not work.
+- An RSA key of 2048 bits or more. Only RSA keys are accepted: bb-sign rejects elliptic curve (EC), EdDSA and RSA-PSS keys at upload.
+- Key usage "digital signature" and, preferably, "non-repudiation".
+
+## 3. Export with the complete chain
+
+The file must include the organization's certificate, the intermediate certificates and the root.
+
+- On Windows: `certmgr.msc`, select the certificate, Export, state that you are exporting the private key, PKCS#12 format, and check "Include all certificates in the certification path if possible".
+- With OpenSSL:
+
+```
+openssl pkcs12 -export -inkey clave.key -in certificado.crt -certfile cadena.pem -out organizacion.p12
+```
+
+If bb-sign reports that the file or the password is not valid, export again with the `-legacy` option of OpenSSL 3.
+
+## 4. Check before uploading
+
+```
+openssl pkcs12 -in organizacion.p12 -nokeys -info
+```
+
+It must list the organization's certificate, the intermediate certificate or certificates, and the root.
+
+## 5. Upload the certificate
+
+Go to Settings, Certificate tab, choose the file, type its password and upload it. bb-sign checks the file and tells you the status of the chain:
+
+- **Complete chain:** the file includes every certificate up to the root. There is nothing more to do.
+- **No root:** the root is missing. Validators that already trust it will keep working; if not, export again with the complete chain.
+- **Leaf only:** the file does not include the certificates that issued yours. Export it again with the complete certification path (section 3).
+- **Self-signed:** the certificate signed itself and no third party will trust it.
+- **The file includes certificates that did not issue yours:** there are extra certificates from another chain. This does not prevent the upload, but export again with only the certification path of **this** certificate. It is different from "Leaf only": each case has its own solution.
+
+bb-sign rejects the file when the chain is broken (an intermediate certificate that does not match), when the private key is not the certificate's, when the private key is missing, when there is more than one private key or when any certificate has expired.
+
+## 6. Renewal
+
+Upload the renewed certificate before the current one expires. The change can take up to 5 minutes to apply to new seals.
+
+bb-sign sends an email to the organization's administrators 30 days and 7 days before the organization's own certificate expires, with the expiry date and a link to Settings, Certificate. The notices are an aid: the renewal remains the organization's responsibility.
+
+## 7. Check a sealed PDF
+
+Open the signed PDF in Adobe Acrobat and review the signatures panel. If you imported your certification entity's root as trusted, you will see the complete path and that the identity is valid.
+
+## 8. Security
+
+Never send the .p12 file or its password by email.

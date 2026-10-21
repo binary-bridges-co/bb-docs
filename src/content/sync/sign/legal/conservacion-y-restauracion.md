@@ -1,0 +1,81 @@
+# Guía: conservación y restauración de documentos
+
+Esta guía acompaña la sección 3 de los [Términos y condiciones del servicio](/legal/terminos).
+
+bb-sign conserva los archivos de cada sobre durante un plazo fijo de 365 días. Esta guía explica qué significan las fechas que muestra bb-sign, cómo pedir un archivo archivado y cómo guardar cada sobre en sus propios sistemas antes de que se cumpla el plazo.
+
+## 1. El plazo y lo que significan las fechas
+
+- **Los archivos se conservan 365 días.** El plazo es fijo y no se puede configurar. Se cuenta para cada archivo: el documento original desde que se carga, el documento firmado desde que el sobre se completa y el certificado de evidencias desde que se emite.
+- **«Deja de estar disponible el …».** Desde esa fecha el archivo ya no se puede descargar. Se borra de forma definitiva en los días siguientes y después no se puede recuperar.
+- **«Se archiva a partir del …».** Los documentos con más de 90 días pueden trasladarse a almacenamiento de archivo. Desde esa fecha, descargar un documento puede requerir que primero solicite su restauración (sección 2). Esta fecha solo aparece cuando el archivo automático está activo.
+- **Las fechas son a las 00:00 UTC.** La página del sobre muestra las fechas más tempranas de todos sus archivos; la API da las fechas exactas de cada archivo.
+- **No todos los archivos llegan a archivarse.** Un documento finalizado antes de que se activara el archivo automático puede no archivarse nunca, aunque muestre una fecha «a partir del». Antes de cada descarga, bb-sign consulta el estado real del archivo, así que una fecha que no se cumple no le impide descargarlo.
+- **El certificado de evidencias y el registro de auditoría no se archivan.** Se pueden descargar de inmediato durante sus 365 días.
+- **Certificados emitidos antes de esta versión.** Un certificado de evidencias ya emitido conserva las fechas con las que se selló, que pueden diferir en un día de las que muestra hoy la aplicación. Las fechas de la aplicación y de la API son las vigentes.
+
+## 2. Solicitar la restauración de un archivo archivado
+
+Una restauración tarda normalmente unas horas, sin un tiempo garantizado. Si varias personas piden el mismo archivo, bb-sign hace una sola restauración y avisa a todas. La copia restaurada se puede descargar durante 7 días; después vuelve al archivo y se puede solicitar de nuevo.
+
+### En la aplicación
+
+- Abra el sobre. En la sección de documentos, un archivo archivado muestra el botón **Solicitar restauración**.
+- Mientras se restaura, el archivo muestra «restaurando». Si la restauración la pidió otra persona, el botón sigue disponible: solicítela también para recibir el correo. Cuando esté disponible, recibirá un correo con un enlace al sobre, donde aparece de nuevo el botón de descarga y la fecha hasta la que está disponible.
+- Necesita el permiso de descarga de documentos en el espacio de trabajo del sobre. Sin él, la aplicación no ofrece el botón.
+
+### Por la API
+
+Pida la restauración de un archivo, `SIGNED` (el PDF firmado) u `ORIGINAL` (el documento cargado):
+
+```
+curl -X POST "$API_BASE/api/v1/envelopes/$ENVELOPE_ID/documents/$DOCUMENT_ID/restore" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"kind": "SIGNED"}'
+```
+
+- `202`: la restauración comenzó, o ya estaba en curso y su solicitud se sumó a ella (`alreadyInProgress: true`).
+- `200`: el archivo no necesita restauración y se puede descargar ya.
+- `410 DOCUMENT_DELETED`: el archivo cumplió sus 365 días y ya no existe.
+- `429 RESTORE_LIMIT_REACHED`: su organización tiene demasiadas restauraciones en curso. Inténtelo cuando termine alguna.
+- `503 ARCHIVAL_STORAGE_UNAVAILABLE`: el almacenamiento de archivo no respondió. Inténtelo de nuevo más tarde.
+
+El estado de cada archivo está en la lista de documentos del sobre, en `original.availability` y `signed.availability`: `AVAILABLE` o `RESTORED` (se puede descargar), `ARCHIVED` (necesita restauración), `RESTORE_IN_PROGRESS` (se está restaurando) o `DELETED` (cumplió sus 365 días).
+
+```
+curl "$API_BASE/api/v1/envelopes/$ENVELOPE_ID/documents" -H "Authorization: Bearer $TOKEN"
+```
+
+### El firmante
+
+Quien firmó puede pedir su copia firmada desde el enlace con el que firmó, aunque el enlace haya vencido para firmar. La página muestra el botón **Solicitar mi copia**; cuando la copia está disponible, el firmante recibe un correo con un enlace a esa misma página, desde donde la descarga.
+
+## 3. El aviso cuando el archivo está disponible
+
+- **Las personas** que pidieron la restauración, en la aplicación o como firmantes, reciben un correo cuando el archivo está disponible. Si no se pudo restaurar, el correo lo indica. Si al enviarlo bb-sign no puede confirmar que la persona aún tiene permiso de descarga, el correo es genérico y no nombra los archivos.
+- **Las integraciones no reciben correo.** Una integración que pide una restauración por la API se entera solo por el webhook `document.restored`. **Suscríbase a ese evento** en Configuración, pestaña Webhooks.
+- El webhook `document.restored` indica el documento, el archivo (`kind`), el resultado (`outcome`: `RESTORED`, `AVAILABLE` o `FAILED`, con su `reason`) y hasta cuándo está disponible (`availableUntil`). No trae el archivo ni un enlace de descarga: trae `downloadPath`, la lista de documentos del sobre, donde obtiene un enlace de descarga de corta duración.
+
+## 4. Guardar cada sobre en sus sistemas, de forma automática
+
+La forma más segura de cumplir el plazo es copiar cada sobre a sus sistemas en cuanto se completa, antes de que nada se archive:
+
+1. Suscríbase al webhook `envelope.completed` (y a `envelope.evidence_issued`, para un certificado que llega después).
+2. Al recibirlo, lea `data.documentsPath` y llame a esa ruta con su credencial, que necesita el permiso de descarga de documentos: devuelve, para cada documento, un enlace de descarga de corta duración del PDF firmado (`signedUrl`).
+3. Descargue cada PDF firmado y compare su SHA-256 con `data.documents[].signedSha256` del webhook. Si coinciden, el archivo es exactamente el que bb-sign selló.
+4. Descargue el certificado de evidencias desde `data.evidenceCertificate.downloadPath`, que devuelve un enlace válido por 300 segundos, y compare su SHA-256 con `data.evidenceCertificate.sha256`.
+5. Guarde también `data.retention.deletesAt`: es la fecha desde la que bb-sign ya no tendrá los archivos.
+
+Para calcular el SHA-256 de un archivo descargado (en Linux, `sha256sum` hace lo mismo):
+
+```
+shasum -a 256 documento-firmado.pdf
+```
+
+Si el webhook indica `signedDocumentsStatus: PREPARING`, los PDF firmados aún no existían: no compare el hash y vuelva a pedir `data.documentsPath` más tarde.
+
+## 5. Responsabilidades
+
+- **bb-sign** conserva los documentos originales, los documentos firmados y las evidencias de cada sobre durante 365 días, y restaura a solicitud los que se hayan archivado.
+- **Su organización** conserva los documentos después de los 365 días, conforme al artículo 12 de la Ley 527 de 1999 y a sus propias normas de conservación. Copie cada sobre a sus sistemas (sección 4) antes de la fecha «deja de estar disponible».

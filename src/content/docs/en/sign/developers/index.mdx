@@ -7,7 +7,7 @@ audience: developer
 
 import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { URLS, AUTH } from '../../../../facts/sign';
+import { URLS, AUTH, RATE_LIMITS, AGREEMENTS } from '../../../../facts/sign';
 import openapi from '../../../../sync/sign/openapi.json';
 
 export const pathCount = Object.keys(openapi.paths).length;
@@ -15,7 +15,10 @@ export const operationCount = Object.values(openapi.paths).reduce((n, p) => n + 
 
 With the bb-sign API, your systems create and send envelopes, receive a signed notification each
 time an envelope changes status, and download the signed document without manual steps. The
-JavaScript and Java SDKs cover the API and webhook verification.
+JavaScript and Java SDKs cover envelopes, documents, verification and webhook signature checks.
+The evidence certificate, the workspace list and agreement copies are not in the SDKs: call them
+over HTTP with the same token (see [JavaScript SDK](/en/sign/sdks/javascript/) and
+[Java SDK](/en/sign/sdks/java/)).
 
 ## Production URLs
 
@@ -33,18 +36,25 @@ automatically.
 ## Public contract scope
 
 Contract version <code>{openapi.info.version}</code> has {pathCount} paths ({operationCount}
-operations) organized in five areas:
+operations) organized in these areas:
 
 | Area | Operations | Credential required |
 |---|---|---|
 | Documents | Upload a PDF before creating the envelope | Yes |
-| Envelopes | Create, list, read, attach documents, add signers, send, cancel, count by status | Yes |
-| Signing ceremony | Open a link, request and verify a one-time code, sign, download the signed copy, record open and close | No: the link token is the credential |
-| Verify | Check a seal from the QR code on a signed document | No |
+| Envelopes | Create, list, read, attach documents, add signers, send, cancel, count by status; read and download the [evidence certificate](/sign/api/operations/getevidencecertificate/); [request a restore](/sign/api/operations/restoreenvelopedocument/) of an archived file | Yes |
+| Signing ceremony | Open a link, request and verify a one-time code, sign, download the signed copy and the signer's certificate, request the archived copy, record open and close | No: the link token is the credential |
+| Verify | Check a seal from the QR code on a signed document, or [upload the file](/sign/api/operations/verifydocumentfile/) to check its SHA-256 (limited to <Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> requests a minute per client) | No |
 | Workspaces | List the workspaces the credential can access | Yes |
+| Agreement copies | [Read an immutable copy](/sign/api/operations/getagreementcopy/) of an agreement text, with its version, language and SHA-256 | Yes |
 
 The token scopes every call to the credential's organization and, within it, to its **workspace
-roles**. [Machine authentication](/en/sign/developers/authentication/) explains both levels.
+roles**. [Machine authentication](/en/sign/developers/authentication/) explains both levels, and
+also what a credential reads outside the published contract: one envelope's audit trail, with the
+`audit:read` permission.
+
+{!AGREEMENTS.pinAtSendInProduction.value && (
+  <p>In production, no envelope cites an agreement copy yet: copies are not pinned to envelopes when they are sent.</p>
+)}
 
 ## Administration operations
 
@@ -59,11 +69,12 @@ registered in **Settings**, tab **Webhooks**.
   <LinkCard title="Quickstart" href="/en/sign/developers/quickstart/" description="Get a 201 from POST /api/v1/envelopes with curl, JavaScript or Java." />
   <LinkCard title="Machine authentication" href="/en/sign/developers/authentication/" description="Client credentials: token contents, scope and lifetime." />
   <LinkCard title="From credential to signed document" href="/en/sign/developers/envelope-walkthrough/" description="Upload, create, add a signer, send, receive the webhook and download the signed PDF." />
-  <LinkCard title="Webhooks" href="/en/sign/developers/webhooks/" description="The six events, the three headers, signature verification, delivery and retries." />
+  <LinkCard title="Webhooks" href="/en/sign/developers/webhooks/" description="The events and their contents, the three headers, signature verification, delivery, retries and file retention." />
   <LinkCard title="Webhook signature specification" href="/en/sign/developers/webhook-signature-spec/" description="The normative scheme: header grammar, signed content, tolerance, algorithm and payload." />
-  <LinkCard title="Errors" href="/en/sign/developers/errors/" description="Every status the API returns, the error body and the 404-instead-of-403 rule." />
+  <LinkCard title="Errors" href="/en/sign/developers/errors/" description="Every status the API returns, the common codes, the error body and the 404-instead-of-403 rule." />
   <LinkCard title="JavaScript SDK" href="/en/sign/sdks/javascript/" description="ESM client for Node, with webhook verification on a server-only subpath." />
   <LinkCard title="Java SDK" href="/en/sign/sdks/java/" description="Retrofit client distributed as a jar, with Webhooks.verify over byte arrays." />
+  <LinkCard title="Evidence certificate" href="/en/sign/concepts/evidence-certificate/" description="The sealed summary of a completed envelope and its frozen audit trail." />
   <LinkCard title="API reference" href="/sign/api/" description="Every operation and schema, generated from the contract." />
   <LinkCard title="Migrating from Adobe Acrobat Sign" href="/en/sign/developers/migrating-from-adobe/" description="Concept mapping between Adobe Acrobat Sign and bb-sign." />
 </CardGrid>

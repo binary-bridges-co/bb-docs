@@ -1,6 +1,6 @@
 ---
 title: Autenticación de máquinas
-description: Cómo una credencial obtiene un token, qué contiene, a qué tiene acceso según sus roles de espacio de trabajo, cuánto dura y qué indica cada estado de error.
+description: Cómo una credencial obtiene un token, qué contiene, a qué accede según sus roles (archivados y auditoría incluidos), cuánto dura y qué indica cada error.
 product: sign
 audience: developer
 source: docs/api/machine-authentication.md
@@ -9,7 +9,9 @@ source: docs/api/machine-authentication.md
 import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import RolesMatrix from '../../../../components/facts/RolesMatrix.astro';
-import { URLS, AUTH, ORG_API_NEVER } from '../../../facts/sign';
+import { URLS, AUTH, ORG_API_NEVER, ORG_PERMISSIONS, AGREEMENTS, AUDIT, ENVELOPE, EVIDENCE, RATE_LIMITS } from '../../../facts/sign';
+
+export const orgApiPermissions = ORG_PERMISSIONS.filter((p) => p.holders.includes('org_api')).map((p) => p.key);
 
 Sus integraciones se autentican ante bb-sign con una credencial de API y operan con las mismas
 garantías de aislamiento que un usuario de la organización. Un administrador crea la credencial en
@@ -45,6 +47,11 @@ curl -s -X POST https://auth.binarybridges.co/realms/bbsign/protocol/openid-conn
 { "access_token": "eyJ...", "expires_in": 300, "token_type": "Bearer" }
 ```
 
+Solo se admite `client_credentials`. El grant de contraseña está desactivado en todos los clientes
+del realm, de modo que un script no puede obtener un token con el correo y la contraseña de una
+persona (Keycloak responde `unauthorized_client`). Una integración usa siempre su propia credencial,
+nunca la cuenta de un usuario.
+
 Envíelo como bearer token en cada solicitud:
 
 ```bash
@@ -58,10 +65,11 @@ curl -H "Authorization: Bearer $TOKEN" https://sign-api.binarybridges.co/api/v1/
 | `bb_sign_org_id` | El UUID de la organización propietaria | Toda lectura y escritura con alcance de organización se resuelve a partir de este valor. **Si falta, la API responde 403** (ver [Estados de error](#estados-de-error)) |
 | `realm_access.roles` | contiene `org_api` | El rol que admiten los endpoints con alcance de organización |
 | `aud` | contiene `bb-sign` | Si falta, el validador de audiencia rechaza el token antes de evaluar la autorización |
+| `iss` | <Fact of={AUTH.expectedIssuer} /> | La API acepta solo tokens de este emisor. Un token de otro realm o de otro host responde `401` |
 
 Sin el mapeador de audiencia, el token falla en la validación; sin el atributo de organización,
 falla en la autorización. En ambos casos el acceso se niega. Las credenciales creadas desde
-**Configuración** incluyen los tres claims.
+**Configuración** incluyen todos estos claims.
 
 <Aside type="note" title="Vigencia del token">
   Un token es válido durante <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> (`expires_in`). Se
@@ -72,8 +80,16 @@ falla en la autorización. En ambos casos el acceso se niega. Las credenciales c
 
 ## Alcance de una credencial
 
-En el nivel de organización, una credencial tiene únicamente `label:read` y `workspace:read`:
-puede listar las claves de etiqueta y los espacios de trabajo a los que pertenece. Lo que puede
+En el nivel de organización, una credencial tiene únicamente estos permisos:
+
+<ul>
+  {orgApiPermissions.map((key) => (
+    <li><code>{key}</code></li>
+  ))}
+</ul>
+
+Con ellos lista las claves de etiqueta y los espacios de trabajo a los que pertenece, y lee las
+copias de acuerdos (ver [Copias de acuerdos](#copias-de-acuerdos)). Lo que puede
 hacer **con los sobres** depende del rol que tenga en cada espacio de trabajo. Al crear la
 credencial, el formulario solicita un espacio de trabajo y un rol: «General con Gestor es la
 opción predeterminada». Un administrador puede agregarla después a otros espacios desde
@@ -82,8 +98,8 @@ opción predeterminada». Un administrador puede agregarla después a otros espa
 <RolesMatrix locale="es" show="workspace" />
 
 - `GET /api/v1/workspaces` devuelve General y los espacios de trabajo en los que la credencial
-  tiene un rol. Envíe el `id` de uno como `workspaceId` al crear un sobre; si lo omite, el sobre se
-  archiva en General.
+  tiene un rol. Envíe el `id` de uno como `workspaceId` al crear un sobre; si lo omite, el sobre
+  queda en General.
 - Una credencial puede pertenecer como máximo a <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> espacios de trabajo.
 - Un cambio de rol se aplica cuando se emite el siguiente token de la credencial, es decir, en
   menos de <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />.
@@ -101,10 +117,11 @@ concederlos. Son protecciones contra la escalada de privilegios en el catálogo 
   ))}
 </ul>
 
-La administración de organizaciones, usuarios, cuotas, certificados, etiquetas, el archivo, la
-auditoría, credenciales, webhooks y espacios de trabajo se realiza en la interfaz, a cargo de un
-administrador de la organización. La ceremonia de firma (`/api/v1/sign/**`) es pública por diseño
-y está limitada a un firmante por el token de su enlace; las integraciones no la utilizan.
+La administración de organizaciones, usuarios, cuotas, certificados, etiquetas, credenciales,
+webhooks y espacios de trabajo se realiza en la interfaz, a cargo de un administrador de la
+organización, al igual que el registro de auditoría de toda la organización. La ceremonia de firma
+(`/api/v1/sign/**`) es pública por diseño y está limitada a un firmante por el token de su enlace;
+las integraciones no la utilizan.
 
 Los dos tipos de rechazo se distinguen de forma intencional:
 
@@ -113,14 +130,59 @@ Los dos tipos de rechazo se distinguen de forma intencional:
 | Una operación para la que la credencial no tiene el permiso de organización | `403`, sin cuerpo |
 | Un sobre o espacio de trabajo que la credencial no puede ver, o que no existe | `404`, idéntico a «no existe» |
 
+## Sobres archivados y registro de auditoría de un sobre
+
+Unos <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de creado, un sobre terminado pasa a
+**Archivados**. No se elimina: el sobre, sus firmantes, sus documentos y su registro de auditoría se
+siguen leyendo por las mismas rutas que un sobre activo, también con una credencial.
+
+| Ruta | Qué recibe la credencial para un sobre archivado | Permiso en el espacio de trabajo del sobre |
+|---|---|---|
+| `GET /api/v1/envelopes/{id}` | El sobre, con `archived: true` y `archivedAt` | `envelope:read` y `archive:read` |
+| `GET /api/v1/envelopes/{id}/documents` | Los documentos, con enlaces de descarga | `document:download` y `archive:read` |
+| `GET /api/v1/envelopes/{id}/evidence-certificate` y `/download` | El [certificado de evidencia](/sign/concepts/evidence-certificate/) | <code>{EVIDENCE.downloadPermission.value}</code> y `archive:read` |
+| `GET /api/v1/audit/envelopes/{id}/events` | El registro de auditoría del sobre | `audit:read` y `archive:read` |
+
+Todos los roles de espacio de trabajo, desde *viewer*, incluyen `archive:read`. Sin ese permiso, o
+para un sobre de otra organización, la respuesta es `404`, igual que un id inexistente. Un sobre
+archivado es de solo lectura: enviar, cancelar, agregar firmantes, subir documentos o cambiar
+etiquetas sobre su id responde `404`.
+
+El registro de auditoría de un sobre (activo o archivado) se lee con `audit:read`, que tienen los
+roles <code>{AUDIT.envelopeTrailReaders.value.join(', ')}</code>:
+
+| Ruta | Respuesta |
+|---|---|
+| `GET /api/v1/audit/envelopes/{id}/events` | Los eventos del sobre |
+| `GET /api/v1/audit/envelopes/{id}/verification` | Si la cadena de hashes verifica: <code>{AUDIT.verificationStatuses.value.join(', ')}</code> |
+| `GET /api/v1/audit/envelopes/{id}/export` | El registro en el formato <code>{AUDIT.exportFormat.value}</code>, como descarga |
+
+`/verification` y `/export` comparten un límite de <Fact of={AUDIT.readRatePerMinute} /> llamadas
+por minuto por credencial; por encima responden `429 RATE_LIMITED` con `Retry-After`.
+{!RATE_LIMITS.auditReadThrottledRoutes.value.includes('events') && <> <code>/events</code> no tiene ese límite.</>} Una
+exportación de más de <Fact of={AUDIT.exportMaxRows} /> filas responde `413 AUDIT_EXPORT_TOO_LARGE`:
+pídala por páginas con `fromSeq` y `limit` (como máximo <Fact of={AUDIT.exportPageMaxRows} /> filas
+por página). Cada exportación queda registrada en el propio registro del sobre, con la credencial
+como actor. Estas rutas no figuran todavía en el contrato OpenAPI publicado ni en la
+[referencia de la API](/sign/api/). El registro de toda la organización (`/api/v1/audit/org-events`)
+y el resto de `/api/v1/audit/**` siguen reservados a personas.
+
+## Copias de acuerdos
+
+Con `agreement:read`, una credencial lee una copia de acuerdo con
+`GET /api/v1/agreement-copies/{copyId}`: el texto exacto e inmutable, con su versión, su idioma y su
+`contentSha256`. Una copia de otra organización responde `404`.
+{!AGREEMENTS.pinAtSendInProduction.value && ' En producción, las copias todavía no se fijan a los sobres al enviarlos, de modo que ningún sobre cita una copia.'}
+
 ## Estados de error
 
 | Estado | Significado | Causa habitual | Acción |
 |---|---|---|---|
-| `401` | Sin token, token expirado o token que el realm no valida | Falta el encabezado `Authorization`; token con más de <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> | Solicite un token nuevo; revise el prefijo `Bearer ` |
+| `401` | Sin token, token expirado o token que el realm no valida | Falta el encabezado `Authorization`; token con más de <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; token emitido por otro realm o por otro host (su `iss` no es <Fact of={AUTH.expectedIssuer} />) | Solicite un token nuevo a la URL del token de producción; revise el prefijo `Bearer ` |
 | `403` en un endpoint del flujo | Autenticado, pero sin permiso en el nivel de organización | Llamar a una operación de administración que solo existe en la interfaz | Confirme que la operación existe en la [referencia de la API](/sign/api/) |
 | `403` en `GET /api/v1/envelopes` en particular | El token incluye `org_api` pero **no `bb_sign_org_id`** | Una credencial que no se creó desde **Configuración** | Revóquela y cree una nueva en **Configuración**, pestaña **Credenciales de API** |
 | `404` en un sobre o espacio de trabajo | La credencial no tiene rol en ese espacio, o el id es incorrecto | Un espacio de trabajo que nunca se asignó a la credencial | Pida a un administrador que agregue la credencial en **Miembros**, o use General |
+| `429 RATE_LIMITED` en `/api/v1/audit/**` | Se superó el límite de lecturas de auditoría de la credencial | Exportaciones o verificaciones repetidas en un mismo minuto | Espere los segundos de `Retry-After` antes de volver a llamar |
 
 En el caso de la tercera fila, el acceso se niega: un token sin el claim de organización no recibe
 datos de ninguna organización.

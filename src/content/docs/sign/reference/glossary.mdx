@@ -5,6 +5,9 @@ product: sign
 audience: all
 ---
 
+import Fact from '../../../../components/facts/Fact.astro';
+import { RESTORE, WEBHOOK_EVENTS } from '../../../facts/sign';
+
 Cada término aparece con su nombre en español, el nombre en inglés que usa la API y, cuando aplica, la
 etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo explica en detalle.
 
@@ -19,7 +22,7 @@ etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo expl
 - **General.** El espacio que toda organización tiene desde su creación. Todos los miembros de la
   organización participan en él como colaboradores; ese rol es fijo.
 - **Rol (role).** El conjunto de acciones que alguien puede realizar. Hay roles de organización
-  (administrador, miembro, credencial de API) y roles de espacio (visor, auditor, colaborador,
+  (administrador, miembro, credencial de API) y roles de espacio (lector, auditor, colaborador,
   gestor). Ver [Matriz de permisos](/sign/admin/permissions/).
 - **Sobre (envelope).** La unidad de trabajo: uno o más documentos PDF, uno o más firmantes y las
   opciones de envío (orden, código de un solo uso, validez del enlace, vencimiento). Ver
@@ -32,7 +35,9 @@ etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo expl
   filtrarlos. Ver [Etiquetas](/sign/concepts/labels/).
 - **Archivados (archived).** La vista a la que pasan los sobres completados, cancelados o vencidos
   cuando se cumple un plazo desde su creación. Organiza la lista de sobres y es independiente de la
-  política de conservación. Ver [Sobres archivados](/sign/sending/archived-envelopes/).
+  política de conservación: un sobre archivado es de solo lectura y sus documentos siguen disponibles
+  para descargar, también desde el enlace del firmante. No es lo mismo que el archivo de un archivo
+  (ver más abajo). Ver [Sobres archivados](/sign/sending/archived-envelopes/).
 
 ## Firma, sello y evidencia
 
@@ -53,11 +58,51 @@ etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo expl
   correo y escribe antes de firmar, cuando la organización lo exige en el sobre. Ver
   [Revisar y verificar identidad](/sign/signing/review-and-identity/).
 - **Cadena de auditoría (audit trail).** El registro encadenado por hash de todo lo que ocurrió en un
-  sobre: quién, qué, cuándo y desde dónde. Ver
-  [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
-- **Verificación (verify).** La comprobación pública, mediante un código QR, de que un sello
-  corresponde al certificado activo de la organización. Ver
+  sobre: quién, qué, cuándo y desde dónde. Cada sobre, cada organización y la plataforma tienen su
+  cadena; los eventos solo se añaden y bb-sign verifica las cadenas cada noche. En la aplicación:
+  "Registro de auditoría". Ver [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+- **Actor.** Quien realizó un evento del registro de auditoría: un usuario, una credencial de API (con
+  la marca **API**), un firmante o el **Sistema**. Los eventos antiguos que no lo guardaron muestran
+  "Actor no registrado".
+- **Método de identificación (identification method).** Cómo se identificó un firmante:
+  `EMAIL_LINK` (el enlace enviado por correo) o `EMAIL_LINK_OTP` (el enlace y un código de un solo
+  uso). Queda registrado con cada firma.
+- **Huella SHA-256 (SHA-256 fingerprint).** Un resumen del contenido de un archivo que cambia por
+  completo si cambia un solo byte. bb-sign registra la del original al subirlo ("SHA-256 del
+  original:") y la de cada documento firmado. Ver [Documentos](/sign/concepts/documents/).
+- **Huella del conjunto de documentos (document set fingerprint).** La huella que combina las huellas
+  de todos los documentos de un sobre. Cada firma queda ligada a ella.
+- **Versión del sello (seal version).** La forma de calcular el hash del sello. La versión 2 incluye
+  la huella del conjunto de documentos y la del certificado que selló; la versión 1 corresponde a los
+  sellos anteriores. Ver [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+- **Certificado de evidencia (evidence certificate).** El PDF sellado que bb-sign emite al completarse
+  un sobre, con sus documentos y huellas, sus firmantes, la línea de tiempo y la integridad del
+  registro de auditoría. Tiene una copia de la organización y una copia del firmante. Ver
+  [Certificado de evidencia](/sign/concepts/evidence-certificate/).
+- **Registro de auditoría congelado (audit trail JSON).** El registro de auditoría del sobre en un
+  archivo JSON, fijado al emitirse el certificado de evidencia y descargable junto con él. En la
+  aplicación: "Registro de auditoría (JSON)".
+- **Idioma de la evidencia (evidence language).** El idioma, español o inglés, en que se emiten los
+  certificados de evidencia de una organización. Lo define Binary Bridges.
+- **Verificación (verify).** La comprobación pública, mediante el código QR del sello, de que el sello
+  coincide con lo que bb-sign registró: el certificado que selló y, en los sellos de versión 2, las
+  huellas de los documentos. Ver
   [Verificar un documento firmado](/sign/signing/verify-a-document/).
+- **Comprobar un archivo (check a file).** La comprobación pública que recibe un PDF, calcula su
+  huella y la busca entre los documentos firmados por bb-sign. El archivo no se guarda. Ver
+  [Verificar un documento firmado](/sign/signing/verify-a-document/).
+
+## Conservación
+
+- **Plazo de conservación (retention period).** El tiempo durante el que bb-sign guarda cada archivo
+  antes de eliminarlo. En el detalle del sobre: "Deja de estar disponible el". Ver
+  [Alcance y conservación](/sign/legal/retention/).
+- **Archivo de un archivo (file archiving).** El traslado de un archivo a un almacenamiento más
+  económico, del que solo se descarga después de restaurarlo. Los términos del servicio lo permiten,
+  pero hoy no se traslada ningún archivo. No es lo mismo que la vista Archivados.
+- **Restauración (restore).** La solicitud para volver a descargar un archivo archivado. La copia
+  restaurada queda disponible durante <Fact of={RESTORE.days} unit="días" /> ("restaurado, disponible
+  hasta el"){RESTORE.requestableAgainAfterWindow.value && '; después se puede solicitar de nuevo'}. Ver [Conservación y restauración](/sign/sending/retention-and-restore/).
 
 ## Integración
 
@@ -65,7 +110,8 @@ etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo expl
   a la API en nombre de la organización. El secreto se muestra una sola vez. Ver
   [Credenciales de API](/sign/admin/api-credentials/).
 - **Webhook.** Una URL HTTPS de su organización a la que bb-sign envía un aviso firmado cuando ocurre
-  un evento (sobre enviado, completado, cancelado o vencido; firmante que vio o firmó). Ver
+  uno de sus {WEBHOOK_EVENTS.length} eventos: sobre enviado, completado, cancelado o vencido; firmante
+  que vio o firmó; certificado de evidencia emitido; archivo restaurado. Ver
   [Webhooks](/sign/developers/webhooks/).
 - **Entrega (delivery).** Cada aviso que bb-sign envía a un webhook por un evento. Ver
   [Estados](/sign/reference/statuses/).
@@ -81,4 +127,13 @@ etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo expl
 - **PKCS#12 (.p12, .pfx).** El formato de archivo que agrupa un certificado, su cadena y la llave
   privada protegida con contraseña. Es el formato que bb-sign usa para sellar.
 - **Cadena de certificación (certificate chain).** El certificado de la organización junto con los
-  certificados intermedios y la raíz que lo respaldan.
+  certificados intermedios y la raíz que lo respaldan. bb-sign incrusta en cada sello la cadena que
+  contiene el archivo del certificado. Ver
+  [Firma electrónica y sello](/sign/concepts/signature-and-seal/).
+- **Estado de la cadena (chain status).** El resultado de la revisión de la cadena al subir el
+  certificado: **Cadena completa** (`COMPLETE`), **Sin raíz** (`NO_ROOT`), **Solo el certificado**
+  (`LEAF_ONLY`) o **Autofirmado** (`SELF_SIGNED`). Los certificados subidos antes de esa revisión
+  muestran **Sin revisar**. Ver [Estados](/sign/reference/statuses/).
+- **Certificado de pruebas (testing certificate).** El certificado autofirmado de Binary Bridges con
+  el que bb-sign sella mientras la organización no configura el suyo. Los lectores de PDF lo muestran
+  como no confiable. En la aplicación: "Certificado de pruebas predeterminado".

@@ -8,7 +8,7 @@ source: docs/api/webhook-signature-spec.md
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { WEBHOOKS } from '../../../facts/sign';
+import { WEBHOOKS, WEBHOOK_EVENTS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED } from '../../../facts/sign';
 
 **Estado: NORMATIVO.** Este documento es la fuente única de verdad del esquema de firma de
 webhooks de bb-sign. El dispatcher, el SDK de Java y el SDK de JavaScript lo implementan y remiten
@@ -280,17 +280,20 @@ cada payload.
 
 ### P3. Tipos de evento y su `data`
 
-Exactamente seis. Los nombres son públicos y estables; **no** corresponden a las claves internas
-de enrutamiento.
+Hoy son {WEBHOOK_EVENTS.length}. Los nombres son públicos y estables; **no** corresponden a las
+claves internas de enrutamiento. Pueden añadirse tipos nuevos: un receptor ignora los que no conoce
+(P4).
 
 | `type` | `data` |
 |---|---|
 | `envelope.sent` | `envelope` |
-| `envelope.completed` | `envelope` |
+| `envelope.completed` | `envelope` + los campos del aviso de finalización (P3a) + `retention` (P3c) |
 | `envelope.cancelled` | `envelope` |
 | `envelope.expired` | `envelope` |
 | `signer.signed` | `envelope` + `signer` |
 | `signer.viewed` | `envelope` + `signer` |
+| `envelope.evidence_issued` | `envelope` + los campos del aviso de finalización (P3a). Llega después de un `envelope.completed` que se envió sin el certificado |
+| `document.restored` | `envelope` + `document`: terminó la restauración de un archivo archivado |
 
 ```json
 "data": {
@@ -300,15 +303,33 @@ de enrutamiento.
   },
   "signer": {
     "id": "uuid", "email": "string", "name": "string",
-    "signOrder": 1, "status": "PENDING|SIGNED", "signedAt": "iso8601|null"
+    "signOrder": 1, "status": "PENDING|SIGNED", "signedAt": "iso8601|null",
+    "authMethod": "EMAIL_LINK|EMAIL_LINK_OTP|null"
   }
 }
 ```
 
+`signer.authMethod` indica cómo se identificó al firmante al firmar: `EMAIL_LINK` (solo el enlace) o
+`EMAIL_LINK_OTP` (el enlace y un código de un solo uso enviado por correo). Es `null` antes de que
+firme y en las firmas anteriores a este campo. Pueden añadirse valores.
+
+`document.restored` lleva `data.document = {id, kind, outcome, reason, availableUntil, downloadPath}`:
+
+- `kind` es `ORIGINAL` o `SIGNED`. `outcome` es `RESTORED` (se lee hasta `availableUntil`),
+  `AVAILABLE` (nunca necesitó restauración) o `FAILED`, con `reason` `DELETED`, `TIMEOUT` o
+  `STORAGE_ERROR` (`null` en los demás casos).
+- `downloadPath` es siempre `/api/v1/envelopes/{id}/documents`, el mismo recurso que
+  `documentsPath`: consúltelo con `document:download` para obtener la disponibilidad del archivo y un
+  enlace de corta duración. **El payload nunca lleva una URL.**
+- Un evento por restauración, la haya pedido quien la haya pedido; su `id` es determinista para cada
+  restauración. Una integración que pide una restauración por la API se entera solo así: las
+  credenciales de API nunca reciben correos.
+
 Esta información basta para actuar sin una llamada adicional, que es el propósito de un webhook.
 **Se excluyen de forma deliberada:** el contenido de los documentos y las URL de descarga (una URL
 prefirmada dentro de un payload sigue siendo útil después de la entrega), `ipAddress` y
-`userAgent` de los eventos de firma (datos internos) y cualquier campo no listado arriba.
+`userAgent` de los eventos de firma (datos internos) y cualquier campo no listado en esta parte. Los
+campos que terminan en `Path` son rutas de la API que se consultan con el token, no enlaces.
 
 <Aside type="tip" title="Cómo obtiene un cliente el documento firmado">
   Al recibir `envelope.completed`, **llame a `GET /api/v1/envelopes/{id}/documents`**: tiene
@@ -316,6 +337,76 @@ prefirmada dentro de un payload sigue siendo útil después de la entrega), `ipA
   sobre está `COMPLETED`. Los enlaces de corta duración obtenidos bajo demanda son más seguros que
   los de larga duración incluidos en un payload que puede quedar guardado en registros.
 </Aside>
+
+### P3a. El aviso de finalización
+
+Se envía **un solo `envelope.completed` por sobre y suscripción**, con lo primero que ocurra:
+
+- se emite el certificado de evidencia (`evidenceStatus: ISSUED`, con `evidenceCertificate`);
+- el certificado se retrasa (`PENDING`, pasadas <Fact of={EVIDENCE.degradedAfterHours} unit="horas" />)
+  o no se pudo producir (`FAILED`);
+- el sobre nunca tendrá certificado (`UNAVAILABLE`: se completó mientras no se emitían certificados).
+
+Ningún aviso se retiene más de <Fact of={EVIDENCE.degradedClampHours} unit="horas" />. Un aviso
+enviado sin el certificado va seguido de **`envelope.evidence_issued`** cuando el certificado llega
+(nunca después de `UNAVAILABLE`). Suscríbase a ese evento para recibir un certificado tardío.
+
+```json
+"data": {
+  "envelope": { ... },
+  "evidenceStatus": "ISSUED|PENDING|FAILED|UNAVAILABLE",
+  "signedDocumentsStatus": "READY|PREPARING",
+  "documents": [ { "documentId": "uuid", "filename": "string", "originalSha256": "hex|null", "signedSha256": "hex|null" } ],
+  "documentsPath": "/api/v1/envelopes/{id}/documents",
+  "evidenceCertificate": { "evidenceId": "uuid", "sha256": "hex", "auditTrailSha256": "hex", "language": "es|en",
+                           "downloadPath": "/api/v1/envelopes/{id}/evidence-certificate/download" },
+  "auditChainHead": { "seq": 12, "hash": "hex",
+                      "auditCoverage": { "level": "FULL|PARTIAL", "fullRows": 12, "partialRows": 0, "lastPartialAt": null,
+                                         "reasons": [], "migratedAt": null } }
+}
+```
+
+- Estos campos están solo en `envelope.completed` y `envelope.evidence_issued`, y faltan en un
+  `envelope.completed` enviado antes de que existieran. Un campo ausente equivale a `null`.
+- `evidenceCertificate` y `auditChainHead` están presentes solo cuando `evidenceStatus` es `ISSUED`.
+  Un aviso informa el estado **del momento en que se envió**: un certificado posterior llega como
+  `envelope.evidence_issued`, nunca como un segundo `envelope.completed`.
+- **`signedDocumentsStatus: PREPARING`** (las copias firmadas aún no existían): trate
+  `documents[].signedSha256` como desconocido, no compare ni guarde un hash y descargue los
+  documentos firmados más tarde desde `documentsPath`.
+- `evidenceStatus` puede ganar valores: trate uno desconocido como `PENDING`.
+- **Un aviso `PENDING` puede no tener continuación.** Si después el certificado falla, ningún webhook
+  lo informa; `envelope.evidence_issued` llega solo si una reemisión posterior tiene éxito. Un
+  receptor que necesite conocer el resultado consulta `GET /api/v1/envelopes/{id}/evidence-certificate`
+  (su `status`) unos días después, en lugar de esperar un evento.
+- El certificado se obtiene bajo demanda en `downloadPath` (un JSON con un enlace válido durante
+  <Fact of={EVIDENCE.downloadLinkSeconds} unit="s" />), nunca dentro del payload, por la razón
+  indicada en P3.
+
+### P3c. Fechas de conservación en `envelope.completed`
+
+Todo `envelope.completed`, con o sin certificado, lleva las fechas del plazo fijo de conservación del
+sobre (<Fact of={RETENTION_POLICY.retentionDays} unit="días" />):
+
+```json
+"data": {
+  "envelope": { ... },
+  "retention": { "archivesAt": "2027-01-16T00:00:00Z|null", "deletesAt": "2027-10-16T00:00:00Z" }
+}
+```
+
+- Ambas fechas se redondean hacia arriba a las 00:00 UTC y son las **más tempranas** que alcanza
+  cualquier archivo del sobre. `GET documentsPath` da las fechas exactas de cada archivo
+  (`original.deletesAt`, `signed.deletesAt`).
+- **`deletesAt` significa «deja de estar disponible el»**: desde esa fecha los archivos no se pueden
+  descargar y se borran de forma definitiva en los días siguientes. Archive antes lo que deba
+  conservar.
+- `archivesAt` es la fecha desde la que los archivos pueden pasar a almacenamiento de archivo, desde
+  donde se restauran a pedido. Está siempre presente y vale `null` mientras el archivo no esté
+  habilitado.{!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && ' Hoy no lo está en producción.'}
+- `retention` está solo en `envelope.completed`, y falta en uno enviado antes de que existiera.
+- El cuerpo se materializa una vez (P3b), de modo que un aviso conserva las fechas con las que se
+  envió. Las fechas actuales de cada archivo están siempre en `GET documentsPath`.
 
 ### P3b. El cuerpo se materializa una vez, no por intento
 
@@ -330,11 +421,11 @@ reintento reenvía exactamente esos bytes.** Solo la firma se recalcula por inte
 es la hora del intento; el cuerpo es la hora del evento). Un reenvío es **idéntico byte a byte**,
 no solo del mismo id de evento.
 
-### P3c. `data` se lee del estado actual al renderizar
+### P3d. `data` se lee del estado actual al renderizar
 
 Los eventos internos llevan solo identificadores, de modo que el dispatcher carga el sobre (y,
 para `signer.*`, el firmante) al renderizar. Como el renderizado lee el estado actual, P3b lo fija
-al primer envío.
+al primer envío. (En la especificación de origen, esta sección también se numera P3c.)
 
 ### P4. Solo aditivo
 
@@ -347,6 +438,6 @@ Eliminar un campo o cambiar su tipo rompe el contrato y genera un nuevo `apiVers
 | Artefacto | Dónde |
 |---|---|
 | Esta especificación | Esta página, reflejada desde el repositorio de bb-sign |
-| `WebhookEvent`, `WebhookEventData`, `WebhookEventEnvelope`, `WebhookEventSigner` | `components/schemas` del contrato OpenAPI, para que ambos SDKs generen eventos **tipados**; ver la [referencia de la API](/sign/api/) |
+| `WebhookEvent`, `WebhookEventData`, `WebhookEventEnvelope`, `WebhookEventSigner`, `WebhookEventDocument`, `WebhookEventEvidenceCertificate`, `WebhookEventAuditChainHead`, `WebhookEventAuditCoverage`, `WebhookEventRetention`, `WebhookEventRestoredDocument` | `components/schemas` del contrato OpenAPI, para que ambos SDKs generen eventos **tipados**; ver la [referencia de la API](/sign/api/) |
 | Los vectores de prueba | <a href="/sync/sign/webhook-signature-vectors.json">webhook-signature-vectors.json</a> |
-| La guía de los seis tipos | [Webhooks](/sign/developers/webhooks/), que cita esta página en lugar de repetirla |
+| La guía de los tipos de evento | [Webhooks](/sign/developers/webhooks/), que cita esta página en lugar de repetirla |

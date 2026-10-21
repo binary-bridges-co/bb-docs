@@ -22,7 +22,7 @@ El estado aparece en la lista, en el Panel y en la página de detalle:
 | **Borrador** | Creado y pendiente de envío. Ningún firmante tiene enlace. |
 | **Enviado** | Enviado; ningún firmante ha firmado aún. |
 | **En Progreso** | Al menos un firmante ha firmado y faltan otros. |
-| **Completado** | Todos firmaron. A continuación se generan los PDF firmados. |
+| **Completado** | Todos firmaron. A continuación se generan los PDF firmados y el certificado de evidencia. |
 | **Cancelado** | Un gestor o un administrador lo canceló. Los enlaces están cerrados. |
 | **Expirado** | Llegó la fecha de **Expira el** sin completarse. Los enlaces están cerrados. |
 
@@ -60,10 +60,11 @@ se organiza en secciones:
 | Sección | Contenido |
 |---|---|
 | Datos del sobre | **Estado**, **OTP Requerido** (Sí o No), **Creado** y, si se definió, **Expira**, con el sufijo **(Expirado)** cuando la fecha ya pasó. |
-| **Documentos (N)** | Cada archivo con **PDF Original** y, en un sobre completado, **PDF Firmado**. Mientras se genera el PDF firmado se muestra **Procesando el PDF firmado...**. Consulte [Descargar documentos firmados](/sign/sending/download-signed-documents/). |
+| **Documentos (N)** | Cada documento con su huella ("SHA-256 del original:"), **PDF Original** y, en un sobre completado, **PDF Firmado**. Mientras se genera el PDF firmado se muestra **Procesando el PDF firmado...**. Un sobre completado añade la fila **Certificado de evidencia**, con **Certificado de evidencia (PDF)** y **Registro de auditoría (JSON)**. Si un archivo está archivado, en lugar de su descarga aparece **Solicitar restauración**. Consulte [Descargar documentos firmados](/sign/sending/download-signed-documents/). |
+| **Conservación** | La fecha desde la que los archivos del sobre dejan de estar disponibles ("Deja de estar disponible el \{fecha\}; después se elimina de forma definitiva."), con enlaces a los términos y a la guía de conservación. Consulte [Conservación y restauración](/sign/sending/retention-and-restore/). |
 | **Firmantes (N)** | El modo (**Firma secuencial** o **Firma en paralelo**) y, por firmante, nombre, correo, **Orden n.º N**, fecha de firma y estado. |
-| **Registro de auditoría (N eventos)** | Cada evento con su tipo, quién lo originó (el correo del firmante o **Sistema**), la fecha y hora y su hash. Disponible para auditores y gestores del espacio. Consulte [Evidencia y auditoría](/sign/concepts/evidence-and-audit/). |
-| Acciones | **Cancelar Sobre**, para quienes pueden cancelar, en sobres en Borrador, Enviado o En Progreso. Consulte [Cancelar un sobre](/sign/sending/cancel/). |
+| **Registro de auditoría (N eventos)** | Cada evento con su tipo ("Sobre creado", "Firmante firmó", "Documentos firmados sellados", "Certificado de evidencia emitido"...), quién lo originó, la fecha y hora y su hash. Quien lo originó puede ser un usuario (su nombre o su correo), una credencial de API (su nombre y su identificador, con la marca **API**), un firmante o **Sistema**; un evento sin autor registrado muestra "Actor no registrado". Algunos eventos añaden las huellas de los documentos, por ejemplo "SHA-256 del original: ...". Disponible para los auditores, colaboradores y gestores del espacio. Consulte [Evidencia y auditoría](/sign/concepts/evidence-and-audit/). |
+| Acciones | **Cancelar Sobre**, para quienes pueden cancelar, en sobres en Borrador, Enviado o En Progreso. Un sobre archivado no tiene acciones. Consulte [Cancelar un sobre](/sign/sending/cancel/). |
 
 Si un sobre no existe o usted no tiene acceso a él, la aplicación muestra "Sobre no encontrado, o
 no tienes acceso a él." Por seguridad, la respuesta es la misma en ambos casos.
@@ -90,8 +91,9 @@ busque los asuntos indicados en esta página. Consulte
 
 <Aside type="tip" title="Saber cuándo se completa un sobre">
   Consulte la lista de Sobres o el Panel para ver los sobres completados. Si su organización integra
-  otros sistemas, un administrador puede configurar un webhook para el evento `envelope.completed`;
-  consulte [Webhooks](/sign/admin/webhooks/).
+  otros sistemas, un administrador puede configurar un webhook para el evento `envelope.completed` y,
+  para un certificado de evidencia que llega después, `envelope.evidence_issued`; consulte
+  [Webhooks](/sign/admin/webhooks/).
 </Aside>
 
 <LinkCard title="Descargar documentos firmados" href="/sign/sending/download-signed-documents/" description="PDF original y firmado, vigencia del enlace de descarga y quién puede descargar." />

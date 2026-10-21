@@ -20,6 +20,136 @@
         ],
         "type": "object"
       },
+      "AgreementCopy": {
+        "description": "An immutable agreement copy. `content` is the exact text; its SHA-256 is `contentSha256`.",
+        "properties": {
+          "agreementType": {
+            "type": "string"
+          },
+          "archiveRetainUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "contentSha256": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "orgId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedBy": {
+            "$ref": "#/components/schemas/AgreementPublisher"
+          },
+          "retiredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "agreementType",
+          "archiveRetainUntil",
+          "content",
+          "contentSha256",
+          "contentType",
+          "id",
+          "language",
+          "publishedAt",
+          "publishedBy",
+          "scope",
+          "status",
+          "version"
+        ],
+        "type": "object"
+      },
+      "AgreementPublisher": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "orgId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "AuditCoverageResponse": {
+        "nullable": true,
+        "properties": {
+          "fullRows": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "lastPartialAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "partialRows": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fullRows",
+          "level",
+          "partialRows"
+        ],
+        "type": "object"
+      },
+      "ChainHead": {
+        "nullable": true,
+        "properties": {
+          "hash": {
+            "type": "string"
+          },
+          "seq": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hash",
+          "seq"
+        ],
+        "type": "object"
+      },
       "CreateEnvelopeRequest": {
         "properties": {
           "documentIds": {
@@ -94,6 +224,66 @@
         ],
         "type": "object"
       },
+      "DocumentFile": {
+        "description": "One stored file of a document: whether it can be downloaded now, and its retention dates (#214).",
+        "nullable": true,
+        "properties": {
+          "archivesAt": {
+            "description": "From this date the file may be in archive storage. Null when it never archives, and null until archiving is enabled.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "availability": {
+            "description": "`AVAILABLE` and `RESTORED` can be downloaded. `ARCHIVED` needs a restore; `RESTORE_IN_PROGRESS` is being restored; `DELETED` is past its 365 days. Further values may be added.",
+            "enum": [
+              "ARCHIVED",
+              "AVAILABLE",
+              "DELETED",
+              "RESTORED",
+              "RESTORE_IN_PROGRESS"
+            ],
+            "type": "string"
+          },
+          "availableUntil": {
+            "description": "When a `RESTORED` copy stops being readable.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "deletesAt": {
+            "description": "No longer available from this date; erased permanently within the following days.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "restorable": {
+            "description": "True when the file is `ARCHIVED` and the caller may download it, so a restore can be requested.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "availability",
+          "deletesAt",
+          "restorable"
+        ],
+        "type": "object"
+      },
+      "DocumentHashDto": {
+        "properties": {
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId",
+          "sha256"
+        ],
+        "type": "object"
+      },
       "DocumentInfo": {
         "properties": {
           "downloadUrl": {
@@ -104,6 +294,9 @@
           },
           "id": {
             "format": "uuid",
+            "type": "string"
+          },
+          "sha256": {
             "type": "string"
           }
         },
@@ -125,12 +318,101 @@
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "originalSha256": {
+            "type": "string"
           }
         },
         "required": [
           "contentType",
           "filename",
           "id"
+        ],
+        "type": "object"
+      },
+      "DocumentRestoreRequest": {
+        "properties": {
+          "kind": {
+            "description": "Which file of the document to restore.",
+            "enum": [
+              "ORIGINAL",
+              "ORIGINAL",
+              "SIGNED",
+              "SIGNED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "DocumentRestoreResponse": {
+        "description": "202: the files being restored, under one `requestId`. 200: nothing needed restoring, and `availability` says why.",
+        "properties": {
+          "availability": {
+            "description": "200 only: the file can be downloaded now.",
+            "enum": [
+              "AVAILABLE",
+              "RESTORED"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "availableUntil": {
+            "description": "200 with `RESTORED`: when the restored copy stops being readable.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "requestId": {
+            "description": "202 only: identifies this request; one email per person and request.",
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "restores": {
+            "description": "202: the files being restored. 200: empty.",
+            "items": {
+              "$ref": "#/components/schemas/DocumentRestoreStarted"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "restores"
+        ],
+        "type": "object"
+      },
+      "DocumentRestoreStarted": {
+        "description": "202: the files being restored. 200: empty.",
+        "properties": {
+          "alreadyInProgress": {
+            "description": "True when someone else's restore of this file was already running; this request joined it.",
+            "type": "boolean"
+          },
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "ORIGINAL",
+              "SIGNED"
+            ],
+            "type": "string"
+          },
+          "restoreId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alreadyInProgress",
+          "documentId",
+          "kind",
+          "restoreId"
         ],
         "type": "object"
       },
@@ -146,18 +428,35 @@
             "format": "uuid",
             "type": "string"
           },
+          "original": {
+            "$ref": "#/components/schemas/DocumentFile"
+          },
+          "originalSha256": {
+            "type": "string"
+          },
+          "signed": {
+            "$ref": "#/components/schemas/DocumentFile"
+          },
           "signedUrl": {
             "type": "string"
           }
         },
         "required": [
           "filename",
-          "id"
+          "id",
+          "original"
         ],
         "type": "object"
       },
       "EnvelopeResponse": {
         "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "archivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -193,6 +492,17 @@
           "otpRequired": {
             "type": "boolean"
           },
+          "restoresInProgress": {
+            "description": "Restores of this envelope's files that are running. Present on `getEnvelope` only; null in `listEnvelopes`.",
+            "items": {
+              "$ref": "#/components/schemas/RestoreInProgressResponse"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "retention": {
+            "$ref": "#/components/schemas/EnvelopeRetention"
+          },
           "sequentialSigning": {
             "type": "boolean"
           },
@@ -217,16 +527,38 @@
           }
         },
         "required": [
+          "archived",
           "createdAt",
           "documentCount",
           "id",
           "labels",
           "orgId",
           "otpRequired",
+          "retention",
           "sequentialSigning",
           "signers",
           "status",
           "title"
+        ],
+        "type": "object"
+      },
+      "EnvelopeRetention": {
+        "description": "When an envelope's files archive and stop being available (#214). Fixed 365-day retention: dates are rounded up to 00:00 UTC and are the earliest any file of the envelope reaches; the per-file dates on `listEnvelopeDocuments` are exact.",
+        "properties": {
+          "archivesAt": {
+            "description": "From this date the envelope's files may be in archive storage and need a restore before download. Null when they never archive (the envelope is not completed), and null until archiving is enabled.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "deletesAt": {
+            "description": "No longer available from this date; the files are erased permanently within the following days.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "deletesAt"
         ],
         "type": "object"
       },
@@ -308,6 +640,92 @@
           "path",
           "status",
           "timestamp"
+        ],
+        "type": "object"
+      },
+      "EvidenceCertificateDownloadResponse": {
+        "properties": {
+          "auditTrailSha256": {
+            "type": "string"
+          },
+          "auditTrailUrl": {
+            "type": "string"
+          },
+          "downloadUrl": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "urlExpiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "auditTrailSha256",
+          "auditTrailUrl",
+          "downloadUrl",
+          "sha256",
+          "urlExpiresAt"
+        ],
+        "type": "object"
+      },
+      "EvidenceCertificateResponse": {
+        "properties": {
+          "auditCoverage": {
+            "$ref": "#/components/schemas/AuditCoverageResponse"
+          },
+          "auditTrailSha256": {
+            "nullable": true,
+            "type": "string"
+          },
+          "chainHead": {
+            "$ref": "#/components/schemas/ChainHead"
+          },
+          "evidenceId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "failureReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "issuedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "language": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sealLevel": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sealSource": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sha256": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "EXPIRED",
+              "FAILED",
+              "ISSUED",
+              "PENDING",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
         ],
         "type": "object"
       },
@@ -404,6 +822,38 @@
         ],
         "type": "object"
       },
+      "RestoreInProgressResponse": {
+        "description": "Restores of this envelope's files that are running. Present on `getEnvelope` only; null in `listEnvelopes`.",
+        "nullable": true,
+        "properties": {
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "ORIGINAL",
+              "SIGNED"
+            ],
+            "type": "string"
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "restoreId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId",
+          "kind",
+          "requestedAt",
+          "restoreId"
+        ],
+        "type": "object"
+      },
       "SendResponse": {
         "properties": {
           "envelopeId": {
@@ -428,6 +878,12 @@
           "challengeId": {
             "format": "uuid",
             "type": "string"
+          },
+          "documentHashes": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentHashDto"
+            },
+            "type": "array"
           },
           "otpCode": {
             "type": "string"
@@ -473,6 +929,17 @@
           "archived": {
             "type": "boolean"
           },
+          "availableUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "deletesAt": {
+            "description": "No longer available from this date; erased permanently within the following days.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "documents": {
             "items": {
               "$ref": "#/components/schemas/SignedDocumentInfo"
@@ -486,6 +953,9 @@
           "envelopeTitle": {
             "type": "string"
           },
+          "restoreInProgress": {
+            "type": "boolean"
+          },
           "signedDocumentsReady": {
             "type": "boolean"
           },
@@ -498,6 +968,7 @@
           "documents",
           "envelopeId",
           "envelopeTitle",
+          "restoreInProgress",
           "signedDocumentsReady",
           "signerName"
         ],
@@ -520,6 +991,62 @@
           "filename",
           "id",
           "signedDownloadUrl"
+        ],
+        "type": "object"
+      },
+      "SignerEvidenceCertificateDownloadResponse": {
+        "properties": {
+          "downloadUrl": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "urlExpiresAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "downloadUrl",
+          "sha256",
+          "urlExpiresAt"
+        ],
+        "type": "object"
+      },
+      "SignerEvidenceCertificateResponse": {
+        "properties": {
+          "evidenceId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "issuedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "language": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sha256": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "EXPIRED",
+              "FAILED",
+              "ISSUED",
+              "PENDING",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
         ],
         "type": "object"
       },
@@ -611,6 +1138,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "originalSha256": {
+            "type": "string"
+          },
           "sizeBytes": {
             "format": "int64",
             "type": "integer"
@@ -621,6 +1151,65 @@
           "createdAt",
           "filename",
           "id"
+        ],
+        "type": "object"
+      },
+      "VerifyFileResponse": {
+        "properties": {
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "envelopeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "match": {
+            "type": "boolean"
+          },
+          "sealCertFingerprint": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "signers": {
+            "items": {
+              "$ref": "#/components/schemas/VerifyFileSigner"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "match",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "VerifyFileSigner": {
+        "properties": {
+          "emailMasked": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sealVersion": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "signedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "emailMasked",
+          "name"
         ],
         "type": "object"
       },
@@ -663,6 +1252,10 @@
           },
           "message": {
             "type": "string"
+          },
+          "sealVersion": {
+            "format": "int32",
+            "type": "integer"
           },
           "signedAt": {
             "format": "date-time",
@@ -711,10 +1304,12 @@
             "type": "string"
           },
           "type": {
-            "description": "One of exactly six values. Asserted against DispatchableEvent.PUBLIC_NAMES.",
+            "description": "One of eight values today; further event types may be added, and a receiver must ignore one it does not know. Asserted against DispatchableEvent.PUBLIC_NAMES.",
             "enum": [
+              "document.restored",
               "envelope.cancelled",
               "envelope.completed",
+              "envelope.evidence_issued",
               "envelope.expired",
               "envelope.sent",
               "signer.signed",
@@ -732,11 +1327,118 @@
         ],
         "type": "object"
       },
-      "WebhookEventData": {
-        "description": "Per-type payload. `envelope` is always present; `signer` only for signer.* events.",
+      "WebhookEventAuditChainHead": {
+        "nullable": true,
         "properties": {
+          "auditCoverage": {
+            "$ref": "#/components/schemas/WebhookEventAuditCoverage"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "seq": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "auditCoverage",
+          "hash",
+          "seq"
+        ],
+        "type": "object"
+      },
+      "WebhookEventAuditCoverage": {
+        "properties": {
+          "fullRows": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "lastPartialAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "level": {
+            "enum": [
+              "FULL",
+              "PARTIAL"
+            ],
+            "type": "string"
+          },
+          "migratedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "partialRows": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "fullRows",
+          "level",
+          "partialRows",
+          "reasons"
+        ],
+        "type": "object"
+      },
+      "WebhookEventData": {
+        "description": "Per-type payload. `envelope` is always present; `signer` only for signer.* events; `document` only for document.restored.",
+        "properties": {
+          "auditChainHead": {
+            "$ref": "#/components/schemas/WebhookEventAuditChainHead"
+          },
+          "document": {
+            "$ref": "#/components/schemas/WebhookEventRestoredDocument"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventDocument"
+            },
+            "nullable": true,
+            "type": "array"
+          },
+          "documentsPath": {
+            "example": "/api/v1/envelopes/{id}/documents",
+            "nullable": true,
+            "type": "string"
+          },
           "envelope": {
             "$ref": "#/components/schemas/WebhookEventEnvelope"
+          },
+          "evidenceCertificate": {
+            "$ref": "#/components/schemas/WebhookEventEvidenceCertificate"
+          },
+          "evidenceStatus": {
+            "description": "The evidence certificate when this notice was sent: `ISSUED` (it is in `evidenceCertificate`), `PENDING` (it will follow as `envelope.evidence_issued`), `FAILED` (it could not be produced), or `UNAVAILABLE` (this envelope will never have one). Further values may be added. Present on `envelope.completed` and `envelope.evidence_issued` only.",
+            "enum": [
+              "FAILED",
+              "ISSUED",
+              "PENDING",
+              "UNAVAILABLE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "retention": {
+            "$ref": "#/components/schemas/WebhookEventRetention"
+          },
+          "signedDocumentsStatus": {
+            "description": "`READY` when every document had its signed copy when this notice was sent. `PREPARING`: treat `documents[].signedSha256` as unknown, and fetch the signed documents later from `documentsPath`. Absent means `READY` on older payloads.",
+            "enum": [
+              "PREPARING",
+              "READY"
+            ],
+            "nullable": true,
+            "type": "string"
           },
           "signer": {
             "$ref": "#/components/schemas/WebhookEventSigner"
@@ -744,6 +1446,32 @@
         },
         "required": [
           "envelope"
+        ],
+        "type": "object"
+      },
+      "WebhookEventDocument": {
+        "nullable": true,
+        "properties": {
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "originalSha256": {
+            "nullable": true,
+            "type": "string"
+          },
+          "signedSha256": {
+            "description": "Null while `signedDocumentsStatus` is `PREPARING`.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId",
+          "filename"
         ],
         "type": "object"
       },
@@ -776,8 +1504,117 @@
         ],
         "type": "object"
       },
+      "WebhookEventEvidenceCertificate": {
+        "nullable": true,
+        "properties": {
+          "auditTrailSha256": {
+            "type": "string"
+          },
+          "downloadPath": {
+            "example": "/api/v1/envelopes/{id}/evidence-certificate/download",
+            "type": "string"
+          },
+          "evidenceId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "auditTrailSha256",
+          "downloadPath",
+          "evidenceId",
+          "language",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "WebhookEventRestoredDocument": {
+        "description": "`document.restored` only: the file whose restore ended.",
+        "nullable": true,
+        "properties": {
+          "availableUntil": {
+            "description": "When `RESTORED`: the restored copy stops being readable at this instant.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "downloadPath": {
+            "example": "/api/v1/envelopes/{id}/documents",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "ORIGINAL",
+              "SIGNED"
+            ],
+            "type": "string"
+          },
+          "outcome": {
+            "description": "`RESTORED`: readable until `availableUntil`. `AVAILABLE`: it never needed a restore. `FAILED`: see `reason`. Further values may be added.",
+            "enum": [
+              "AVAILABLE",
+              "FAILED",
+              "RESTORED"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "description": "When `FAILED`: `DELETED` (past its 365 days), `TIMEOUT` (it took too long; ask again) or `STORAGE_ERROR`. Null otherwise.",
+            "enum": [
+              "DELETED",
+              "STORAGE_ERROR",
+              "TIMEOUT"
+            ],
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "downloadPath",
+          "id",
+          "kind",
+          "outcome"
+        ],
+        "type": "object"
+      },
+      "WebhookEventRetention": {
+        "description": "`envelope.completed` only: the envelope's retention dates, the earliest any of its files reaches. Absent on every other event type, and on an `envelope.completed` sent before this field existed.",
+        "nullable": true,
+        "properties": {
+          "archivesAt": {
+            "description": "From this date the envelope's files may be in archive storage and need a restore before download. Null while archiving is not enabled.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "deletesAt": {
+            "description": "No longer available from this date; the files are erased permanently within the following days.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "deletesAt"
+        ],
+        "type": "object"
+      },
       "WebhookEventSigner": {
         "properties": {
+          "authMethod": {
+            "description": "How the signer was identified when they signed: `EMAIL_LINK` (the signing link only) or `EMAIL_LINK_OTP` (the link plus a one-time code sent by email). More values may be added. Null until the signer signs, and for signatures made before this field existed.",
+            "nullable": true,
+            "type": "string"
+          },
           "email": {
             "type": "string"
           },
@@ -868,6 +1705,65 @@
   },
   "openapi": "3.0.1",
   "paths": {
+    "/api/v1/agreement-copies/{copyId}": {
+      "get": {
+        "description": "The exact text of an immutable agreement copy (an electronic-signature agreement or a data-processing authorization), with its version, language and SHA-256. Copies of other organizations answer 404.",
+        "operationId": "getAgreementCopy",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "copyId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgreementCopy"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "summary": "Read one agreement copy",
+        "tags": [
+          "agreement-copy-controller"
+        ]
+      }
+    },
     "/api/v1/documents": {
       "post": {
         "description": "Multipart. Uploads to organisation storage without attaching to an envelope; counts against the organisation's storage quota.",
@@ -1509,6 +2405,232 @@
         ]
       }
     },
+    "/api/v1/envelopes/{id}/documents/{docId}/restore": {
+      "post": {
+        "description": "From day 90 a document's signed file, and the original of a completed envelope, may be in archive storage (`availability: ARCHIVED` on `listEnvelopeDocuments`) and cannot be downloaded until restored. This asks for one file to be restored. Only one restore of a file runs, however many people ask: a second request joins it (`alreadyInProgress: true`). Answers **202** while it is being restored, usually a few hours; the people who asked get an email, and integrations get the `document.restored` webhook (subscribe to it: an API credential is never emailed). The restored copy can then be downloaded from `listEnvelopeDocuments` for 7 days. Answers **200** when the file needs no restore. Requires `document:download`. Refused with 409 `DOCUMENT_NOT_SIGNED`, 410 `DOCUMENT_DELETED` (past its 365 days), 429 `RESTORE_LIMIT_REACHED` (too many restores running for the organization) and 503 `ARCHIVAL_STORAGE_UNAVAILABLE` (retry later).",
+        "operationId": "restoreEnvelopeDocument",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "docId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentRestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentRestoreResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "summary": "Restore an archived document file",
+        "tags": [
+          "envelope-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}/evidence-certificate": {
+      "get": {
+        "description": "The status of the sealed evidence certificate of a completed envelope, with its hashes once issued. Carries no download link and is not recorded, so it can be polled while `PENDING`. Requires `document:download` in the envelope's workspace (and `archive:read` once the envelope is archived); otherwise 404. A non-completed envelope is 409 `ENVELOPE_NOT_COMPLETED`.",
+        "operationId": "getEvidenceCertificate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceCertificateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "summary": "Get an envelope's evidence certificate status",
+        "tags": [
+          "evidence-certificate-controller"
+        ]
+      }
+    },
+    "/api/v1/envelopes/{id}/evidence-certificate/download": {
+      "get": {
+        "description": "Links, valid for 300 seconds, to the sealed organization copy of the certificate and to the stored audit trail, both pinned to the stored versions. Each call is recorded in the envelope's audit trail as `EVIDENCE_CERTIFICATE_ACCESSED`. A certificate that is not `ISSUED` is 409 `EVIDENCE_NOT_AVAILABLE`. Same authorization as the status.",
+        "operationId": "downloadEvidenceCertificate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceCertificateDownloadResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "401": {
+            "description": "No credentials, or a token this organisation's credentials cannot present. Produced by the security filter chain, so there is no response body."
+          },
+          "403": {
+            "description": "Authenticated, but the token lacks the role this operation requires. No response body."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "summary": "Download an envelope's evidence certificate",
+        "tags": [
+          "evidence-certificate-controller"
+        ]
+      }
+    },
     "/api/v1/envelopes/{id}/send": {
       "post": {
         "description": "Transitions the envelope to SENT, emails each signer their link, and returns the signing tokens. **This is the point of no return**: documents and signers are frozen, and the `envelope.sent` webhook fires.",
@@ -1750,6 +2872,112 @@
         ]
       }
     },
+    "/api/v1/sign/{token}/evidence-certificate": {
+      "get": {
+        "description": "The status of the signer copy of the envelope's evidence certificate. The same gates as the signed copy: this link was used to sign and the envelope is complete. Carries no link and is not recorded, so it can be polled. Unauthenticated — the token in the path IS the credential.",
+        "operationId": "getSignerEvidenceCertificate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignerEvidenceCertificateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "security": [],
+        "summary": "Your evidence certificate's status",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}/evidence-certificate/download": {
+      "get": {
+        "description": "A link, valid for 300 seconds, to the signer copy of the envelope's evidence certificate, pinned to the stored version. Recorded in the envelope's audit trail as `EVIDENCE_CERTIFICATE_ACCESSED`. A certificate that is not `ISSUED` is 409 `EVIDENCE_NOT_AVAILABLE`. Unauthenticated — the token in the path IS the credential.",
+        "operationId": "downloadSignerEvidenceCertificate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignerEvidenceCertificateDownloadResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          }
+        },
+        "security": [],
+        "summary": "Download your evidence certificate",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
     "/api/v1/sign/{token}/request-otp": {
       "post": {
         "description": "Only for envelopes configured with `otpRequired`. Inside the resend cooldown this returns the challenge already delivered rather than issuing a new one, so a signer who reloads keeps the code they were sent.",
@@ -1974,6 +3202,89 @@
         },
         "security": [],
         "summary": "Download your signed copy",
+        "tags": [
+          "signing-controller"
+        ]
+      }
+    },
+    "/api/v1/sign/{token}/signed-documents/restore": {
+      "post": {
+        "description": "When `getSignedCopy` reports the copy `archived`, this asks for every archived signed file of the envelope to be restored. Answers **202** while they are being restored, usually a few hours; an email with a link back to this signing page is sent when they are available, and the copy can then be downloaded for 7 days. Asking again while it runs changes nothing. Answers **200** when the copy needs no restore. The same gates as `getSignedCopy`: this link was used to sign and the envelope is complete. Refused with 409 `DOCUMENT_NOT_SIGNED`, 410 `DOCUMENT_DELETED`, 429 `RATE_LIMITED` (with `Retry-After`) and 503 `ARCHIVAL_STORAGE_UNAVAILABLE`. Unauthenticated — the token in the path IS the credential.",
+        "operationId": "restoreSignedCopy",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentRestoreResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "No such resource, or it belongs to another organisation. Deliberately not a 403: a 403 across a tenant boundary confirms the id exists."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "security": [],
+        "summary": "Ask for your archived signed copy",
         "tags": [
           "signing-controller"
         ]
@@ -2235,7 +3546,7 @@
     },
     "/api/v1/verify": {
       "get": {
-        "description": "Public. Checks a signed PDF's CMS/PKCS#7 signature and returns who signed it and when. Requires no credentials — a verifiable artefact that needed a token to verify would not be verifiable.",
+        "description": "Public. Looks up the seal hash printed on a signed PDF (its QR code carries `id` and the first 16 hex characters as `h`) and recomputes it from bb-sign's records: signer name, email, signing time, envelope id, the sealing certificate's fingerprint and, for v2 seals, the SHA-256 of the envelope's documents. It does **not** read the PDF or validate its CMS/PAdES signature. Requires no credentials.",
         "operationId": "verifyDocument",
         "parameters": [
           {
@@ -2279,7 +3590,88 @@
           }
         },
         "security": [],
-        "summary": "Verify a signed document",
+        "summary": "Verify a signature seal",
+        "tags": [
+          "verify-controller"
+        ]
+      }
+    },
+    "/api/v1/verify/file": {
+      "post": {
+        "description": "Public. Streams the uploaded file through SHA-256 and reports whether it is a signed document bb-sign produced. The file is not stored and not parsed. Only signed documents match. Rate-limited per client.",
+        "operationId": "verifyDocumentFile",
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            },
+            "application/pdf": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "description": "The file's bytes, as they are (not multipart).",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyFileResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The request was malformed or failed validation."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The resource is not in a state that allows this — for example sending an envelope that is already sent."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A domain rule rejected the request."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "An organisation quota is exhausted."
+          }
+        },
+        "security": [],
+        "summary": "Check a file against bb-sign's signed documents",
         "tags": [
           "verify-controller"
         ]

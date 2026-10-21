@@ -8,7 +8,7 @@ source: docs/api/webhooks.md
 
 import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { WEBHOOKS } from '../../../facts/sign';
+import { EVIDENCE, WEBHOOKS } from '../../../facts/sign';
 
 Con un webhook, bb-sign avisa a sus sistemas en el momento en que ocurre algo con un sobre: cuando se
 envía, cuando un firmante firma o cuando se completa. Cada aviso llega firmado, para que su sistema
@@ -38,11 +38,15 @@ para verificar la firma está en [Webhooks para desarrolladores](/sign/developer
 | Evento | Nombre en la aplicación | Cuándo se envía |
 | --- | --- | --- |
 | `envelope.sent` | **Sobre enviado** | El sobre se envió a sus firmantes. |
-| `envelope.completed` | **Sobre completado** | Todos los firmantes firmaron. |
+| `envelope.completed` | **Sobre completado** | Todos los firmantes firmaron. Se envía una vez: cuando el certificado de evidencia está listo, o sin él si no se puede emitir o tarda más de <Fact of={EVIDENCE.degradedAfterHours} unit="horas" />. |
 | `envelope.cancelled` | **Sobre cancelado** | El sobre se canceló. |
 | `envelope.expired` | **Sobre caducado** | El sobre venció sin completarse. |
 | `signer.signed` | **Firmante firmó** | Un firmante firmó; puede haber otros pendientes. |
 | `signer.viewed` | **Firmante abrió el documento** | Un firmante abrió el documento. |
+| `envelope.evidence_issued` | **Certificado de evidencia listo (después de una finalización sin él)** | El certificado de evidencia quedó listo después de que `envelope.completed` se envió sin él. |
+| `document.restored` | **Documento archivado restaurado (o no se pudo restaurar)** | Terminó la restauración de un archivo archivado, con éxito o no. Es el único aviso que recibe una integración que pidió la restauración. |
+
+Su sistema debe ignorar los tipos de evento que no conozca: bb-sign puede añadir otros.
 
 Su organización puede tener hasta <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
 

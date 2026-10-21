@@ -98,7 +98,7 @@ kbd,
   color: var(--bb-seal);
 }
 
-/* ----- the legal banner ----- */
+/* ----- the legal version header ----- */
 .bb-legal-header {
   display: grid;
   gap: 0.35rem;

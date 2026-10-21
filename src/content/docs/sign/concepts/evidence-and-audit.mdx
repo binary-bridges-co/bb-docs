@@ -7,49 +7,155 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { CERTIFICATE, ENVELOPE } from '../../../facts/sign';
+import { AUDIT, AUDIT_EVENT_TYPES, CERTIFICATE, ENVELOPE, EVIDENCE, VERIFY } from '../../../facts/sign';
+
+export const ENVELOPE_EVENTS = {
+  ENVELOPE_CREATED: { label: 'Sobre creado', when: 'Se crea el sobre, en la aplicación o por la API.' },
+  DOCUMENT_ADDED: { label: 'Documento añadido', when: 'Un documento se incorpora al sobre, con la huella SHA-256 del original.' },
+  ENVELOPE_SENT: { label: 'Sobre enviado', when: 'Se envía el sobre.' },
+  SIGNER_ELIGIBLE: { when: 'Llega el turno de un firmante (al enviar el sobre o, en la firma secuencial, cuando termina el grupo anterior).' },
+  EMAIL_SENT: { when: 'Se envía un correo del sobre.' },
+  EMAIL_DELIVERED: { when: 'El proveedor de correo informa que el correo se entregó.' },
+  EMAIL_OPENED: { when: 'El proveedor de correo informa que el correo se abrió.' },
+  EMAIL_BOUNCED: { when: 'El proveedor de correo informa que el correo rebotó.' },
+  SIGNING_LINK_CLICKED: { when: 'El firmante abre su enlace.' },
+  SIGNING_VIEW_OPENED: { when: 'El firmante abre la vista de firma.' },
+  SIGNING_VIEW_CLOSED: { when: 'El firmante cierra o abandona la vista de firma.' },
+  OTP_REQUESTED: { when: 'El firmante pide un código de un solo uso.' },
+  OTP_VERIFIED: { when: 'El firmante escribe el código correcto.' },
+  OTP_FAILED: { when: 'El código escrito no es correcto, o la verificación se rechaza.' },
+  OTP_LOCKED: { when: 'Se agotan los intentos y el código queda bloqueado.' },
+  SIGNER_SIGNED: { label: 'Firmante firmó', when: 'El firmante envía su firma, ligada a la huella del conjunto de documentos.' },
+  ENVELOPE_COMPLETED: { label: 'Sobre completado', when: 'Firma el último firmante.' },
+  DOCUMENTS_SEALED: { label: 'Documentos firmados sellados', when: 'Los PDF firmados quedan listos, con la huella SHA-256 de cada uno.' },
+  EVIDENCE_CERTIFICATE_ISSUED: { label: 'Certificado de evidencia emitido', when: 'Se emite el certificado de evidencia del sobre.' },
+  EVIDENCE_CERTIFICATE_FAILED: { label: 'No se pudo generar el certificado de evidencia', when: 'La emisión automática del certificado falla.' },
+  EVIDENCE_CERTIFICATE_ACCESSED: { label: 'Certificado de evidencia descargado', when: 'Un usuario o una credencial de API descarga el certificado, o un firmante descarga su copia.' },
+  EVIDENCE_CERTIFICATE_REISSUE_REQUESTED: { label: 'Certificado de evidencia reemitido por el equipo de la plataforma', when: 'El equipo de la plataforma vuelve a emitir un certificado que falló.' },
+  SIGNED_COPY_ACCESSED: { when: 'Un firmante descarga su copia firmada.' },
+  AUDIT_TRAIL_EXPORTED: { when: 'Se exporta el registro de auditoría del sobre.' },
+  ENVELOPE_CANCELLED: { label: 'Sobre cancelado', when: 'Se cancela el sobre.' },
+  ENVELOPE_EXPIRED: { label: 'Sobre vencido', when: 'El sobre vence.' },
+  ENVELOPE_ARCHIVED: { label: 'Sobre archivado', when: 'El sobre pasa a Archivados.' },
+  DOCUMENT_RESTORE_REQUESTED: { label: 'Restauración de un documento archivado solicitada', when: 'Alguien solicita restaurar un archivo archivado.' },
+  DOCUMENT_RESTORED: { label: 'Restauración de un documento archivado terminada', when: 'Termina una restauración, con el archivo disponible o con el motivo del fallo.' },
+};
+
+export const ORG_EVENTS = {
+  API_CREDENTIAL_CREATED: 'Se crea una credencial de API.',
+  API_CREDENTIAL_REVOKED: 'Se revoca una credencial de API.',
+  WEBHOOK_SUBSCRIPTION_CREATED: 'Se crea un webhook.',
+  WEBHOOK_SUBSCRIPTION_SECRET_ROTATED: 'Se rota el secreto de un webhook.',
+  WEBHOOK_SUBSCRIPTION_DELETED: 'Se elimina un webhook.',
+  WORKSPACE_CREATED: 'Se crea un espacio de trabajo.',
+  WORKSPACE_RENAMED: 'Se cambia el nombre de un espacio.',
+  WORKSPACE_DELETED: 'Se elimina un espacio.',
+  WORKSPACE_MEMBER_GRANTED: 'Se concede un rol en un espacio.',
+  WORKSPACE_MEMBER_REVOKED: 'Se retira un rol en un espacio.',
+  CERTIFICATE_UPLOADED: 'Se sube un certificado de sello.',
+  CERTIFICATE_DELETED: 'Se elimina un certificado de sello.',
+  CERTIFICATE_EXPIRING: 'El certificado propio de la organización llega a uno de sus avisos de vencimiento.',
+  AGREEMENT_COPY_PUBLISHED: 'Se publica una versión de un texto en la pestaña Acuerdos de Configuración.',
+};
 
 bb-sign registra la evidencia completa de cada sobre: quién recibió qué, quién lo abrió, quién firmó,
 desde dónde y cuándo. Esa evidencia, protegida por una cadena de auditoría, respalda la identidad de
-cada firmante y la integridad del proceso. Esta página explica qué se registra y cómo se comprueba.
+cada firmante y la integridad del proceso, y al completarse el sobre se entrega en un
+[certificado de evidencia](/sign/concepts/evidence-certificate/). Esta página explica qué se registra
+y cómo se comprueba.
 
 ## La cadena de auditoría
 
-Cada evento de auditoría lleva su propio hash y el hash del evento anterior del mismo sobre. Así, la
-cadena permite comprobar que ningún evento se insertó, se modificó ni se eliminó después: cualquier
-alteración rompe el encadenamiento con el evento siguiente.
+Cada evento de auditoría pertenece a una cadena: la del sobre, la de la organización o la de la
+plataforma. Dentro de su cadena, cada evento lleva un número de secuencia sin huecos y un hash que
+cubre su contenido, su posición y el hash del evento anterior. Así, la cadena permite comprobar que
+ningún evento se insertó, se modificó ni se eliminó después: cualquier alteración rompe el
+encadenamiento con el evento siguiente.
+
+Los eventos solo se añaden. Ningún usuario ni servicio puede modificar ni borrar un evento ya
+registrado, y bb-sign verifica todas las cadenas cada noche, a las <Fact of={AUDIT.nightlyVerifyTime} />
+(zona horaria <Fact of={AUDIT.nightlyVerifyTimeZone} />).
+
+## El registro de auditoría de un sobre
 
 En el detalle de un sobre, la sección **Registro de auditoría** muestra cada evento con su fecha, su
-actor (una persona, un firmante o **Sistema**) y su hash. La consultan los Auditores y Gestores del
-espacio, y los administradores en todos los espacios.
+actor y su hash. El actor puede ser:
+
+- **Un usuario**, por su nombre o su correo ("Usuario desconocido" si ya no se puede identificar).
+- **Una credencial de API**, por su etiqueta y con la marca **API** ("Credencial de API" si ya no se
+  puede identificar).
+- **Un firmante**.
+- **Sistema**, para las acciones automáticas de bb-sign.
+- **Actor no registrado**, en eventos antiguos que no guardaron quién actuó.
+
+Consultan el registro los Auditores, Colaboradores y Gestores del espacio, y los administradores en
+todos los espacios. Como todos los miembros son Colaboradores en General, todos ven el registro de los
+sobres de ese espacio. Consulte
+[Organizaciones, espacios y roles](/sign/concepts/organizations-workspaces-roles/).
 
 ## Eventos registrados
 
-| Evento | Cuándo |
-| --- | --- |
-| `SIGNER_ELIGIBLE` | Llega el turno de un firmante (al enviar el sobre o, en la firma secuencial, cuando termina el grupo anterior). |
-| `SIGNING_LINK_CLICKED` | El firmante abre su enlace. |
-| `SIGNING_VIEW_OPENED` | El firmante abre la vista de firma. |
-| `SIGNING_VIEW_CLOSED` | El firmante cierra o abandona la vista de firma. |
-| `SIGNER_SIGNED` | El firmante envía su firma. |
-| `ENVELOPE_COMPLETED` | El último firmante firma. |
-| `SIGNED_COPY_ACCESSED` | Un firmante descarga su copia firmada. |
-| `EMAIL_SENT`, `EMAIL_DELIVERED`, `EMAIL_OPENED`, `EMAIL_BOUNCED` | Un correo del sobre se envía, se entrega, se abre o rebota, según lo informe el proveedor de correo. |
+Cada sobre registra estos eventos. La aplicación muestra un nombre para los más frecuentes y el
+código para los demás.
+
+<table>
+  <thead>
+    <tr>
+      <th>Evento</th>
+      <th>En la aplicación</th>
+      <th>Cuándo</th>
+    </tr>
+  </thead>
+  <tbody>
+    {Object.entries(ENVELOPE_EVENTS).filter(([type]) => AUDIT_EVENT_TYPES.includes(type)).map(([type, event]) => (
+      <tr>
+        <td><code>{type}</code></td>
+        <td>{event.label ?? 'Se muestra el código'}</td>
+        <td>{event.when}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 El sobre conserva además su estado y sus fechas de creación, envío y cancelación, y los
-[webhooks](/sign/developers/webhooks/) notifican el envío, la cancelación y el vencimiento a sus
-sistemas.
+[webhooks](/sign/developers/webhooks/) notifican a sus sistemas los eventos del sobre y de sus
+firmantes, la emisión del certificado de evidencia y la restauración de documentos.
 
-A nivel de organización, bb-sign registra también la creación y revocación de credenciales de API;
-la creación, eliminación y rotación de secreto de webhooks; y la creación, el cambio de nombre y la
-eliminación de espacios, junto con las concesiones y revocaciones de roles. Los administradores
-consultan estos eventos en [Auditoría](/sign/admin/audit-trail/).
+A nivel de organización, bb-sign registra estos eventos, que los administradores consultan en
+[Auditoría](/sign/admin/audit-trail/):
+
+<table>
+  <thead>
+    <tr>
+      <th>Evento</th>
+      <th>Cuándo</th>
+    </tr>
+  </thead>
+  <tbody>
+    {Object.entries(ORG_EVENTS).filter(([type]) => AUDIT_EVENT_TYPES.includes(type)).map(([type, when]) => (
+      <tr>
+        <td><code>{type}</code></td>
+        <td>{when}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 ## Datos de cada firma
 
-Cuando un firmante envía su firma, bb-sign guarda la **imagen** de la firma, la **hora** exacta, la
-**dirección IP** de origen y el **navegador** (la cadena *user agent*). Estos datos acompañan al
-evento `SIGNER_SIGNED` y a la ficha del firmante.
+Cuando un firmante envía su firma, bb-sign guarda:
+
+- la **imagen** de la firma;
+- la **hora** exacta;
+- la **dirección IP** de origen y el **navegador** (la cadena *user agent*);
+- el **método de identificación**: `EMAIL_LINK` (el enlace enviado por correo) o `EMAIL_LINK_OTP` (el
+  enlace y un código de un solo uso);
+- si se usó código, su canal, el destino enmascarado y la hora en que se aceptó. El código nunca se
+  guarda en claro;
+- la **huella del conjunto de documentos** firmado, que liga la firma a esos documentos exactos.
+
+Estos datos acompañan al evento `SIGNER_SIGNED`, a la ficha del firmante y al certificado de
+evidencia.
 
 ## Seguimiento de aperturas
 
@@ -60,30 +166,72 @@ misma apertura. Una apertura posterior a ese intervalo se registra como nueva.
 
 ## La verificación pública
 
-El código QR de cada sello lleva a una página pública de bb-sign con el identificador del sobre y
-los primeros dieciséis caracteres del hash del sello. Cualquier persona que tenga el documento puede
-usarla, sin necesidad de cuenta. Consulte
-[Verificar un documento firmado](/sign/signing/verify-a-document/).
+La página pública de verificación de bb-sign ofrece dos comprobaciones, sin necesidad de cuenta.
+Consulte [Verificar un documento firmado](/sign/signing/verify-a-document/).
 
-bb-sign busca el firmante de ese sobre cuyo hash empieza por el valor recibido y **recalcula** el
-hash con la fórmula <Fact of={CERTIFICATE.sealHashFormula} />, usando la huella del certificado
-**activo** en la organización. Si el resultado coincide con el hash registrado, la página confirma
-que el sello es válido y muestra el nombre del firmante, su correo y la fecha de la firma.
+### El código QR del sello
 
-<Aside type="caution" title="Para verificar el PDF, use el panel de firmas del lector">
-  La página pública confirma que los datos del sello coinciden con lo que bb-sign tiene registrado.
-  Para confirmar que el PDF que tiene en la mano está intacto, ábralo en Adobe Acrobat u otro lector
-  y revise su panel de firmas. Consulte
-  [Firma electrónica y sello](/sign/concepts/signature-and-seal/).
+El código QR de cada sello lleva a la página pública con el identificador del sobre y los primeros
+dieciséis caracteres del hash del sello. bb-sign busca el firmante de ese sobre cuyo hash empieza por
+el valor recibido y **recalcula** el hash con los datos registrados:
+
+- Los sellos hechos desde la versión <Fact of={VERIFY.qrUsesStoredFingerprintSince} /> de bb-sign
+  (versión 2 del sello) usan la fórmula <Fact of={CERTIFICATE.sealHashFormulaV2} />, donde cada
+  `<len>` es la longitud en bytes (UTF-8) del campo que le sigue, con la huella del certificado que
+  selló, guardada junto con el sello, y la huella del conjunto de documentos,
+  <Fact of={CERTIFICATE.documentSetFormula} />, con una entrada por documento ordenada por
+  `documentId`, que bb-sign vuelve a calcular con las huellas registradas de los documentos.
+- Los sellos anteriores (versión 1) usan la fórmula <Fact of={CERTIFICATE.sealHashFormulaV1} />, con
+  la huella del certificado **activo** en la organización.
+
+Si el resultado coincide con el hash registrado, la página confirma que el sello es válido y muestra
+el nombre del firmante, su correo y la fecha de la firma.
+
+Los sellos de versión 2 siguen validándose aunque su organización cambie de certificado, porque
+llevan la huella del certificado que los selló. Los sellos de versión 1 dependen del certificado
+activo: si su organización cambia de certificado, dejan de validarse en la página pública aunque los
+documentos estén intactos. Para esos documentos, use el panel de firmas del lector e informe de ello
+a quienes vayan a verificarlos.
+
+<Aside type="caution" title="Sobres en Archivados">
+  Hoy, el código QR de un sobre que ya pasó a **Archivados** (a los
+  <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> de su creación) muestra "Firma no válida", aunque
+  el documento esté intacto. Para esos documentos, use **Comprobar un archivo** o, si se sellaron
+  antes de que existiera esa comprobación, el panel de firmas del lector. Consulte
+  [Verificar un documento firmado](/sign/signing/verify-a-document/).
 </Aside>
 
-Como el hash incluye la huella del certificado, si su organización cambia de certificado, los sellos
-anteriores dejan de validarse en la página pública, aunque los documentos estén intactos. En ese
-caso, verifique los documentos anteriores con el panel de firmas del lector e informe de ello a
-quienes vayan a verificarlos.
+### Comprobar un archivo
+
+En la misma página, **Comprobar un archivo** recibe un PDF, calcula en el servidor su huella SHA-256
+y la busca entre los documentos **firmados** por bb-sign, incluidos los de sobres archivados. El
+archivo no se guarda. Si la huella coincide, la página muestra la fecha en que se completó el sobre,
+los firmantes (con el correo enmascarado y la hora de su firma) y la huella del certificado que selló.
+Un original sin firmar, o un documento modificado después de la firma, no coincide. Tampoco
+coinciden los documentos sellados antes de que existiera esta comprobación: para ellos, use el panel
+de firmas del lector.
+
+Cada archivo puede pesar hasta <Fact of={VERIFY.fileMaxMb} unit="MB" /> y se comprueba en un máximo
+de <Fact of={VERIFY.fileMaxSeconds} unit="segundos" />. Desde cada conexión se admiten hasta
+<Fact of={VERIFY.fileRatePerMinute} /> comprobaciones por minuto.
+
+<Aside type="caution" title="Para verificar la firma del PDF, use el panel de firmas del lector">
+  Ninguna de las dos comprobaciones valida la firma con certificado del PDF. Para confirmar que la
+  firma del archivo es válida, ábralo en Adobe Acrobat u otro lector y revise su panel de firmas.
+  Consulte [Firma electrónica y sello](/sign/concepts/signature-and-seal/).
+</Aside>
 
 ## Consultar y conservar la evidencia
 
-La evidencia de cada sobre se consulta en su **Registro de auditoría**, dentro de la aplicación. Para
-conservarla más allá del plazo de bb-sign, consulte
-[Alcance y conservación](/sign/legal/retention/).
+La evidencia de cada sobre se consulta en su **Registro de auditoría**, dentro de la aplicación. Al
+completarse el sobre, bb-sign la entrega además en el **certificado de evidencia**, un PDF sellado,
+junto con el registro de auditoría congelado en JSON. Los descargan quienes pueden descargar los
+documentos del sobre, y cada firmante descarga su propia copia desde su enlace. bb-sign los conserva
+<Fact of={EVIDENCE.retentionDays} unit="días" /> desde su emisión. Consulte
+[Certificado de evidencia](/sign/concepts/evidence-certificate/).
+
+Las integraciones pueden además verificar la cadena de un sobre (resultado
+{AUDIT.verificationStatuses.value.join(', ')}) y exportar su registro con
+<Fact of={AUDIT.exportPath} />, en el formato <Fact of={AUDIT.exportFormat} />, con el permiso
+`audit:read`. Para conservar la evidencia más allá
+del plazo de bb-sign, descárguela antes y consulte [Alcance y conservación](/sign/legal/retention/).

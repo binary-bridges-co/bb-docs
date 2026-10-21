@@ -13,7 +13,8 @@ reúne cada una de esas tareas.
 
 **Quién:** administradores de la organización y administradores de plataforma. **Dónde:** las
 entradas **Etiquetas**, **Usuarios**, **Almacenamiento** y **Configuración** del menú lateral, que
-solo ven los administradores.
+solo ven los administradores. Las cuentas de administrador inician sesión con un segundo factor; ver
+[Seguridad del inicio de sesión](/sign/admin/sign-in-security/).
 
 ## Tareas del administrador
 
@@ -21,16 +22,22 @@ solo ven los administradores.
 | --- | --- | --- | --- |
 | Personas | Invitar usuarios como miembros o administradores | **Usuarios**, botón **Nuevo Usuario** | [Usuarios e invitaciones](/sign/admin/users-and-invitations/) |
 | Personas | Reenviar una invitación y ver si una cuenta está activa | **Usuarios**, **Reenviar invitación** | [Usuarios e invitaciones](/sign/admin/users-and-invitations/) |
+| Personas | Conocer el segundo factor de los administradores y la política de contraseñas | Pantalla de inicio de sesión | [Seguridad del inicio de sesión](/sign/admin/sign-in-security/) |
 | Acceso | Crear, renombrar y eliminar espacios de trabajo | **Configuración**, pestaña **Espacios de trabajo** | [Espacios y miembros](/sign/admin/workspaces-and-members/) |
 | Acceso | Dar a personas y claves de API el rol Lector, Auditor o Gestor en un espacio | **Configuración**, **Espacios de trabajo**, **Miembros** | [Espacios y miembros](/sign/admin/workspaces-and-members/) |
 | Acceso | Consultar qué permite cada rol | Referencia | [Matriz de permisos](/sign/admin/permissions/) |
 | Integración | Crear, rotar y revocar credenciales de API | **Configuración**, pestaña **Credenciales de API** | [Credenciales de API](/sign/admin/api-credentials/) |
 | Integración | Crear, probar, activar, rotar y eliminar webhooks, y revisar sus entregas | **Configuración**, pestaña **Webhooks** | [Webhooks](/sign/admin/webhooks/) |
-| Sello | Configurar el certificado propio de la organización | Sección **Certificado de firma**, junto con Binary Bridges | [Certificado propio](/sign/admin/own-certificate/) |
+| Sello | Subir, reemplazar y quitar el certificado propio de la organización | **Configuración**, pestaña **Certificado** | [Certificado propio](/sign/admin/own-certificate/) |
 | Datos | Crear, editar y eliminar claves de etiqueta | **Etiquetas** | [Claves de etiqueta](/sign/admin/labels/) |
-| Datos | Consultar el ciclo de vida del almacenamiento | **Almacenamiento** | [Almacenamiento](/sign/admin/storage/) |
+| Datos | Consultar la política de conservación y las reglas del almacenamiento | **Almacenamiento** | [Almacenamiento](/sign/admin/storage/) |
+| Datos | Consultar las fechas de conservación de un sobre y restaurar un archivo archivado | Detalle del sobre, **Conservación** | [Conservación y restauración](/sign/sending/retention-and-restore/) |
 | Datos | Conocer la cuota y el consumo del periodo | Panel **Cuota y uso** | [Cuota y uso](/sign/admin/quota-and-usage/) |
 | Supervisión | Revisar el registro de auditoría de cada sobre | Detalle del sobre, **Registro de auditoría** | [Auditoría](/sign/admin/audit-trail/) |
+| Supervisión | Descargar el certificado de evidencia y el registro de auditoría de un sobre | Detalle del sobre, **Certificado de evidencia** | [Auditoría](/sign/admin/audit-trail/) |
+
+La pestaña **Acuerdos** de **Configuración** permite a los administradores publicar textos de acuerdos,
+que todavía no se muestran a los firmantes ni se adjuntan a los sobres.
 
 Un administrador accede a todos los espacios de trabajo sin necesidad de ser miembro: ve todos los
 sobres, puede cancelarlos y descargar sus documentos. El trabajo diario con sobres está en
@@ -46,8 +53,8 @@ configuración comercial y general del servicio. Solicítelas al soporte de Bina
 | Crear organizaciones | **Organizaciones**, **Nueva Organización** |
 | Definir la apariencia de la firma (nombre visible, motivo, ubicación) | Página de la organización, **Apariencia de la firma** |
 | Establecer, ampliar, renovar, suspender o activar la cuota | Página de la organización, **Configuración de la cuota** |
-| Cambiar el ciclo de vida del almacenamiento | **Almacenamiento**, **Aplicar** |
-| Entregar los eventos de auditoría de la organización | A solicitud, por soporte |
+| Definir el idioma de los certificados de evidencia (español o inglés) | Página de la organización, **Idioma de la evidencia** |
+| Entregar los eventos de configuración de la organización (el registro de cada sobre se consulta y se descarga en el propio sobre) | A solicitud, por soporte |
 | Crear administradores de plataforma | **Usuarios**, rol **Administrador de Plataforma** |
 
 <LinkCard title="Matriz de permisos" href="/sign/admin/permissions/" description="Qué permite cada rol de organización y de espacio de trabajo, y por qué una credencial de API nunca administra." />

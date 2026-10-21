@@ -23,19 +23,26 @@ La aplicación está disponible en <a href={URLS.app.value}>{URLS.app.value}</a>
 ## Qué ofrece bb-sign
 
 - **Integridad.** Cada documento firmado queda sellado y cualquier cambio posterior se detecta.
+  bb-sign registra la huella SHA-256 de cada documento y vincula cada firma a esas huellas.
 - **Identificación.** Cada firmante se identifica con su correo y, si la organización lo exige, con
   un código de verificación de un solo uso.
-- **Registro de lo aceptado.** Lo que el firmante vio y aceptó queda registrado con fecha y hora.
+- **Registro de lo firmado.** Qué documentos vio el firmante (por su huella SHA-256), cuándo los
+  abrió y cómo se identificó queda registrado con fecha y hora.
 - **Detección de inconsistencias.** La cadena de auditoría permite comprobar que ningún evento se
   insertó ni se eliminó después.
 - **Valor probatorio.** La evidencia del proceso (quién, qué, cuándo y desde dónde) se puede
-  consultar en cada sobre.
+  consultar en cada sobre y se entrega como un
+  [certificado de evidencia](/sign/concepts/evidence-certificate/) en PDF, que la organización y cada
+  firmante pueden descargar.
+- **Verificación pública.** Cualquier persona que tenga el PDF firmado puede confirmar, sin cuenta,
+  que bb-sign lo produjo. Consulte [Verificar un documento firmado](/sign/signing/verify-a-document/).
 - **Trazabilidad.** Cada acción relevante sobre un sobre queda en su historial.
 
 bb-sign conserva los documentos firmados y su evidencia durante un plazo fijo de
-<Fact of={RETENTION_POLICY.retentionDays} unit="días" />; a partir de ese momento, su conservación
-es responsabilidad de la organización, como se detalla en
-[Alcance y conservación](/sign/legal/retention/).
+<Fact of={RETENTION_POLICY.retentionDays} unit="días" />, contados para cada archivo; a partir de ese
+momento, su conservación es responsabilidad de la organización, como se detalla en
+[Alcance y conservación](/sign/legal/retention/). Si un archivo llegara a estar archivado, se puede
+solicitar de nuevo; consulte [Conservación y restauración](/sign/sending/retention-and-restore/).
 
 Para que el sello de cada documento lleve el nombre de su organización y los lectores de PDF lo
 reconozcan como confiable, le recomendamos configurar su

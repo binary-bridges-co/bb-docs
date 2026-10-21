@@ -3,17 +3,23 @@
  * Starlight `PageTitle` override: adds the audience badge declared in the
  * page's frontmatter above the title. Admin pages read "Administradores",
  * signer pages "Firmantes", and so on, so a reader knows at a glance whether
- * the page is for them.
+ * the page is for them. Below the title, a mirrored legal text (`legal: true`)
+ * gets its version header, rendered here so no page has to import it.
  */
 import Default from '@astrojs/starlight/components/PageTitle.astro';
+import LegalHeader from '../legal/LegalHeader.astro';
+import { legalHeaderFor } from '../../lib/legal';
 
 const { entry, locale } = Astro.locals.starlightRoute;
 const audience = entry.data.audience;
+const lang = locale === 'en' ? 'en' : 'es';
 const labels = {
   es: { admin: 'Administradores', user: 'Usuarios', signer: 'Firmantes', developer: 'Desarrolladores', legal: 'Legal', all: 'Todos' },
   en: { admin: 'Administrators', user: 'Users', signer: 'Signers', developer: 'Developers', legal: 'Legal', all: 'Everyone' },
-}[locale === 'en' ? 'en' : 'es'];
+}[lang];
+const legal = legalHeaderFor({ legal: entry.data.legal, legalVersion: entry.data.legalVersion }, lang);
 ---
 
 {audience && audience !== 'all' && <span class="bb-audience" data-audience={audience}>{labels[audience]}</span>}
 <Default><slot /></Default>
+{legal && <LegalHeader locale={lang} version={legal.version} prevails={legal.prevails} />}

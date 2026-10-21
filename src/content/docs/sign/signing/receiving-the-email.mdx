@@ -7,7 +7,7 @@ audience: signer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE, REMINDERS, URLS } from '../../../facts/sign';
+import { ENVELOPE, EVIDENCE, REMINDERS, RESTORE, RETENTION_POLICY, URLS } from '../../../facts/sign';
 
 La invitación a firmar llega por correo y contiene su enlace personal de firma. bb-sign también le
 avisa por correo cuando es su turno, cuando falta su firma y cuando el documento está completo.
@@ -26,10 +26,20 @@ derecha.
 | `It's your turn to sign: {title}` | Cuando el sobre tiene un orden de firma y las personas anteriores ya firmaron. Contiene su enlace de firma. |
 | `Your verification code for BB-Sign` | Cuando solicita el código de verificación en la página de firma. |
 | `Reminder: please sign {title}` | Cuando su firma sigue pendiente. Contiene el mismo enlace de la invitación. |
-| `Signing complete: {title}` | Cuando todas las personas firmaron. Contiene el enlace a su copia firmada. |
+| `Signing complete: {title}` | Cuando todas las personas firmaron, normalmente junto con su certificado de evidencia. Contiene el enlace a su copia firmada y a su certificado. |
 | `Signing request expired: {title}` | Cuando el sobre venció sin su firma. |
+| `Tu solicitud de restauración de documentos / Your document restore request` | Cuando pidió su copia con **Solicitar mi copia** y la restauración terminó. Llega en español y en inglés e indica si su copia está disponible y hasta cuándo.{RESTORE.emailLinksToEnvelopeOrSigningPage.value && ' Su enlace lleva a su página de firma, donde descarga la copia; el correo no trae el archivo.'} |
 
 `{title}` es el título que asignó quien envió el documento.
+
+## El correo de finalización
+
+`Signing complete: {title}` sale cuando su certificado de evidencia está
+emitido{EVIDENCE.usuallyIssuedWithinMinutes.value && ', normalmente pocos minutos después de la última firma'}. Si el certificado tarda, el correo sale sin esperarlo más de
+<Fact of={EVIDENCE.degradedAfterHours} unit="horas" /> después de completarse el sobre. El correo
+indica, en inglés, cuál es el caso: "Your evidence certificate is ready, at the same link.", "Your
+evidence certificate is being prepared; it will appear at the same link." o "Your signed documents are
+being prepared; they will appear at the same link."
 
 ## Recordatorios
 
@@ -55,5 +65,7 @@ invitación, bb-sign le envía un recordatorio. Luego envía como máximo uno ca
 </Aside>
 
 El enlace es válido durante <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> por defecto, o
-el plazo que haya definido quien envió el documento. Una vez que firma, el mismo enlace lo lleva a
-su copia firmada.
+el plazo que haya definido quien envió el documento. Ese plazo solo limita la firma. Una vez que firma,
+el mismo enlace lo lleva a su copia firmada y a su certificado de evidencia durante
+<Fact of={RETENTION_POLICY.retentionDays} unit="días" /> desde que el sobre se completó, aunque el
+plazo para firmar haya vencido y aunque el sobre ya esté archivado.

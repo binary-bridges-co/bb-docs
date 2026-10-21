@@ -40,7 +40,7 @@ without a marker, at the bottom-right corner of the last page (see
 | Name and email | The signer's, as the sender entered them. |
 | Date | The day they signed, in UTC. |
 | Signature | The image they drew or typed. |
-| Hash | A SHA-256 digest computed from the name, the email, the date, the envelope identifier and the certificate's fingerprint. Part of it appears as text around the circular seal, and the seal's pattern is derived from it. |
+| Hash | A SHA-256 digest computed from the name, the email, the date and time of signing, the envelope identifier, the certificate's fingerprint and the fingerprint of the signed documents. Part of it appears as text around the circular seal, and the seal's pattern is derived from it. See [Evidence and audit](/en/sign/concepts/evidence-and-audit/#the-seals-qr-code). |
 | QR code | Links to bb-sign's public verification page, with the envelope identifier and the start of the hash. See [Verify a signed document](/en/sign/signing/verify-a-document/). |
 
 ### The certificate signature
@@ -59,8 +59,10 @@ there is one per document.
   The seal guarantees that the signed document is the one bb-sign produced when the envelope
   completed and that it **has not changed since**: if someone edits the PDF, the certificate
   signature stops validating. It also records who sealed it and when. The signer's identity is
-  supported by the evidence of the process (email, verification code, IP address and audit trail).
-  See [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
+  supported by the evidence of the process: the identification method (email and, when required, a
+  verification code), the IP address and the audit trail, gathered in the
+  [evidence certificate](/en/sign/concepts/evidence-certificate/). See
+  [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
 </Aside>
 
 ## The organization's certificate
@@ -70,13 +72,34 @@ seal carries the organization's name and PDF readers recognize it as trusted. Ho
 where to get it and how to upload it is explained in
 [Your own certificate](/en/sign/admin/own-certificate/).
 
+When the certificate is uploaded, bb-sign checks its chain and shows its status: **Complete chain**,
+**No root**, **Leaf only** or **Self-signed**. Only RSA keys are accepted, and the chain can hold at
+most <Fact of={CERTIFICATE.maxChainLength} /> certificates. The upload is refused, without changing
+the active certificate, if a certificate in the chain is expired or not yet valid, if the chain is
+broken or out of order, if an issuer is not a certification authority, if the key does not match the
+certificate, or if the file carries no private key or more than one.
+
+bb-sign emails the organization's administrators when their own certificate is
+{CERTIFICATE.expiryNoticeDays.value.join(' and ')} days from expiry. See
+[Emails bb-sign sends](/en/sign/reference/emails/).
+
+### The testing certificate
+
 Until the organization configures its own, bb-sign seals with Binary Bridges' testing certificate,
 whose subject is <Fact of={CERTIFICATE.defaultSubject} />, and the visible field reads "Digitally
 signed by" <Fact of={CERTIFICATE.defaultDisplayName} />. This certificate is self-signed: the seal
 still protects the document's integrity and detects any change, but PDF readers show it as
 untrusted.
 
-bb-sign embeds the organization's certificate in the PDF (<Fact of={CERTIFICATE.chainEmbedded} />),
-without the chain of the authority that issued it. For a reader to show the signature as verified,
-it must have that authority's root installed; that is why it pays to choose a certificate issued by
-an authority recognized by the readers your recipients use.
+In **Settings**, **Certificate** tab, the application says so with the **Default testing
+certificate** notice: "Sending is not blocked: until you configure your own, documents are sealed
+with the testing certificate.". The evidence certificate of those envelopes also warns that it was
+sealed with the testing certificate.
+
+### The chain inside the PDF
+
+bb-sign embeds in the PDF the full chain the certificate file contains: the organization's
+certificate and whichever intermediate certificates and root it includes. That is why it pays to
+export the .p12 file with its full certification path. Even so, for a reader to show the signature
+as verified, it must trust the issuing authority's root; choose a certificate issued by an authority
+recognized by the readers your recipients use.

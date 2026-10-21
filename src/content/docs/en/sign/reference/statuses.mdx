@@ -1,13 +1,13 @@
 ---
 title: "Statuses"
-description: "Every status of envelopes, signers, webhook deliveries and API credentials, with the label the application shows for each one."
+description: "Every status of envelopes, signers, evidence certificates, files, restores, certificates, webhooks and credentials, with its label in the application."
 product: sign
 audience: all
 ---
 
 import Fact from '../../../../../components/facts/Fact.astro';
 import StatusFlow from '../../../../../components/facts/StatusFlow.astro';
-import { AUTH, DELIVERY_STATUSES, WEBHOOKS } from '../../../../facts/sign';
+import { AUDIT, AUTH, CERTIFICATE, DELIVERY_STATUSES, ENVELOPE, EVIDENCE, RESTORE, WEBHOOKS } from '../../../../facts/sign';
 
 export const DELIVERY = {
   PENDING_RENDER: { label: 'Preparing', meaning: 'bb-sign is preparing the delivery payload. Sending starts once it is ready.' },
@@ -16,6 +16,50 @@ export const DELIVERY = {
   FAILED_PERMANENT: { label: 'Could not be built', meaning: 'bb-sign could not generate the delivery payload, so nothing was sent.' },
   SKIPPED: { label: 'Not sent', meaning: 'The endpoint was disabled when the event happened, so this event was not sent. It explains a gap in the events you received.' },
   DEAD_LETTERED: { label: 'Gave up', meaning: 'Every retry was used without a 2xx answer. The delivery is closed.' },
+};
+
+export const EVIDENCE_STATUS = {
+  PENDING: { label: '"Evidence certificate processing..."', meaning: 'bb-sign is issuing the certificate.' },
+  ISSUED: { label: 'The downloads "Evidence certificate (PDF)" and "Audit trail (JSON)"', meaning: 'The certificate exists and can be downloaded.' },
+  FAILED: { label: '"It could not be generated; the team was notified."', meaning: 'The automatic issuing failed. Binary Bridges can issue it again.' },
+  UNAVAILABLE: { label: '"Completed before evidence certificates were enabled."', meaning: 'The envelope completed before certificates existed and will never have one.' },
+  EXPIRED: { label: '"The retention period has ended and the certificate was deleted."', meaning: "The certificate's retention period has ended." },
+};
+
+export const FILE_AVAILABILITY = {
+  AVAILABLE: { label: 'The "Original PDF" and "Signed PDF" downloads', meaning: 'The file downloads directly.' },
+  ARCHIVED: { label: '"archived. Request its restore to download it."', meaning: 'The file is in archive storage and must be restored before it can be downloaded.' },
+  RESTORE_IN_PROGRESS: { label: '"restoring" or "being restored"', meaning: 'A restore is in progress. Whoever requested it is notified when it ends.' },
+  RESTORED: { label: '"restored, available until" and the date', meaning: 'The restored copy downloads directly until that date.' },
+  DELETED: { label: '"no longer available"', meaning: 'The retention period has ended and the file was deleted.' },
+};
+
+export const RESTORE_STATUS = {
+  REQUESTED: 'The restore was requested and has not started yet.',
+  IN_PROGRESS: 'Archive storage is restoring the file.',
+  RESTORED: 'The restored copy can be downloaded until the date given.',
+  AVAILABLE: 'The file did not need a restore: it downloads directly.',
+  EXPIRED: 'The restored copy is no longer available.',
+  FAILED: 'The restore did not complete; the reason says why.',
+};
+
+export const RESTORE_REASON = {
+  DELETED: 'The file has passed its retention period and was deleted.',
+  TIMEOUT: 'The restore took too long. Request it again.',
+  STORAGE_ERROR: 'Archive storage failed. Request it again later.',
+};
+
+export const CHAIN_STATUS = {
+  COMPLETE: { label: 'Complete chain', meaning: 'The file includes every certificate up to the root.' },
+  NO_ROOT: { label: 'No root', meaning: 'The chain stops before the root certificate. Validators that already trust the root still accept the seal.' },
+  LEAF_ONLY: { label: 'Leaf only', meaning: 'The file carries no chain, so validators cannot link the certificate to whoever issued it. Export it again with the full certification path.' },
+  SELF_SIGNED: { label: 'Self-signed', meaning: 'The certificate signed itself, so no third party will trust it.' },
+};
+
+export const AUDIT_VERIFICATION = {
+  VALID: "The envelope's chain is complete and every hash matches.",
+  BROKEN: 'The chain stops matching from one event, which the response names. Let Binary Bridges know.',
+  EMPTY: "The envelope's chain has no events.",
 };
 
 Use this reference to interpret every status the application and the API show. Each status appears
@@ -31,12 +75,158 @@ An envelope becomes `EXPIRED` when an expiry date was set at creation and that d
 sending, cancelling is the transition a person starts; expiring and completing happen
 automatically.
 
+**Archived** is not a status. A completed, cancelled or expired envelope moves to that view
+<Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after its creation and keeps its status; the API
+shows it with the `archived` and `archivedAt` fields, and the audit trail with the
+`ENVELOPE_ARCHIVED` event.
+
 ## Signer statuses
 
 <StatusFlow locale="en" of="signer" />
 
 In an envelope with sequential signing, signers in later turns stay `PENDING` until the previous turn
 finishes; then they receive their link and become `NOTIFIED`.
+
+## Evidence certificate
+
+The status of a completed envelope's evidence certificate. See
+[Evidence certificate](/en/sign/concepts/evidence-certificate/).
+
+<table>
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>In the envelope detail</th>
+      <th>What it means</th>
+    </tr>
+  </thead>
+  <tbody>
+    {EVIDENCE.statuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{EVIDENCE_STATUS[status].label}</td>
+        <td>{EVIDENCE_STATUS[status].meaning}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## File availability
+
+Each file of an envelope (the original PDF and the signed PDF) has an availability, which the API
+returns with the document list and the **Retention** block of the detail shows next to the file name.
+Today no file is moved to archive storage, so in practice you only see `AVAILABLE` and, once the
+retention period ends, `DELETED`. See [Retention and restore](/en/sign/sending/retention-and-restore/).
+
+<table>
+  <thead>
+    <tr>
+      <th>Availability</th>
+      <th>In the application</th>
+      <th>What it means</th>
+    </tr>
+  </thead>
+  <tbody>
+    {RESTORE.fileAvailability.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{FILE_AVAILABILITY[status].label}</td>
+        <td>{FILE_AVAILABILITY[status].meaning}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Restores
+
+Each restore request moves through these statuses, which appear in the API and in the
+`document.restored` webhook. The application does not show them by these names: it shows the file's
+availability. A restore that does not end within <Fact of={RESTORE.timeoutHours} unit="hours" /> is
+considered failed with the reason `TIMEOUT`.
+
+<table>
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>What it means</th>
+    </tr>
+  </thead>
+  <tbody>
+    {RESTORE.statuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{RESTORE_STATUS[status]}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+When a restore fails, its reason is one of these:
+
+<table>
+  <thead>
+    <tr>
+      <th>Reason</th>
+      <th>What it means and what to do</th>
+    </tr>
+  </thead>
+  <tbody>
+    {RESTORE.failureReasons.value.map((reason) => (
+      <tr>
+        <td><code>{reason}</code></td>
+        <td>{RESTORE_REASON[reason]}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Certificate chain
+
+When an own certificate is uploaded, bb-sign checks its chain and shows its status in **Settings**,
+**Certificate** tab. Certificates uploaded before this check existed show **Not checked**
+(`UNCHECKED`); upload them again to have them checked. See
+[Your own certificate](/en/sign/admin/own-certificate/).
+
+<table>
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Label in the application</th>
+      <th>What it means</th>
+    </tr>
+  </thead>
+  <tbody>
+    {CERTIFICATE.chainStatuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{CHAIN_STATUS[status].label}</td>
+        <td>{CHAIN_STATUS[status].meaning}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Audit chain verification
+
+Integrations with the `audit:read` permission can ask the API to verify an envelope's audit chain.
+The answer is one of these results:
+
+<table>
+  <thead>
+    <tr>
+      <th>Result</th>
+      <th>What it means</th>
+    </tr>
+  </thead>
+  <tbody>
+    {AUDIT.verificationStatuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{AUDIT_VERIFICATION[status]}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 ## Webhook deliveries
 

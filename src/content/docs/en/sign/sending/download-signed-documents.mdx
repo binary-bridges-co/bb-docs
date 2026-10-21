@@ -1,22 +1,23 @@
 ---
 title: Download signed documents
-description: Download the original PDF and the signed PDF from the envelope page. Who can download, how long the link lasts and retention periods.
+description: Download the original PDF, the signed PDF and the evidence certificate from the envelope page. Who can download, how long links last and retention periods.
 product: sign
 audience: user
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { ENVELOPE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../../facts/sign';
+import { ENVELOPE, EVIDENCE, RETENTION_POLICY } from '../../../../facts/sign';
 
 When an envelope completes, bb-sign generates a signed PDF for every document: the original with
-each signer's seal, signed with the organization's certificate. Every document is sealed and any
-later change is detected. Download it from the envelope page and keep it in your organization's
-systems.
+each signer's seal, signed with the organization's certificate and its certificate chain. Every
+document is sealed and any later change is detected. bb-sign also issues an evidence certificate for
+the envelope. Download them from the envelope page and keep them in your organization's systems.
 
-## Download the original PDF and the signed PDF
+## Download the documents
 
-In the **Documents (N)** section of the envelope page, each file offers these downloads:
+In the **Documents (N)** section of the envelope page, each document shows its fingerprint
+("SHA-256 of the original:") and offers these downloads:
 
 | Button | Contents | Available |
 |---|---|---|
@@ -32,38 +33,66 @@ code) and the role of the certificate are described in
 [Electronic signature and seal](/en/sign/concepts/signature-and-seal/). To check a signed PDF you
 received another way, see [Verify a signed document](/en/sign/signing/verify-a-document/).
 
+## Download the evidence certificate
+
+On a completed envelope, the same section ends with the **Evidence certificate** row. Once the
+certificate is issued, it shows its fingerprint ("SHA-256 of the certificate:") and two buttons:
+
+| Button | Contents |
+|---|---|
+| **Evidence certificate (PDF)** | The sealed certificate: documents, signers, how each one was identified and the envelope's timeline. |
+| **Audit trail (JSON)** | The envelope's events, stored with the certificate when it was issued. |
+
+While it is being issued, the row shows "Evidence certificate processing...". An envelope completed
+before certificates existed shows "Completed before evidence certificates were enabled." and has no
+certificate. If the row shows "It could not be generated; the team was notified.", the bb-sign team
+has already been alerted: check the envelope again later. The full contents are described in
+[Evidence certificate](/en/sign/concepts/evidence-certificate/).
+
 ## How long the download link lasts
 
-Each button uses a temporary link, valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />
-from the moment the page opens. If the download does not start, reload the envelope page and press
-the button again. To share a document, send the downloaded file.
+Each document button uses a temporary link, valid for
+<Fact of={ENVELOPE.downloadUrlSeconds} unit="s" /> from the moment the page opens. The evidence
+certificate buttons ask for a link when pressed, valid for
+<Fact of={EVIDENCE.downloadLinkMinutes} unit="minutes" />. If a download does not start, reload the
+envelope page and press the button again. To share a document, send the downloaded file.
 
 ## Who can download
 
 Users with the **auditor**, **contributor** or **manager** role in the envelope's workspace can
-download, as can the organization's administrators. Users with the **viewer** role see each
-document's name along with the message "You can see this document's name but not download it. Ask
-an admin for auditor access."
+download, as can the organization's administrators. The same permission gives access to the evidence
+certificate and to requesting the restore of an archived file. Users with the **viewer** role see
+each document's name along with the message "You can see this document's name but not download it.
+Ask an admin for auditor access." and, instead of the certificate, "The evidence certificate is
+available to those who can download this envelope's documents."
 
-Signers download their copy from their own link when they finish signing and from the email
-`Signing complete: {title}`. See [Sign and download](/en/sign/signing/sign-and-download/).
+Signers download their signed copy and their own copy of the evidence certificate from their link,
+when they finish signing and from the email `Signing complete: {title}`. Their copy of the certificate
+masks email addresses and leaves out the IP address and the browser. See
+[Sign and download](/en/sign/signing/sign-and-download/).
 
 ## Download and retention periods
 
-Download the signed PDFs while the envelope is in **Envelopes**. Once
-<Fact of={ENVELOPE.archiveAfterDays} unit="days" /> have passed since its creation, a completed
-envelope moves to [Archived envelopes](/en/sign/sending/archived-envelopes/), which lists its record
-without downloads. Files uploaded more than <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="days" />
-ago move to long-term storage and are no longer available for immediate download.
+Once <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> have passed since its creation, a completed
+envelope moves to [Archived envelopes](/en/sign/sending/archived-envelopes/). From there it opens
+read-only and its files still download the same way.
 
-bb-sign keeps documents for <Fact of={RETENTION_POLICY.retentionDays} unit="days" />, a fixed,
-non-negotiable period. After that, retention is your organization's responsibility. See
-[Scope and retention](/en/sign/legal/retention/).
+bb-sign keeps each file for <Fact of={RETENTION_POLICY.retentionDays} unit="days" />, a fixed,
+non-negotiable period counted per file: the original from upload, the signed PDF from the envelope's
+completion and the certificate from its issue. The **Retention** section of the envelope page shows
+the date from which its files are no longer available. After that, retention is your organization's
+responsibility. See [Scope and retention](/en/sign/legal/retention/).
 
-<Aside type="tip" title="Download the signed PDF when the envelope completes">
-  As soon as an envelope becomes **Completed**, download the **Signed PDF** of every document and
-  store it in your organization's document system. An administrator can automate this step with the
-  `envelope.completed` webhook; see [Webhooks](/en/sign/admin/webhooks/).
+If a file is archived, the page shows **Request restore** instead of the download button. Today
+bb-sign does not move any file to archive storage; when a copy is archived, the procedure is described
+in [Retention and restore](/en/sign/sending/retention-and-restore/).
+
+<Aside type="tip" title="Download the envelope when it completes">
+  As soon as an envelope becomes **Completed**, download the **Signed PDF** of every document and its
+  evidence certificate, and store them in your organization's document system. An administrator can
+  automate this step with the `envelope.completed` and `envelope.evidence_issued` webhooks; see
+  [Webhooks](/en/sign/admin/webhooks/) and section 4 of the
+  [retention and restore guide](/en/sign/legal/retention-guide/).
 </Aside>
 
-<LinkCard title="Archived envelopes" href="/en/sign/sending/archived-envelopes/" description="Which envelopes move to the archive, when, and how to consult them." />
+<LinkCard title="Retention and restore" href="/en/sign/sending/retention-and-restore/" description="How long each file is kept and how to request an archived one." />

@@ -8,7 +8,7 @@ audience: all
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import RolesMatrix from '../../../../../components/facts/RolesMatrix.astro';
-import { AUTH } from '../../../../facts/sign';
+import { ADMIN_MFA, AUTH } from '../../../../facts/sign';
 
 bb-sign organizes work in two layers so that each person sees and does exactly what they should.
 Envelopes live in **workspaces** inside an **organization**: the **workspace role** defines what
@@ -47,7 +47,7 @@ them **Viewer**, **Auditor**, **Contributor** and **Manager**; the API uses `vie
 | Role | What it adds |
 | --- | --- |
 | `viewer` (Viewer) | See the list and the detail of envelopes, archived ones included. |
-| `auditor` (Auditor) | Download documents and consult each envelope's audit trail. |
+| `auditor` (Auditor) | Download documents and the evidence certificate, request the restore of an archived file and consult each envelope's audit trail. |
 | `contributor` (Contributor) | Create envelopes, edit them before sending, upload documents, assign labels and send. |
 | `manager` (Manager) | Cancel envelopes. |
 
@@ -65,13 +65,17 @@ administer:
 | Role | Name in the application | What it allows |
 | --- | --- | --- |
 | `org_member` | Org Member | Work with envelopes according to their workspace roles, from the **Dashboard**, **Envelopes** and **Archived**. |
-| `org_admin` | Org Admin | All of the above in **every** workspace, without needing to belong to them, plus invite users, create workspaces and grant roles, define label keys, manage API credentials and webhooks, configure the certificate and consult the organization's audit trail. |
+| `org_admin` | Org Admin | All of the above in **every** workspace, without needing to belong to them, plus invite users, create workspaces and grant roles, define label keys, manage API credentials and webhooks, configure the certificate and consult the organization's audit trail. They also publish texts in the **Agreements** tab, which are not yet shown to signers nor attached to envelopes. |
 | `org_api` | API credential | An integration. It lists workspaces and label keys; what it can do with envelopes depends on its workspace roles. Administering the organization is reserved for people. |
-| `platform_admin` | Platform Admin | Binary Bridges. Creates organizations and defines quotas and the seal's appearance. |
+| `platform_admin` | Platform Admin | Binary Bridges. Creates organizations and defines each organization's quotas, seal appearance and evidence certificate language. |
 
 Administrators see every workspace in the organization without being a member of any, so they are
 not added to workspaces. The full permission matrix is in
 [Permission matrix](/en/sign/admin/permissions/).
+
+Organization and platform administrators sign in with a second factor: besides the password, a
+<Fact of={ADMIN_MFA.digits} />-digit code from an authenticator app (TOTP). Members and signers do not
+need it. See [Sign-in security](/en/sign/admin/sign-in-security/).
 
 ## Tasks reserved for Managers and administrators
 

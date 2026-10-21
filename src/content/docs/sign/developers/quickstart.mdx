@@ -196,9 +196,8 @@ La respuesta `201` confirma que el sobre existe, en estado `DRAFT`.
 
 Cada sobre pertenece a un **espacio de trabajo**, y una credencial accede a los espacios que se le
 asignaron. Una credencial nueva es **Gestor** en el espacio **General** de su organización, salvo
-que el administrador haya elegido otro. Sin `workspaceId`, el sobre se archiva en General. Para
-archivarlo en otro espacio, liste los espacios disponibles para la credencial y envíe el `id` de
-uno:
+que el administrador haya elegido otro. Sin `workspaceId`, el sobre queda en General. Para crearlo
+en otro espacio, liste los espacios disponibles para la credencial y envíe el `id` de uno:
 
 ```bash
 curl -s "$BBSIGN_BASE_URL/api/v1/workspaces" -H "Authorization: Bearer $TOKEN"
@@ -237,6 +236,8 @@ de estas llamadas en los tres lenguajes.
 | `403` | La credencial es válida, pero la operación no está disponible para credenciales | Confirme que la operación figura en la [referencia de la API](/sign/api/); la administración se realiza en la interfaz |
 | `404 WORKSPACE_NOT_FOUND` | La credencial no tiene un rol que le permita crear en ese espacio de trabajo, o el espacio no existe | Omita `workspaceId`, o pida al administrador que asigne a la credencial un rol en ese espacio desde **Configuración**, pestaña **Espacios de trabajo** |
 | `400` sin detalle | Por lo general, un cuerpo mal formado | Compárelo campo por campo con el ejemplo; `expiresAt` debe estar en ISO-8601 |
+| `409 DOCUMENT_HASH_MISSING` al enviar | Un documento todavía no tiene SHA-256 registrado. Solo ocurre con borradores anteriores al registro de hashes; toda subida nueva lo calcula | Vuelva a intentarlo más tarde, porque esos documentos se completan de forma periódica, o suba el documento de nuevo |
+| `unauthorized_client` desde la URL del token | Se intentó obtener un token con usuario y contraseña | Use `grant_type=client_credentials` con una credencial de API |
 | `NoClassDefFoundError` en tiempo de ejecución (Java) | Se omitió `-DpomFile` en la instalación | Reinstale con ese parámetro |
 | `ERR_REQUIRE_ESM` (JavaScript) | El paquete es solo ESM | Use `import` |
 
@@ -246,6 +247,10 @@ Si su caso no aparece en la tabla, escríbanos con una descripción de lo que es
 
 - **[Referencia de la API](/sign/api/)**: cada endpoint, generado a partir del contrato.
 - **[Webhooks](/sign/developers/webhooks/)**: recibir eventos y verificar su origen.
+- **[Certificado de evidencia](/sign/concepts/evidence-certificate/)**: el resumen sellado de un sobre
+  completado y su registro de auditoría.
+- **[Errores](/sign/developers/errors/)**: cada estado y código, y la diferencia entre una cuota y un
+  límite de tasa.
 - **[Migrar desde Adobe Acrobat Sign](/sign/developers/migrating-from-adobe/)**: equivalencia de conceptos.
 - <a href={URLS.api.value + URLS.openapiPath.value}><code>openapi.json</code></a>: el contrato
   legible por máquinas, para generar su propio cliente.

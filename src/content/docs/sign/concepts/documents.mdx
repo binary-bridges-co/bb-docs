@@ -7,7 +7,7 @@ audience: user
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { DOCUMENTS } from '../../../facts/sign';
+import { DOCUMENTS, RETENTION_IMPLEMENTED } from '../../../facts/sign';
 
 Un sobre contiene uno o más documentos, y cada firmante los firma todos. Usted decide en qué lugar
 de cada documento aparece el sello de cada firmante. Esta página explica qué archivos acepta bb-sign,
@@ -22,7 +22,12 @@ Cada archivo puede pesar hasta <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />. Si
 ese tamaño, la aplicación muestra "Ese archivo es demasiado grande."; reduzca el PDF (por ejemplo,
 bajando la resolución de sus imágenes) y vuelva a subirlo.
 
-Un sobre necesita al menos un documento para enviarse.
+Un sobre necesita al menos un documento para enviarse, y cada documento debe tener registrada su
+huella (consulte [La huella de cada documento](#la-huella-de-cada-documento)). bb-sign la calcula al
+subir el archivo; si falta, el envío muestra "Uno de los documentos aún no tiene su huella digital
+registrada, así que el sobre no se puede enviar todavía. Espera unos minutos o vuelve a subirlo.".
+Espere unos minutos, porque bb-sign completa en segundo plano las huellas de los borradores antiguos,
+o quite el documento y súbalo de nuevo.
 
 ## Documentos subidos antes de enviar
 
@@ -78,10 +83,40 @@ página al final y continúa allí.
 
 En el detalle del sobre, cada documento ofrece dos descargas: **PDF Original**, el archivo tal como
 se subió, y **PDF Firmado**, el mismo archivo con los sellos estampados y la firma del certificado de
-la organización. El documento firmado está disponible cuando el sobre está `COMPLETED`; mientras se
-genera, el detalle muestra "Procesando el PDF firmado...".
+la organización. Junto a cada documento aparece su huella, "SHA-256 del original:". El documento
+firmado está disponible cuando el sobre está `COMPLETED`; mientras se genera, el detalle muestra
+"Procesando el PDF firmado...".
 
-Para descargar documentos se necesita el rol de Auditor o superior en el espacio; un Lector ve sus
-nombres. Consulte [Descargar documentos firmados](/sign/sending/download-signed-documents/).
+Cuando el sobre se completa, el detalle añade el bloque **Certificado de evidencia**, con las
+descargas **Certificado de evidencia (PDF)** y **Registro de auditoría (JSON)**. Consulte
+[Certificado de evidencia](/sign/concepts/evidence-certificate/).
 
-El documento firmado corresponde exactamente al PDF que usted adjuntó al enviar el sobre.
+Para descargar documentos y el certificado de evidencia se necesita el rol de Auditor o superior en
+el espacio; un Lector ve sus nombres. Consulte
+[Descargar documentos firmados](/sign/sending/download-signed-documents/).
+
+## La huella de cada documento
+
+Mientras recibe cada PDF, bb-sign calcula su huella SHA-256, un resumen que cambia por completo si
+cambia un solo byte del archivo, y la guarda junto con la versión exacta almacenada. Al firmar, cada
+firma queda ligada a las huellas de los documentos del sobre. Si los documentos cambiaran mientras
+un firmante los revisa, bb-sign rechaza la firma y le muestra "Los documentos cambiaron mientras los
+revisabas. Revísalos de nuevo antes de firmar.".
+{DOCUMENTS.sealRefusedOnHashMismatch.value && ' Antes de sellar, bb-sign vuelve a comprobar las huellas: si el archivo almacenado ya no coincide con su huella registrada, o los documentos ya no son los que firmó cada firmante, no sella el documento.'}
+
+Por eso el documento firmado corresponde exactamente al PDF que usted adjuntó al enviar el sobre, y
+cualquiera puede comprobarlo: la huella del original figura en el detalle del sobre, en el registro
+de auditoría y en el certificado de evidencia.
+
+## Conservación de los archivos
+
+bb-sign conserva cada archivo durante <Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="días" />:
+el original desde que se sube y el documento firmado desde que se completa el sobre. Después lo
+elimina de forma definitiva. En el detalle del sobre, el bloque **Conservación** indica la fecha
+("Deja de estar disponible el...") para cada sobre.
+
+Hoy ningún archivo se traslada a almacenamiento de archivo: durante todo el plazo, los documentos se
+descargan directamente. Si un archivo llegara a archivarse, el detalle lo indica y permite solicitar
+su restauración; consulte [Conservación y restauración](/sign/sending/retention-and-restore/).
+Guarde en sus sistemas lo que deba conservar por más tiempo. Las condiciones están en
+[Alcance y conservación](/sign/legal/retention/).

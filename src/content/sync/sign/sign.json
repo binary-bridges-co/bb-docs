@@ -1,19 +1,31 @@
 {
   "repo": "binary-bridges-co/bb-sign",
-  "ref": "local:bb-sign",
-  "commit": "d1badc513f9c4434f7ca3ef62d866ab20bed33cf",
-  "syncedAt": "2026-10-10",
+  "ref": "local:release-v0.34.2",
+  "commit": "114de3808ac9cfb32bec4912aeb5c5b5c03ae8f3",
+  "commitDate": "2026-10-20",
   "rewrites": [
     "servers[0].url"
   ],
   "files": {
     "openapi.json": {
       "source": "docs/api/openapi.json",
-      "sha256": "d1e3720408ddf1e85686ba666a4c7a6f47d5878a54de7bd008fef012b6efb47c"
+      "sha256": "40c050683b9ae1bd20f91e3fb79cc3f8baef77f3f46c87bc74ee3893dd19bdd6"
     },
     "webhook-signature-vectors.json": {
       "source": "docs/api/webhook-signature-vectors.json",
       "sha256": "290fb600616ffe8a458a3566f80a03b92cf2a2d5e93b4ca5f2d3b2511c6f3549"
+    },
+    "legal/terminos-y-condiciones.md": {
+      "source": "docs/legal/terminos-y-condiciones.md",
+      "sha256": "4550a42eee197699844511f7bd4288a96c4f430a271eac59cb339c7c1504ed30"
+    },
+    "legal/certificado-propio.md": {
+      "source": "docs/guias/certificado-propio.md",
+      "sha256": "be9467625815d53371773f2c319f5e888f9414c73e984565666b79886b5ed7dd"
+    },
+    "legal/conservacion-y-restauracion.md": {
+      "source": "docs/guias/conservacion-y-restauracion.md",
+      "sha256": "414e01b5026723e669f7a77c3931cdb4738f112a4f9f783691660747ef728b55"
     }
   }
 }

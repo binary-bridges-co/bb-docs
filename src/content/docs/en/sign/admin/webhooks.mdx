@@ -8,7 +8,7 @@ source: docs/api/webhooks.md
 
 import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { WEBHOOKS } from '../../../../facts/sign';
+import { EVIDENCE, WEBHOOKS } from '../../../../facts/sign';
 
 With a webhook, bb-sign notifies your systems the moment something happens to an envelope: when it
 is sent, when a signer signs or when it is completed. Every notification arrives signed, so your
@@ -37,11 +37,15 @@ code that verifies the signature is in [Webhooks for developers](/en/sign/develo
 | Event | Name in the app | When it is sent |
 | --- | --- | --- |
 | `envelope.sent` | **Envelope sent** | The envelope was sent to its signers. |
-| `envelope.completed` | **Envelope completed** | Every signer signed. |
+| `envelope.completed` | **Envelope completed** | Every signer signed. Sent once: when the evidence certificate is ready, or without it if it cannot be issued or takes longer than <Fact of={EVIDENCE.degradedAfterHours} unit="hours" />. |
 | `envelope.cancelled` | **Envelope cancelled** | The envelope was cancelled. |
 | `envelope.expired` | **Envelope expired** | The envelope expired before completion. |
 | `signer.signed` | **Signer signed** | One signer signed; others may still be pending. |
 | `signer.viewed` | **Signer opened the document** | A signer opened the document. |
+| `envelope.evidence_issued` | **Evidence certificate ready (after a completion without it)** | The evidence certificate became ready after `envelope.completed` was sent without it. |
+| `document.restored` | **Archived document restored (or could not be)** | The restore of an archived file finished, successfully or not. It is the only notice an integration that requested the restore receives. |
+
+Your system must ignore event types it does not know: bb-sign may add others.
 
 Your organization can hold up to <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
 

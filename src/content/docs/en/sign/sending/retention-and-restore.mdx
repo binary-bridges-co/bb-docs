@@ -1,0 +1,163 @@
+---
+title: "Retention and restore"
+description: "How long bb-sign keeps the files of each envelope, what its dates mean and how to request an archived file."
+product: sign
+audience: user
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import {
+  ENVELOPE,
+  EVIDENCE,
+  RATE_LIMITS,
+  RESTORE,
+  RETENTION_IMPLEMENTED,
+  RETENTION_POLICY,
+} from '../../../../facts/sign';
+
+bb-sign keeps every file of an envelope for a fixed period of
+<Fact of={RETENTION_POLICY.retentionDays} unit="days" />. This page explains how that period is
+counted, what each envelope's **Retention** section shows and how to ask for a file that is in archive
+storage, both from the organization and from the signer's link.
+
+## How long each file is kept
+
+The period is the same for every organization and cannot be configured. It is counted separately for
+each file:
+
+| File | The period counts from |
+|---|---|
+| **Original PDF** | When the document is uploaded. |
+| **Signed PDF** | When the envelope completes. |
+| Evidence certificate and audit trail | When the certificate is issued. |
+
+When the period ends, the file is no longer available and is deleted permanently; it cannot be
+recovered afterwards. In production, document storage applies that same period: it deletes each file
+once it is <Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="days" /> old. Whatever your
+organization must keep for longer, store in your own systems. See
+[Scope and retention](/en/sign/legal/retention/).
+
+## The envelope's Retention section
+
+Each envelope page has a **Retention** section with the date from which its files can no longer be
+downloaded:
+
+> No longer available from \{date\}; it is then deleted permanently.
+
+The date is the earliest across the envelope's files, at midnight (UTC). Below it is the note "bb-sign
+keeps each file for <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. Keep in your own systems
+whatever you must retain for longer." and two links, **Terms: document retention** and **Retention and
+restore guide**, which open the same texts this documentation publishes: the
+[terms of service](/en/sign/legal/terms/) and the
+[retention and restore guide](/en/sign/legal/retention-guide/).
+
+The section can also show an "Archived from \{date\}" line, which only appears when automatic archiving
+is active. It is not shown today.
+
+## Archived envelopes and archive storage
+
+In bb-sign, "archiving" refers to two different things:
+
+- **An envelope moves to Archived.** Once <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> have
+  passed since its creation, a closed envelope moves to the **Archived** view. It is a change of list,
+  not of storage: the envelope becomes read-only, its documents and its evidence certificate are still
+  downloaded as usual and each signer's link still gives access to their copy. See
+  [Archived envelopes](/en/sign/sending/archived-envelopes/).
+- **A file moves to archive storage.** The terms of service allow a signed PDF, or the original of a
+  completed envelope, to be moved to archive storage once it is more than
+  <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> old. A file in that storage is kept just
+  the same, but it has to be restored before it can be downloaded. The evidence certificate and the
+  audit trail are never moved.
+
+<Aside type="note" title="Today no file is moved to archive storage">
+  bb-sign does not move any file to archive storage today: every file downloads directly until its
+  retention period ends. The restore described below only applies if a copy is archived.
+</Aside>
+
+## Request a restore from the envelope page
+
+If a file is archived, the envelope's **Documents (N)** section shows, instead of its download button,
+the **Request restore** button and the note "\{file\}: archived. Request its restore to download it."
+The envelope can be in **Envelopes** or in **Archived**: either way, you open it from its title.
+
+Press **Request restore**. While it is being restored, the file says it is restoring and, once it is
+available, you receive an email. Then return to the envelope page: the download button is back, with
+the date until which you can use it. The restored copy can be downloaded for
+<Fact of={RESTORE.days} unit="days" />; after that it goes back to archive
+storage{RESTORE.requestableAgainAfterWindow.value && ' and can be requested again'}.
+
+A restore can be requested by those who can download the envelope's documents: the auditors,
+contributors and managers of its workspace and the organization's administrators. Without that
+permission, the page does not offer the button.
+
+### File states
+
+| What you see next to the file | What it means | What to do |
+|---|---|---|
+| "\{file\}: archived. Request its restore to download it." | The file is in archive storage. | Press **Request restore**. |
+| "\{file\}: restoring. We will email you when it is available (usually within a few hours)." | Your request is in progress. | Wait for the email. You do not need to press the button again. |
+| "\{file\}: being restored (usually within a few hours). If you did not request it, request it to be emailed when it is ready." | Someone else asked for the same file and the restore is in progress. | Press **Request restore** if you want the email: your request joins the one already running. |
+| "\{file\}: restored, available until \{date\}." | The restored copy can be downloaded. | Download it before that date and store it in your systems. |
+| "\{file\}: no longer available (<Fact of={RETENTION_POLICY.retentionDays} />-day period ended)." | The file reached the end of its retention period and was deleted. | Use the copy your organization kept. |
+
+### How long it takes
+
+A restore usually takes a few hours, with no guaranteed time. If several people ask for the same file,
+bb-sign runs a single restore and emails each of them. If the restore has not finished within
+<Fact of={RESTORE.timeoutHours} unit="hours" />, it is treated as failed and the email says so; you can
+request it again.
+
+### If the request is not accepted
+
+| Message | What happened | What to do |
+|---|---|---|
+| "Your organization already has too many restores in progress. Try again when one finishes." | Your organization has the maximum of <Fact of={RESTORE.maxActivePerOrg} /> restores in progress. Users' and API credentials' restores count; signers' do not. | Wait for one to finish and press **Request restore** again. |
+| "The archive storage is not responding right now. Try again in a few minutes." | Archive storage did not answer and the request was not recorded. | Try again in a few minutes. |
+| "This file is no longer available: its <Fact of={RETENTION_POLICY.retentionDays} />-day period has ended." | The file was deleted at the end of its period. | Use the copy your organization kept. |
+| "Could not request the restore" | The request did not complete for another reason. | Reload the page and try again. If it repeats, send your administrator the reference shown in the notice. |
+
+## Request a restore from an integration
+
+An integration requests a file's restore through the API, with the same download permission:
+`POST /api/v1/envelopes/{id}/documents/{docId}/restore`. API credentials are not emailed: the
+integration learns that the file is available from the `document.restored` webhook. See
+[Webhooks](/en/sign/developers/webhooks/) and the
+[retention and restore guide](/en/sign/legal/retention-guide/).
+
+## The signer's copy
+
+Each signer can ask for their own signed copy from the link they signed with, even after the signing
+period has ended. If their copy is archived, the page shows "Your signed copy is archived. Request it
+and we will email it to you when it is available." and the **Request my copy** button. When they press
+it, the page confirms "We will email you your copy when it is available, usually within a few hours."
+and the signer receives the restore email once the copy is ready.
+
+Each link allows <Fact of={RATE_LIMITS.signerRestorePerLink} /> requests and each connection
+<Fact of={RATE_LIMITS.signerRestorePerIp} /> within <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutes" />.
+What the signer sees in each case is described in [Sign and download](/en/sign/signing/sign-and-download/).
+
+## The restore email
+
+When a restore ends, each person who asked for it, in the application or as a signer, receives the
+email `Tu solicitud de restauración de documentos / Your document restore request`, in Spanish and then
+in English. For each file, the email says whether it is available and until when (in UTC), or why it
+is not.{RESTORE.emailLinksToEnvelopeOrSigningPage.value && ' It does not carry the files: its link leads to the envelope page, or to the signing page if you asked as a signer, where they are downloaded.'}{RESTORE.emailGenericWithoutConfirmedAccess.value && ' If bb-sign cannot confirm that you can still download the envelope\'s documents, you receive a generic email, with no envelope title and no file names, only the link.'}
+
+| What the email says | What to do |
+|---|---|
+| "No longer available: it was deleted after its <Fact of={RETENTION_POLICY.retentionDays} unit="days" />." | Use the copy your organization kept. |
+| "The restore took longer than expected; you can request it again." | Press **Request restore** or **Request my copy** again. |
+| "It could not be restored." | Request it again. If it repeats, contact your administrator. |
+
+The evidence certificate never needs a restore: it downloads directly for its
+<Fact of={EVIDENCE.retentionDays} unit="days" />.
+
+<Aside type="tip" title="Keep each envelope as it completes">
+  The safest way to meet the period is to copy every envelope to your organization's systems as soon
+  as it completes. An administrator can automate this with the `envelope.completed` and
+  `envelope.evidence_issued` webhooks, and compare the SHA-256 of each downloaded PDF with the one the
+  webhook carries. See section 4 of the [retention and restore guide](/en/sign/legal/retention-guide/).
+</Aside>
+
+<LinkCard title="Retention and restore guide" href="/en/sign/legal/retention-guide/" description="bb-sign's text on the dates, restores and copying each envelope automatically." />

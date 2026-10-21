@@ -1,6 +1,6 @@
 ---
 title: Webhooks
-description: Receive each envelope's status changes in your system. Events, headers, signature verification, delivery, retries and history.
+description: Receive each envelope's changes in your system. Events, contents, signature verification, delivery, retries, history and file retention.
 product: sign
 audience: developer
 source: docs/api/webhooks.md
@@ -8,10 +8,10 @@ source: docs/api/webhooks.md
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { WEBHOOKS, ENVELOPE } from '../../../../facts/sign';
+import { WEBHOOKS, WEBHOOK_EVENTS, ENVELOPE, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED, RESTORE } from '../../../../facts/sign';
 
-With webhooks, bb-sign sends a signed JSON payload to your URL each time an envelope changes
-status, and your system reacts immediately without polling.
+With webhooks, bb-sign sends a signed JSON payload to your URL each time something happens to an
+envelope, and your system reacts immediately without polling.
 
 The signature scheme is defined normatively in the
 [webhook signature specification](/en/sign/developers/webhook-signature-spec/); this page is the
@@ -23,16 +23,21 @@ In **Settings**, tab **Webhooks**, select **New webhook**.
 
 - **Endpoint URL**: "Must be HTTPS and reachable from the internet. We refuse private and internal
   addresses." The check runs again on every delivery.
-- **Events to receive**: select the ones you need from the six available:
+- **Events to receive**: select the ones you need from the {WEBHOOK_EVENTS.length} available:
 
 | Event | When |
 |---|---|
 | `envelope.sent` | An envelope was sent to its signers |
-| `envelope.completed` | Every signer has signed |
+| `envelope.completed` | Every signer has signed. Sent once, with the evidence certificate when it is ready in time |
 | `envelope.cancelled` | An envelope was cancelled |
 | `envelope.expired` | An envelope reached its expiry without being completed |
 | `signer.signed` | One signer signed; others may be pending |
 | `signer.viewed` | A signer opened the document |
+| `envelope.evidence_issued` | The evidence certificate arrived after an `envelope.completed` that went out without it |
+| `document.restored` | A restore of an archived file ended (see [Retention and restores](#retention-and-restores)) |
+
+New event types may be added: your receiver must ignore the ones it does not know. A subscription
+receives only the types it selected.
 
 The **signing secret is shown once**, when the webhook is created. Store it in your secret store.
 An organization can have up to <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
@@ -50,13 +55,24 @@ An organization can have up to <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
       "id": "...", "title": "Q3 Agreement", "status": "COMPLETED",
       "createdAt": "...", "expiresAt": null
     },
-    "signer": { "id": "...", "email": "...", "name": "...", "signOrder": 1, "status": "SIGNED", "signedAt": "..." }
+    "signer": { "id": "...", "email": "...", "name": "...", "signOrder": 1, "status": "SIGNED", "signedAt": "...", "authMethod": "EMAIL_LINK_OTP" }
   }
 }
 ```
 
-`data.signer` is included only in `signer.*` events. Full schemas are in the
-[API reference](/sign/api/) as `WebhookEvent`, so a generated client receives them typed.
+`data.envelope` is in every event. The other `data` fields depend on the type:
+
+| Field | Events | Contents |
+|---|---|---|
+| `signer` | `signer.*` | The signer. `signer.authMethod` says how they were identified when they signed: `EMAIL_LINK` (the link only) or `EMAIL_LINK_OTP` (the link plus a one-time code sent by email). It is `null` before they sign, and for signatures made before the field existed |
+| `evidenceStatus`, `signedDocumentsStatus`, `documents`, `documentsPath`, `evidenceCertificate`, `auditChainHead` | `envelope.completed`, `envelope.evidence_issued` | The completion notice: the evidence certificate's status, each document's SHA-256 (original and signed) and, once the certificate is issued, its hashes and the path to download it |
+| `retention` | `envelope.completed` | The envelope's retention dates (see [Retention and restores](#retention-and-restores)) |
+| `document` | `document.restored` | The file whose restore ended, and the outcome |
+
+New fields may appear within one `apiVersion`: ignore the ones you do not know. Full schemas are in
+the [API reference](/sign/api/) as `WebhookEvent`, so a generated client receives them typed. The
+[specification](/en/sign/developers/webhook-signature-spec/#p3a-the-completion-notice) details each
+field.
 
 Every delivery carries three headers:
 
@@ -68,11 +84,28 @@ Every delivery carries three headers:
 
 ### Get the signed document
 
-When you receive `envelope.completed`, call `GET /api/v1/envelopes/{id}/documents` to get the
-file. The response includes `signedUrl` once the envelope is `COMPLETED`, valid for
-<Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />. The payload deliberately carries no download
-links: a presigned link in a payload would remain usable after delivery and could end up stored in
-logs. The [walkthrough](/en/sign/developers/envelope-walkthrough/) shows the whole sequence.
+When you receive `envelope.completed`, call `GET /api/v1/envelopes/{id}/documents` (the path comes
+in `data.documentsPath`) to get the files. The response includes `signedUrl` once the envelope is
+`COMPLETED`, valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />. The payload deliberately
+carries no download links: a presigned link in a payload would remain usable after delivery and
+could end up stored in logs. Fields ending in `Path` are API paths you call with the token, not
+links.
+
+To keep a complete, checked copy of each envelope:
+
+1. Subscribe to `envelope.completed` and to `envelope.evidence_issued` (a certificate that arrives
+   late).
+2. Download each document from `data.documentsPath`. The SHA-256 of the signed PDF must equal
+   `data.documents[].signedSha256`. If `signedDocumentsStatus` is `PREPARING`, that hash is not
+   known yet: do not compare it, and download the documents later.
+3. Call `data.evidenceCertificate.downloadPath`: it returns a link to the
+   [evidence certificate](/en/sign/concepts/evidence-certificate/) valid for
+   <Fact of={EVIDENCE.downloadLinkSeconds} unit="s" />. The PDF's SHA-256 must equal
+   `data.evidenceCertificate.sha256`.
+4. Keep `data.retention.deletesAt`: from that date, bb-sign no longer has the files.
+
+The [walkthrough](/en/sign/developers/envelope-walkthrough/) shows the whole sequence in curl,
+JavaScript and Java.
 
 ## Verify the signature over the raw body
 
@@ -106,18 +139,20 @@ before any parsing.
     @PostMapping("/webhooks/bb-sign")
     public ResponseEntity<Void> receive(
             @RequestHeader("X-BBSign-Signature") String signature,
-            @RequestBody byte[] rawBody) {                    // byte[], NOT a DTO
+            @RequestBody byte[] rawBody) throws IOException {   // byte[], NOT a DTO
 
         if (!Webhooks.verify(signature, rawBody, System.getenv("BBSIGN_WEBHOOK_SECRET"))) {
             return ResponseEntity.status(401).build();
         }
-        WebhookEvent event = new ObjectMapper().readValue(rawBody, WebhookEvent.class);
+        WebhookEvent event = MAPPER.readValue(rawBody, WebhookEvent.class);
         // ... handle asynchronously
         return ResponseEntity.ok().build();
     }
     ```
 
-    The [Java SDK](/en/sign/sdks/java/) page explains why the parameter is `byte[]`.
+    `MAPPER` is the `ObjectMapper` shown on the [Java SDK](/en/sign/sdks/java/) page, configured
+    for ISO-8601 dates and to ignore new fields. That page also explains why the parameter is
+    `byte[]`.
   </TabItem>
 </Tabs>
 
@@ -178,6 +213,60 @@ It is the first place to diagnose a delivery:
 | Gave up | Retries were exhausted | Fix the endpoint and fetch the envelope's status with the API; this event is not resent |
 | Not sent | The endpoint was disabled at the time | Enable the endpoint and reconcile the period with `GET /api/v1/envelopes` |
 | Could not be built | An error on bb-sign's side | Contact support |
+
+## Retention and restores
+
+bb-sign keeps every file of an envelope for a fixed
+<Fact of={RETENTION_POLICY.retentionDays} unit="days" />: the original from its upload, the signed
+copy from the completion and the evidence certificate from its issue. Dates are rounded up to
+00:00 UTC.
+
+- **`deletesAt`** (in `data.retention` on `envelope.completed`, and on each file of
+  `GET /api/v1/envelopes/{id}/documents`) means "no longer available from": from that date the files
+  cannot be downloaded, and they are erased permanently within the following days. Archive what you
+  must keep before it.
+- **`archivesAt`** is the date from which a file may move to archive storage. The terms of service
+  allow it from day <Fact of={RETENTION_POLICY.archiveAfterDays} />.
+  {!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && <>Today no file is moved to archive storage, so <code>archivesAt</code> is <code>null</code> and every file downloads directly.</>}
+- A delivery's body is fixed at its first dispatch. Each file's current dates are always on
+  `GET /api/v1/envelopes/{id}/documents`.
+
+**Restoring an archived file.** `GET /api/v1/envelopes/{id}/documents` reports each file's
+availability in `original.availability` and `signed.availability`:
+
+| Value | Meaning |
+|---|---|
+| `AVAILABLE`, `RESTORED` | It can be downloaded |
+| `ARCHIVED` | It is in archive storage: request a restore |
+| `RESTORE_IN_PROGRESS` | It is being restored |
+| `DELETED` | It is past its retention period |
+
+Request one file with `POST /api/v1/envelopes/{id}/documents/{docId}/restore` and the body
+`{"kind": "SIGNED"}` (or `"ORIGINAL"`). It answers `202` while the file is restored, usually within
+a few hours, and `200` when it needs no restore. However many people ask, one restore runs. The
+restored copy can be downloaded for <Fact of={RESTORE.days} unit="days" />. An organization can have
+at most <Fact of={RESTORE.maxActivePerOrg} /> restores in progress. The full cycle is described in
+[Retention and restores](/en/sign/sending/retention-and-restore/).
+
+**An integration is told only by `document.restored`**: API credentials are never emailed. If your
+integration requests restores, subscribe to that event. One event arrives per restore, including
+the ones a person or a signer asked for:
+
+```json
+"data": {
+  "envelope": { "id": "...", "title": "...", "status": "COMPLETED", "createdAt": "...", "expiresAt": null },
+  "document": {
+    "id": "...", "kind": "SIGNED", "outcome": "RESTORED", "reason": null,
+    "availableUntil": "2027-03-02T14:05:00Z", "downloadPath": "/api/v1/envelopes/{id}/documents"
+  }
+}
+```
+
+- `outcome` is `RESTORED` (downloadable until `availableUntil`), `AVAILABLE` (it never needed a
+  restore) or `FAILED`, with `reason` `DELETED` (past its retention), `TIMEOUT` (it took too long:
+  ask again) or `STORAGE_ERROR`. Further values may be added.
+- The payload carries no links: call `downloadPath` for the file's availability and a short-lived
+  link.
 
 ## Rotate the secret
 

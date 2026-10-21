@@ -49,8 +49,12 @@ issue → validate → worktree → plan → review gate → implement → merge
 - Numbers come from the fact sheet, never typed in prose.
 - No emojis, no typed arrows. Status is never colour alone. Brass means evidence.
 - Error and troubleshooting rows say what happened **and** what to do.
-- Legal texts are mirrored verbatim from the product repo with their version header and the
-  "Pendiente de revisión jurídica" banner. Do not improve legal wording here; change it at the source.
+- Legal texts are mirrored verbatim from the product repo with their version header. `npm run sync:sign`
+  generates the Spanish pages (`src/content/docs/sign/legal/{terms,own-certificate-guide,retention-guide}.md`;
+  never edit them) with three mechanical transforms only: drop the H1, move the version line into
+  `legalVersion`, rewrite the in-app links. The English pages are faithful translations with the same
+  version and clause numbering. No `<Fact>` inside legal text. Do not improve legal wording here; change it
+  at the source.
 - Nothing from a product's "not shipped" list (see the current plan) is described as available.
 
 ## 4. Before opening a PR

@@ -60,20 +60,31 @@ left off. To discard the draft, use **Start over**.
 
 On send, the envelope moves from **Draft** to **Sent** and every signer receives a unique link by
 email. From that moment the documents and the list of signers are fixed, which guarantees that
-everyone signs exactly the same thing. If you need to correct something,
+everyone signs exactly the same thing: bb-sign records each document's SHA-256 fingerprint when it is
+uploaded and binds every signature to those fingerprints. If you need to correct something,
 [cancel the envelope](/en/sign/sending/cancel/) and create a new one.
 
 From then on, follow its progress from **Envelopes**. See
-[Send and track](/en/sign/sending/send-and-track/).
+[Send and track](/en/sign/sending/send-and-track/). When the envelope completes, its page also offers
+the evidence certificate and the **Retention** section, with the date from which its files are no
+longer available. See [Download signed documents](/en/sign/sending/download-signed-documents/) and
+[Retention and restore](/en/sign/sending/retention-and-restore/).
 
 ## Finish a pending send
 
 **Send Envelope** creates the envelope with everything you gathered and then sends it. If the
-envelope is created but the send does not complete (for example, because your organization reached
-a limit of its plan), the envelope stays in **Draft** and the wizard says so:
+envelope is created but the send does not complete, the envelope stays in **Draft** and the wizard
+says so:
 
 > The envelope was created but not sent. Sending again sends it as it is; to change it, open it
 > from Envelopes.
+
+The two most common causes are:
+
+| Cause | What to do |
+|---|---|
+| Your organization reached a limit of its plan. | Ask your administrator to review the plan and, once it is resolved, press **Send Envelope** again. |
+| "One of the documents does not have its fingerprint recorded yet, so the envelope cannot be sent. Wait a few minutes or upload it again." | Wait a few minutes and press **Send Envelope** again. If the message continues, cancel the draft and create the envelope again with the document uploaded anew. |
 
 Once the cause is resolved, press **Send Envelope** again. If you close the wizard and come back
 later, it recognizes the envelope ("You already created this envelope, but it was not sent.") and
@@ -86,7 +97,8 @@ different documents or signers, cancel it and create a new one.
 
 The signer does not need an account. They receive an email in English with the subject
 `You have a document to sign: {title}`, open the link, review every document, enter the
-verification code if you requested one, draw or type their signature and download their copy at the
-end. Knowing that path helps you answer their questions.
+verification code if you requested one, draw or type their signature and, at the end, download their
+signed copy and their evidence certificate. While reviewing, they see each document's SHA-256
+fingerprint. Knowing that path helps you answer their questions.
 
 <LinkCard title="The signer's path" href="/en/sign/signing/" description="What every signer sees and does, start to finish, on one page." />

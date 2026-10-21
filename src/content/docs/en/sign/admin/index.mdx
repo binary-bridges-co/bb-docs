@@ -12,7 +12,8 @@ systems connect to the API and which certificate seals your documents. This sect
 those tasks.
 
 **Who:** organization admins and platform admins. **Where:** the **Labels**, **Users**,
-**Storage** and **Settings** entries of the sidebar, which only admins see.
+**Storage** and **Settings** entries of the sidebar, which only admins see. Administrator accounts
+sign in with a second factor; see [Sign-in security](/en/sign/admin/sign-in-security/).
 
 ## Admin tasks
 
@@ -20,16 +21,22 @@ those tasks.
 | --- | --- | --- | --- |
 | People | Invite users as members or admins | **Users**, **New User** button | [Users and invitations](/en/sign/admin/users-and-invitations/) |
 | People | Resend an invitation and see whether an account is active | **Users**, **Resend invitation** | [Users and invitations](/en/sign/admin/users-and-invitations/) |
+| People | Know the administrators' second factor and the password policy | Sign-in screen | [Sign-in security](/en/sign/admin/sign-in-security/) |
 | Access | Create, rename and delete workspaces | **Settings**, **Workspaces** tab | [Workspaces and members](/en/sign/admin/workspaces-and-members/) |
 | Access | Give people and API keys the Viewer, Auditor or Manager role in a workspace | **Settings**, **Workspaces**, **Members** | [Workspaces and members](/en/sign/admin/workspaces-and-members/) |
 | Access | Look up what each role allows | Reference | [Permissions matrix](/en/sign/admin/permissions/) |
 | Integration | Create, rotate and revoke API credentials | **Settings**, **API credentials** tab | [API credentials](/en/sign/admin/api-credentials/) |
 | Integration | Create, test, enable, rotate and delete webhooks, and review their deliveries | **Settings**, **Webhooks** tab | [Webhooks](/en/sign/admin/webhooks/) |
-| Seal | Configure the organization's own certificate | **Signing Certificate** section, together with Binary Bridges | [Your own certificate](/en/sign/admin/own-certificate/) |
+| Seal | Upload, replace and remove the organization's own certificate | **Settings**, **Certificate** tab | [Your own certificate](/en/sign/admin/own-certificate/) |
 | Data | Create, edit and delete label keys | **Labels** | [Label keys](/en/sign/admin/labels/) |
-| Data | Review the storage lifecycle | **Storage** | [Storage](/en/sign/admin/storage/) |
+| Data | Review the retention policy and the storage rules | **Storage** | [Storage](/en/sign/admin/storage/) |
+| Data | Check an envelope's retention dates and restore an archived file | Envelope detail, **Retention** | [Retention and restore](/en/sign/sending/retention-and-restore/) |
 | Data | Know the quota and the period's usage | **Quota & Usage** panel | [Quota and usage](/en/sign/admin/quota-and-usage/) |
 | Oversight | Review each envelope's audit trail | Envelope detail, **Audit Trail** | [Audit trail](/en/sign/admin/audit-trail/) |
+| Oversight | Download an envelope's evidence certificate and audit trail | Envelope detail, **Evidence certificate** | [Audit trail](/en/sign/admin/audit-trail/) |
+
+The **Agreements** tab of **Settings** lets admins publish agreement texts, which are not yet shown to
+signers nor attached to envelopes.
 
 An admin reaches every workspace without being a member: they see every envelope, can cancel it
 and download its documents. Day-to-day work with envelopes is in
@@ -45,8 +52,8 @@ and service-wide configuration. Request them from Binary Bridges support.
 | Create organizations | **Organizations**, **New Organization** |
 | Set the signature appearance (display name, reason, location) | Organization page, **Signature Appearance** |
 | Set, raise, renew, suspend or activate the quota | Organization page, **Quota Configuration** |
-| Change the storage lifecycle | **Storage**, **Apply** |
-| Provide the organization's audit events | On request, through support |
+| Set the language of evidence certificates (Spanish or English) | Organization page, **Evidence language** |
+| Provide the organization's configuration events (each envelope's trail is viewed and downloaded on the envelope itself) | On request, through support |
 | Create platform administrators | **Users**, **Platform Admin** role |
 
 <LinkCard title="Permissions matrix" href="/en/sign/admin/permissions/" description="What each organization and workspace role allows, and why an API credential never administers." />

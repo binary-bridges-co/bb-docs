@@ -7,12 +7,19 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { EMAILS, REMINDERS, URLS } from '../../../facts/sign';
+import { EMAILS, EVIDENCE, REMINDERS, RESTORE, URLS } from '../../../facts/sign';
 
 export const RECIPIENT = {
   signer: 'Firmante',
   org_admin: 'Administradores de la organización',
   user: 'Usuario de la aplicación',
+  requester: 'Quien solicitó la restauración (un usuario o un firmante)',
+};
+
+export const LANGUAGE = {
+  en: 'Inglés',
+  'es+en': 'Español e inglés, en el mismo correo',
+  realm: 'El del servicio de identidad',
 };
 
 export const TRIGGER = {
@@ -20,9 +27,11 @@ export const TRIGGER = {
   'signer.eligible (sequential signing)': 'Le llega el turno a un firmante (firma secuencial).',
   'otp.ready_for_delivery': 'El firmante pide un código de un solo uso.',
   'daily; invitation older than the threshold': 'Cada día, a los firmantes cuya invitación supera el umbral de recordatorio y aún no han firmado.',
-  'envelope.completed': 'El sobre se completa.',
+  'evidence certificate issued, or the degraded wait (without it)': 'El sobre se completa y su certificado de evidencia está listo, o pasa la espera máxima sin él.',
   'envelope.expired': 'El sobre vence.',
   'webhook circuit breaker': 'bb-sign desactiva un webhook tras agotar los reintentos.',
+  'daily certificate expiry check (own certificate, at each notice threshold)': 'El certificado propio de la organización llega a uno de sus avisos de vencimiento (revisión diaria).',
+  'a restore the person requested ends (restored, or failed with a reason)': 'Termina una restauración que la persona solicitó: el archivo está disponible o no se pudo restaurar, con el motivo.',
   'user invited': 'Un administrador invita a un usuario.',
   'user request': 'El usuario pide restablecer su contraseña.',
   'realm flow': 'El servicio de identidad solicita verificar el correo.',
@@ -35,8 +44,9 @@ envían; `{title}` es el título del sobre.
 ## Remitentes
 
 Los correos de sobres (invitaciones, códigos, recordatorios, sobre completado, sobre vencido y aviso
-de webhook) se envían desde **<Fact of={URLS.senderAddress} />**. Los correos de cuenta (invitación a
-la aplicación, restablecimiento de contraseña y verificación de correo) se envían desde
+de webhook) y los avisos de vencimiento del certificado y de restauración se envían desde
+**<Fact of={URLS.senderAddress} />**. Los correos de cuenta (invitación a la aplicación,
+restablecimiento de contraseña y verificación de correo) se envían desde
 **<Fact of={URLS.identitySenderAddress} />**. Si su organización filtra el correo entrante, pida a su
 equipo de TI que autorice ambas direcciones.
 
@@ -49,6 +59,7 @@ equipo de TI que autorice ambas direcciones.
       <th>Asunto</th>
       <th>Destinatario</th>
       <th>Cuándo se envía</th>
+      <th>Idioma</th>
     </tr>
   </thead>
   <tbody>
@@ -58,6 +69,7 @@ equipo de TI que autorice ambas direcciones.
         <td>{email.subject}</td>
         <td>{RECIPIENT[email.recipient]}</td>
         <td>{TRIGGER[email.trigger] ?? email.trigger}</td>
+        <td>{LANGUAGE[email.language]}</td>
       </tr>
     ))}
   </tbody>
@@ -65,12 +77,22 @@ equipo de TI que autorice ambas direcciones.
 
 Los recordatorios se envían una vez al día a los firmantes cuya invitación tiene más de
 <Fact of={REMINDERS.thresholdHours} unit="horas" />, con un máximo de uno cada
-<Fact of={REMINDERS.cooldownHours} unit="horas" /> por firmante. Los asuntos de los correos de cuenta
-los define el servicio de identidad; por eso aparecen entre paréntesis.
+<Fact of={REMINDERS.cooldownHours} unit="horas" /> por firmante. En el asunto del aviso de
+vencimiento, N es el número de días que faltan. Los asuntos de los correos de cuenta los define el
+servicio de identidad; por eso aparecen entre paréntesis.
+
+El correo de sobre completado espera al certificado de evidencia durante un máximo de
+<Fact of={EVIDENCE.degradedAfterHours} unit="horas" /> y, cuando corresponde, indica si está listo o
+si se está preparando, en el mismo enlace. Consulte [Certificado de evidencia](/sign/concepts/evidence-certificate/).
+
+El aviso de restauración solo se envía al terminar la restauración de un archivo archivado, y hoy
+ningún archivo se traslada a almacenamiento de archivo. Las credenciales de API no reciben este correo: sus
+integraciones lo conocen por el webhook `document.restored`.{RESTORE.emailLinksToEnvelopeOrSigningPage.value && ' El correo no adjunta archivos: enlaza a la página del sobre o, si lo pidió un firmante, a su página de firma.'}{RESTORE.emailGenericWithoutConfirmedAccess.value && ' Si bb-sign no puede confirmar que el usuario sigue pudiendo descargar los documentos del sobre, el correo es genérico: sin el título del sobre ni los nombres de los archivos.'} Consulte
+[Conservación y restauración](/sign/sending/retention-and-restore/).
 
 <Aside type="note" title="Idioma de los correos de sobres">
-  Los correos que reciben los firmantes se envían en inglés. Si sus firmantes no leen inglés,
-  infórmeles por sus propios canales qué correo recibirán y desde qué dirección. Ver
+  Los correos del sobre que reciben los firmantes se envían en inglés. Si sus firmantes no leen
+  inglés, infórmeles por sus propios canales qué correo recibirán y desde qué dirección. Ver
   [El correo de invitación](/sign/signing/receiving-the-email/).
 </Aside>
 
@@ -82,5 +104,6 @@ Estos momentos se gestionan desde la aplicación o mediante webhooks:
   webhook con el evento `envelope.completed`.
 - **Sobre cancelado.** Al cancelar un sobre, el enlace de los firmantes pendientes deja de estar
   disponible. Informe usted a esos firmantes. Ver [Cancelar un sobre](/sign/sending/cancel/).
-- **Vencimiento del certificado.** Lleve control de la fecha de vencimiento del certificado de su
-  organización y renuévelo con anticipación. Ver [Certificado propio](/sign/admin/own-certificate/).
+- **Renovación del certificado.** El aviso de vencimiento llega a los administradores; renueve el
+  certificado con anticipación y súbalo antes de que venza. Ver
+  [Certificado propio](/sign/admin/own-certificate/).

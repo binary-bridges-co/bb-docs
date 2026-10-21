@@ -1,0 +1,88 @@
+---
+title: "Guide: document retention and restore"
+description: "Guide that accompanies section 3 of the terms: the retention period, the dates, how to restore a file and how to keep each envelope yourself."
+product: sign
+audience: legal
+source: docs/guias/conservacion-y-restauracion.md
+legal: true
+---
+
+This guide accompanies section 3 of the [Terms and conditions of service](/en/sign/legal/terms).
+
+bb-sign keeps the files of each envelope for a fixed period of 365 days. This guide explains what the dates bb-sign shows mean, how to request an archived file and how to keep each envelope in your own systems before the period ends.
+
+## 1. The period and what the dates mean
+
+- **Files are kept for 365 days.** The period is fixed and cannot be configured. It is counted for each file: the original document from when it is uploaded, the signed document from when the envelope is completed and the evidence certificate from when it is issued.
+- **"No longer available from …".** From that date the file can no longer be downloaded. It is permanently deleted in the following days and after that it cannot be recovered.
+- **"Archived from …".** Documents older than 90 days may be moved to archive storage. From that date, downloading a document may require you to request its restore first (section 2). This date only appears when automatic archiving is active.
+- **Dates are at 00:00 UTC.** The envelope page shows the earliest dates across all its files; the API gives the exact dates of each file.
+- **Not every file ends up archived.** A document finalized before automatic archiving was activated may never be archived, even if it shows an "archived from" date. Before every download, bb-sign checks the real state of the file, so a date that does not come true does not stop you from downloading it.
+- **The evidence certificate and the audit trail are not archived.** They can be downloaded immediately throughout their 365 days.
+- **Certificates issued before this version.** An evidence certificate already issued keeps the dates it was sealed with, which may differ by one day from the ones the application shows today. The dates in the application and in the API are the ones in force.
+
+## 2. Requesting the restore of an archived file
+
+A restore usually takes a few hours, with no guaranteed time. If several people request the same file, bb-sign performs a single restore and notifies all of them. The restored copy can be downloaded for 7 days; after that it returns to the archive and can be requested again.
+
+### In the application
+
+- Open the envelope. In the documents section, an archived file shows the **Request restore** button.
+- While it is being restored, the file shows "restoring". If someone else requested the restore, the button remains available: request it too to receive the email. When it is available, you will receive an email with a link to the envelope, where the download button appears again together with the date until which the file is available.
+- You need the document download permission in the envelope's workspace. Without it, the application does not offer the button.
+
+### Through the API
+
+Request the restore of a file, `SIGNED` (the signed PDF) or `ORIGINAL` (the uploaded document):
+
+```
+curl -X POST "$API_BASE/api/v1/envelopes/$ENVELOPE_ID/documents/$DOCUMENT_ID/restore" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"kind": "SIGNED"}'
+```
+
+- `202`: the restore started, or it was already in progress and your request joined it (`alreadyInProgress: true`).
+- `200`: the file does not need a restore and can be downloaded now.
+- `410 DOCUMENT_DELETED`: the file reached its 365 days and no longer exists.
+- `429 RESTORE_LIMIT_REACHED`: your organization has too many restores in progress. Try again when one of them finishes.
+- `503 ARCHIVAL_STORAGE_UNAVAILABLE`: the archive storage did not respond. Try again later.
+
+The state of each file is in the envelope's document list, in `original.availability` and `signed.availability`: `AVAILABLE` or `RESTORED` (it can be downloaded), `ARCHIVED` (it needs a restore), `RESTORE_IN_PROGRESS` (it is being restored) or `DELETED` (it reached its 365 days).
+
+```
+curl "$API_BASE/api/v1/envelopes/$ENVELOPE_ID/documents" -H "Authorization: Bearer $TOKEN"
+```
+
+### The signer
+
+The person who signed can request their signed copy from the link they signed with, even if the link has expired for signing. The page shows the **Request my copy** button; when the copy is available, the signer receives an email with a link to that same page, from which they download it.
+
+## 3. The notice when the file is available
+
+- **The people** who requested the restore, in the application or as signers, receive an email when the file is available. If it could not be restored, the email says so. If, when sending it, bb-sign cannot confirm that the person still has the download permission, the email is generic and does not name the files.
+- **Integrations do not receive email.** An integration that requests a restore through the API learns about it only through the `document.restored` webhook. **Subscribe to that event** in Settings, Webhooks tab.
+- The `document.restored` webhook states the document, the file (`kind`), the outcome (`outcome`: `RESTORED`, `AVAILABLE` or `FAILED`, with its `reason`) and until when it is available (`availableUntil`). It does not carry the file or a download link: it carries `downloadPath`, the envelope's document list, where you get a short-lived download link.
+
+## 4. Keeping each envelope in your systems, automatically
+
+The safest way to meet the period is to copy each envelope to your systems as soon as it is completed, before anything is archived:
+
+1. Subscribe to the `envelope.completed` webhook (and to `envelope.evidence_issued`, for a certificate that arrives later).
+2. When you receive it, read `data.documentsPath` and call that path with your credential, which needs the document download permission: for each document it returns a short-lived download link to the signed PDF (`signedUrl`).
+3. Download each signed PDF and compare its SHA-256 with the webhook's `data.documents[].signedSha256`. If they match, the file is exactly the one bb-sign sealed.
+4. Download the evidence certificate from `data.evidenceCertificate.downloadPath`, which returns a link valid for 300 seconds, and compare its SHA-256 with `data.evidenceCertificate.sha256`.
+5. Also store `data.retention.deletesAt`: it is the date from which bb-sign will no longer have the files.
+
+To compute the SHA-256 of a downloaded file (on Linux, `sha256sum` does the same):
+
+```
+shasum -a 256 documento-firmado.pdf
+```
+
+If the webhook indicates `signedDocumentsStatus: PREPARING`, the signed PDFs did not exist yet: do not compare the hash, and request `data.documentsPath` again later.
+
+## 5. Responsibilities
+
+- **bb-sign** keeps the original documents, the signed documents and the evidence of each envelope for 365 days, and restores on request those that have been archived.
+- **Your organization** keeps the documents after the 365 days, in accordance with article 12 of Ley 527 de 1999 and its own retention rules. Copy each envelope to your systems (section 4) before the "no longer available" date.

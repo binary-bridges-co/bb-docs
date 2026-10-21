@@ -7,7 +7,7 @@ source: docs/api/migrating-from-adobe.md
 ---
 
 import Fact from '../../../../components/facts/Fact.astro';
-import { AUTH, DOCUMENTS } from '../../../facts/sign';
+import { AUTH, DOCUMENTS, EVIDENCE } from '../../../facts/sign';
 
 Si su equipo ya tiene una integración con Acrobat Sign, esta guía le permite trasladarla a bb-sign
 con un mapa claro de conceptos, autenticación, webhooks y endpoints. Toma como referencia la API v6
@@ -27,6 +27,7 @@ de Acrobat Sign.
 | **Webhook** con verificación por eco | **Webhook** con firma HMAC | Ver [Webhooks](#webhooks-de-la-verificación-por-eco-a-la-firma-hmac); es el cambio principal |
 | **Megasign / bulk send** | Un sobre por destinatario | Cree los sobres en un ciclo con `POST /api/v1/envelopes` |
 | **Custom workflow** | Firma secuencial o en paralelo | Se define con el booleano `sequentialSigning` del sobre y el `signOrder` de cada firmante |
+| **Audit report** | **Certificado de evidencia** | Un PDF sellado por sobre completado, con una copia para la organización y otra para cada firmante. Consulte [Certificado de evidencia](/sign/concepts/evidence-certificate/) |
 | **Form fields / anchors** | Un marcador de texto en el PDF | El sello se ubica donde el PDF contiene <code>{DOCUMENTS.placementMarker.value}</code> (N es el orden del firmante); sin marcador, los sellos se ubican en la última página. Consulte [Documentos](/sign/concepts/documents/) |
 
 ## Autenticación: de la clave de integración a client credentials
@@ -82,7 +83,9 @@ implementación propia. La [guía de webhooks](/sign/developers/webhooks/) detal
 requisitos que debe cumplir un verificador.
 
 **Contenido del evento.** bb-sign entrega un evento compacto y tipado: id del sobre, título,
-estado y, en los eventos `signer.*`, el firmante. Para obtener más datos, consulte la API. Así los
+estado y, en los eventos `signer.*`, el firmante y cómo se identificó. El evento de finalización
+incluye además el SHA-256 de cada documento, los hashes del certificado de evidencia y las fechas de
+conservación. Ningún payload lleva enlaces de descarga: los archivos se obtienen con la API. Así los
 payloads se mantienen pequeños y el contrato del webhook permanece estable.
 
 ## Equivalencia de endpoints
@@ -95,6 +98,9 @@ payloads se mantienen pequeños y el contrato del webhook permanece estable.
 | `GET /agreements/{id}` | `GET /api/v1/envelopes/{id}` |
 | `GET /agreements/{id}/documents` | `GET /api/v1/envelopes/{id}/documents` |
 | `PUT /agreements/{id}/state` a `CANCELLED` | `POST /api/v1/envelopes/{id}/cancel` |
+| `GET /agreements/{id}/auditTrail` (el «audit report» en PDF) | `GET /api/v1/envelopes/{id}/evidence-certificate/download`: enlaces al certificado de evidencia sellado y al registro de auditoría congelado, válidos durante <Fact of={EVIDENCE.downloadLinkSeconds} unit="s" /> |
+| Eventos del acuerdo (`GET /agreements/{id}/events`) | `GET /api/v1/audit/envelopes/{id}/events` con `audit:read` (fuera del contrato publicado; ver [Autenticación de máquinas](/sign/developers/authentication/#sobres-archivados-y-registro-de-auditoría-de-un-sobre)) |
+| `GET /agreements/{id}/formData` | Sin equivalente: bb-sign no tiene campos de formulario |
 | `POST /webhooks` | **Configuración**, pestaña **Webhooks** (los webhooks se administran en la interfaz) |
 
 **Crear y enviar son dos llamadas.** El sobre se crea en `DRAFT`, se le adjuntan los documentos y

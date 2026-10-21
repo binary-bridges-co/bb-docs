@@ -7,48 +7,153 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { CERTIFICATE, ENVELOPE } from '../../../../facts/sign';
+import { AUDIT, AUDIT_EVENT_TYPES, CERTIFICATE, ENVELOPE, EVIDENCE, VERIFY } from '../../../../facts/sign';
+
+export const ENVELOPE_EVENTS = {
+  ENVELOPE_CREATED: { label: 'Envelope created', when: 'The envelope is created, in the application or through the API.' },
+  DOCUMENT_ADDED: { label: 'Document added', when: "A document joins the envelope, with the original's SHA-256 fingerprint." },
+  ENVELOPE_SENT: { label: 'Envelope sent', when: 'The envelope is sent.' },
+  SIGNER_ELIGIBLE: { when: "It becomes a signer's turn (on send or, in sequential signing, when the previous group finishes)." },
+  EMAIL_SENT: { when: 'An envelope email is sent.' },
+  EMAIL_DELIVERED: { when: 'The email provider reports that the email was delivered.' },
+  EMAIL_OPENED: { when: 'The email provider reports that the email was opened.' },
+  EMAIL_BOUNCED: { when: 'The email provider reports that the email bounced.' },
+  SIGNING_LINK_CLICKED: { when: 'The signer opens their link.' },
+  SIGNING_VIEW_OPENED: { when: 'The signer opens the signing view.' },
+  SIGNING_VIEW_CLOSED: { when: 'The signer closes or leaves the signing view.' },
+  OTP_REQUESTED: { when: 'The signer asks for a one-time code.' },
+  OTP_VERIFIED: { when: 'The signer types the right code.' },
+  OTP_FAILED: { when: 'The code typed is wrong, or the verification is refused.' },
+  OTP_LOCKED: { when: 'The attempts run out and the code is locked.' },
+  SIGNER_SIGNED: { label: 'Signer signed', when: 'The signer submits their signature, bound to the fingerprint of the document set.' },
+  ENVELOPE_COMPLETED: { label: 'Envelope completed', when: 'The last signer signs.' },
+  DOCUMENTS_SEALED: { label: 'Signed documents sealed', when: 'The signed PDFs are ready, with the SHA-256 fingerprint of each one.' },
+  EVIDENCE_CERTIFICATE_ISSUED: { label: 'Evidence certificate issued', when: "The envelope's evidence certificate is issued." },
+  EVIDENCE_CERTIFICATE_FAILED: { label: 'Evidence certificate could not be generated', when: 'The automatic issuing of the certificate fails.' },
+  EVIDENCE_CERTIFICATE_ACCESSED: { label: 'Evidence certificate downloaded', when: 'A user or an API credential downloads the certificate, or a signer downloads their copy.' },
+  EVIDENCE_CERTIFICATE_REISSUE_REQUESTED: { label: 'Evidence certificate re-issued by platform staff', when: 'Platform staff issue again a certificate that failed.' },
+  SIGNED_COPY_ACCESSED: { when: 'A signer downloads their signed copy.' },
+  AUDIT_TRAIL_EXPORTED: { when: "The envelope's audit trail is exported." },
+  ENVELOPE_CANCELLED: { label: 'Envelope cancelled', when: 'The envelope is cancelled.' },
+  ENVELOPE_EXPIRED: { label: 'Envelope expired', when: 'The envelope expires.' },
+  ENVELOPE_ARCHIVED: { label: 'Envelope archived', when: 'The envelope moves to Archived.' },
+  DOCUMENT_RESTORE_REQUESTED: { label: 'Restore of an archived document requested', when: 'Someone asks for an archived file to be restored.' },
+  DOCUMENT_RESTORED: { label: 'Archived document restore finished', when: 'A restore ends, with the file available or with the reason it failed.' },
+};
+
+export const ORG_EVENTS = {
+  API_CREDENTIAL_CREATED: 'An API credential is created.',
+  API_CREDENTIAL_REVOKED: 'An API credential is revoked.',
+  WEBHOOK_SUBSCRIPTION_CREATED: 'A webhook is created.',
+  WEBHOOK_SUBSCRIPTION_SECRET_ROTATED: "A webhook's secret is rotated.",
+  WEBHOOK_SUBSCRIPTION_DELETED: 'A webhook is deleted.',
+  WORKSPACE_CREATED: 'A workspace is created.',
+  WORKSPACE_RENAMED: 'A workspace is renamed.',
+  WORKSPACE_DELETED: 'A workspace is deleted.',
+  WORKSPACE_MEMBER_GRANTED: 'A workspace role is granted.',
+  WORKSPACE_MEMBER_REVOKED: 'A workspace role is revoked.',
+  CERTIFICATE_UPLOADED: 'A sealing certificate is uploaded.',
+  CERTIFICATE_DELETED: 'A sealing certificate is deleted.',
+  CERTIFICATE_EXPIRING: "The organization's own certificate reaches one of its expiry notices.",
+  AGREEMENT_COPY_PUBLISHED: 'A version of a text is published in the Settings Agreements tab.',
+};
 
 bb-sign records complete evidence for every envelope: who received what, who opened it, who signed,
 from where and when. That evidence, protected by an audit chain, supports each signer's identity and
-the integrity of the process. This page explains what is recorded and how it is checked.
+the integrity of the process, and when the envelope completes it is delivered in an
+[evidence certificate](/en/sign/concepts/evidence-certificate/). This page explains what is recorded
+and how it is checked.
 
 ## The audit chain
 
-Every audit event carries its own hash and the hash of the previous event of the same envelope. The
-chain therefore lets you check that no event was inserted, modified or removed afterwards: any
-alteration breaks the link with the next event.
+Every audit event belongs to a chain: the envelope's, the organization's or the platform's. Within its
+chain, each event carries a sequence number with no gaps and a hash that covers its content, its
+position and the hash of the previous event. The chain therefore lets you check that no event was
+inserted, modified or removed afterwards: any alteration breaks the link with the next event.
 
-In an envelope's detail, the **Audit Trail** section shows every event with its date, its actor (a
-person, a signer or **System**) and its hash. It is available to Auditors and Managers of the
-workspace, and to administrators in every workspace.
+Events are only ever added. No user or service can modify or delete an event once recorded, and
+bb-sign verifies every chain each night, at <Fact of={AUDIT.nightlyVerifyTime} /> (time zone
+<Fact of={AUDIT.nightlyVerifyTimeZone} />).
+
+## An envelope's audit trail
+
+In an envelope's detail, the **Audit Trail** section shows every event with its date, its actor and
+its hash. The actor can be:
+
+- **A user**, by name or email ("Unknown user" when they can no longer be identified).
+- **An API credential**, by its label and with the **API** badge ("API credential" when it can no
+  longer be identified).
+- **A signer**.
+- **System**, for bb-sign's automatic actions.
+- **Actor not recorded**, on older events that did not keep who acted.
+
+The trail is available to Auditors, Contributors and Managers of the workspace, and to administrators
+in every workspace. Since every member is a Contributor in General, everyone sees the trail of that
+workspace's envelopes. See
+[Organizations, workspaces and roles](/en/sign/concepts/organizations-workspaces-roles/).
 
 ## Recorded events
 
-| Event | When |
-| --- | --- |
-| `SIGNER_ELIGIBLE` | It becomes a signer's turn (on send or, in sequential signing, when the previous group finishes). |
-| `SIGNING_LINK_CLICKED` | The signer opens their link. |
-| `SIGNING_VIEW_OPENED` | The signer opens the signing view. |
-| `SIGNING_VIEW_CLOSED` | The signer closes or leaves the signing view. |
-| `SIGNER_SIGNED` | The signer submits their signature. |
-| `ENVELOPE_COMPLETED` | The last signer signs. |
-| `SIGNED_COPY_ACCESSED` | A signer downloads their signed copy. |
-| `EMAIL_SENT`, `EMAIL_DELIVERED`, `EMAIL_OPENED`, `EMAIL_BOUNCED` | An envelope email is sent, delivered, opened or bounces, as reported by the email provider. |
+Every envelope records these events. The application shows a name for the most common ones and the
+code for the others.
+
+<table>
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th>In the application</th>
+      <th>When</th>
+    </tr>
+  </thead>
+  <tbody>
+    {Object.entries(ENVELOPE_EVENTS).filter(([type]) => AUDIT_EVENT_TYPES.includes(type)).map(([type, event]) => (
+      <tr>
+        <td><code>{type}</code></td>
+        <td>{event.label ?? 'Shown as the code'}</td>
+        <td>{event.when}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 The envelope also keeps its status and its creation, sent and cancelled dates, and
-[webhooks](/en/sign/developers/webhooks/) notify your systems of sending, cancellation and expiry.
+[webhooks](/en/sign/developers/webhooks/) notify your systems of the events of the envelope and its
+signers, the issuing of the evidence certificate and the restore of documents.
 
-At organization level, bb-sign also records the creation and revocation of API credentials; the
-creation, deletion and secret rotation of webhooks; and the creation, renaming and deletion of
-workspaces, together with role grants and revocations. Administrators consult these events in
-[Audit trail](/en/sign/admin/audit-trail/).
+At organization level, bb-sign records these events, which administrators consult in
+[Audit trail](/en/sign/admin/audit-trail/):
+
+<table>
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th>When</th>
+    </tr>
+  </thead>
+  <tbody>
+    {Object.entries(ORG_EVENTS).filter(([type]) => AUDIT_EVENT_TYPES.includes(type)).map(([type, when]) => (
+      <tr>
+        <td><code>{type}</code></td>
+        <td>{when}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 ## Data kept with each signature
 
-When a signer submits their signature, bb-sign keeps the signature **image**, the exact **time**,
-the originating **IP address** and the **browser** (the *user agent* string). This data accompanies
-the `SIGNER_SIGNED` event and the signer's record.
+When a signer submits their signature, bb-sign keeps:
+
+- the signature **image**;
+- the exact **time**;
+- the originating **IP address** and the **browser** (the *user agent* string);
+- the **identification method**: `EMAIL_LINK` (the link sent by email) or `EMAIL_LINK_OTP` (the link
+  and a one-time code);
+- if a code was used, its channel, the masked destination and the time it was accepted. The code is
+  never stored in plain text;
+- the **fingerprint of the document set** signed, which binds the signature to those exact documents.
+
+This data accompanies the `SIGNER_SIGNED` event, the signer's record and the evidence certificate.
 
 ## Opening tracking
 
@@ -59,27 +164,71 @@ opening. An opening after that interval is recorded as a new one.
 
 ## The public verification
 
-The QR code on every seal leads to a public bb-sign page with the envelope identifier and the first
-sixteen characters of the seal's hash. Anyone who has the document can use it, without an account.
-See [Verify a signed document](/en/sign/signing/verify-a-document/).
+bb-sign's public verification page offers two checks, without an account. See
+[Verify a signed document](/en/sign/signing/verify-a-document/).
 
-bb-sign looks up the signer of that envelope whose hash starts with the received value and
-**recomputes** the hash with the formula <Fact of={CERTIFICATE.sealHashFormula} />, using the
-fingerprint of the organization's **active** certificate. If the result matches the recorded hash,
-the page confirms the seal is valid and shows the signer's name, their email and the signing date.
+### The seal's QR code
 
-<Aside type="caution" title="To verify the PDF, use the reader's signature panel">
-  The public page confirms that the seal's data matches what bb-sign has on record. To confirm that
-  the PDF in your hands is intact, open it in Adobe Acrobat or another reader and review its
-  signature panel. See [Electronic signature and seal](/en/sign/concepts/signature-and-seal/).
+The QR code on every seal leads to the public page with the envelope identifier and the first
+sixteen characters of the seal's hash. bb-sign looks up the signer of that envelope whose hash starts
+with the received value and **recomputes** the hash from the recorded data:
+
+- Seals made since bb-sign <Fact of={VERIFY.qrUsesStoredFingerprintSince} /> (seal version 2) use
+  the formula <Fact of={CERTIFICATE.sealHashFormulaV2} />, where each `<len>` is the length in bytes
+  (UTF-8) of the field that follows it, with the fingerprint of the certificate that sealed, stored
+  with the seal, and the fingerprint of the document set, <Fact of={CERTIFICATE.documentSetFormula} />,
+  with one entry per document ordered by `documentId`, which bb-sign recomputes from the documents'
+  recorded fingerprints.
+- Earlier seals (version 1) use the formula <Fact of={CERTIFICATE.sealHashFormulaV1} />, with the
+  fingerprint of the organization's **active** certificate.
+
+If the result matches the recorded hash, the page confirms the seal is valid and shows the signer's
+name, their email and the signing date.
+
+Version 2 seals keep validating even if your organization changes its certificate, because they carry
+the fingerprint of the certificate that sealed them. Version 1 seals depend on the active certificate:
+if your organization changes its certificate, they stop validating on the public page, even though
+the documents are intact. For those documents, use the reader's signature panel and let whoever will
+verify them know.
+
+<Aside type="caution" title="Envelopes in Archived">
+  Today, the QR code of an envelope that has moved to **Archived**
+  (<Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after its creation) shows "Invalid Signature",
+  even though the document is intact. For those documents, use **Check a file** or, if they were
+  sealed before that check existed, the reader's signature panel. See
+  [Verify a signed document](/en/sign/signing/verify-a-document/).
 </Aside>
 
-Because the hash includes the certificate's fingerprint, if your organization changes its
-certificate, earlier seals stop validating on the public page, even though the documents are intact.
-In that case, verify earlier documents with the reader's signature panel and let whoever will verify
-them know.
+### Check a file
+
+On the same page, **Check a file** takes a PDF, computes its SHA-256 fingerprint on the server and
+looks it up among the documents **signed** by bb-sign, those of archived envelopes included. The file
+is not stored. If the fingerprint matches, the page shows when the envelope completed, the signers
+(with their email masked and the time they signed) and the fingerprint of the certificate that
+sealed. An unsigned original, or a document changed after signing, does not match. Nor do documents
+sealed before this check existed: for those, use the reader's signature panel.
+
+Each file can weigh up to <Fact of={VERIFY.fileMaxMb} unit="MB" /> and is checked within
+<Fact of={VERIFY.fileMaxSeconds} unit="seconds" />. Each connection can run up to
+<Fact of={VERIFY.fileRatePerMinute} /> checks per minute.
+
+<Aside type="caution" title="To verify the PDF's signature, use the reader's signature panel">
+  Neither check validates the PDF's certificate signature. To confirm that the file's signature is
+  valid, open it in Adobe Acrobat or another reader and review its signature panel. See
+  [Electronic signature and seal](/en/sign/concepts/signature-and-seal/).
+</Aside>
 
 ## Consult and keep the evidence
 
-Each envelope's evidence is consulted in its **Audit Trail**, inside the application. To keep it
-beyond bb-sign's retention period, see [Scope and retention](/en/sign/legal/retention/).
+Each envelope's evidence is consulted in its **Audit Trail**, inside the application. When the
+envelope completes, bb-sign also delivers it in the **evidence certificate**, a sealed PDF, together
+with the audit trail frozen as JSON. They are downloaded by whoever can download the envelope's
+documents, and each signer downloads their own copy from their link. bb-sign keeps them for
+<Fact of={EVIDENCE.retentionDays} unit="days" /> from issue. See
+[Evidence certificate](/en/sign/concepts/evidence-certificate/).
+
+Integrations can also verify an envelope's chain (result
+{AUDIT.verificationStatuses.value.join(', ')}) and export its trail with
+<Fact of={AUDIT.exportPath} />, in the <Fact of={AUDIT.exportFormat} /> format, with the `audit:read`
+permission. To keep the evidence beyond bb-sign's retention period, download it beforehand and see
+[Scope and retention](/en/sign/legal/retention/).

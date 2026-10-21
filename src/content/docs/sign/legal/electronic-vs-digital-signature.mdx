@@ -5,17 +5,10 @@ product: sign
 audience: legal
 ---
 
-import { Aside } from '@astrojs/starlight/components';
-
 Las firmas que se recogen en bb-sign son firmas electrónicas con validez jurídica en Colombia, conforme
 a la Ley 527 de 1999 y al Decreto 2364 de 2012. Esta página reúne los textos legales aplicables y
 explica cómo bb-sign cumple cada condición: identifica al firmante, protege la integridad del documento
 y conserva la evidencia de cada firma.
-
-<Aside type="caution" title="Pendiente de revisión jurídica">
-  Esta página describe el mecanismo de bb-sign y cita la norma aplicable. No constituye una opinión
-  jurídica y aún no ha sido revisada por un abogado.
-</Aside>
 
 ## Fundamento legal
 
@@ -79,13 +72,17 @@ sobre:
 - **Identificación por correo.** Cada firmante recibe un enlace personal en su correo; solo quien
   controla ese buzón puede abrirlo.
 - **Verificación adicional.** La organización puede exigir, sobre por sobre, un código de un solo uso
-  enviado al mismo correo, que el firmante escribe antes de firmar.
+  enviado al mismo correo, que el firmante escribe antes de firmar. Cada firma registra cuál de los dos
+  métodos identificó al firmante.
 - **Aprobación expresa.** El firmante dibuja o escribe su firma, que queda estampada en el documento
   junto a su nombre, su correo y la fecha.
 - **Integridad.** Cada firma queda vinculada a la huella SHA-256 de los documentos que el firmante vio,
   de modo que cualquier cambio posterior se detecta.
 - **Evidencia.** Una cadena de auditoría registra la fecha y hora, la dirección IP y el navegador de
   cada acción.
+- **Certificado de evidencia.** Al completarse el sobre, bb-sign emite un certificado de evidencia
+  sellado, con una copia para la organización y otra para cada firmante, que reúne esa evidencia y una
+  copia fija del registro de auditoría. Ver [Certificado de evidencia](/sign/concepts/evidence-certificate/).
 
 Con este método, bb-sign cumple las dos condiciones del artículo 7: identifica al firmante y demuestra
 su aprobación de una forma que la organización puede explicar y probar. Ver
@@ -94,14 +91,17 @@ su aprobación de una forma que la organización puede explicar y probar. Ver
 
 ## El sello de la organización
 
-Al completarse un sobre, bb-sign sella cada documento con el certificado de la organización. El sello
-garantiza la integridad del documento e indica qué organización lo selló; la identidad de cada
-firmante la acredita la evidencia de la firma electrónica descrita arriba.
+Al completarse un sobre, bb-sign sella cada documento con el certificado de la organización, e
+incluye en el sello la cadena de certificación completa que la organización subió. El sello garantiza
+la integridad del documento e indica qué organización lo selló; la identidad de cada firmante la
+acredita la evidencia de la firma electrónica descrita arriba.
 
 Configure el certificado propio de su organización, emitido por una Entidad de Certificación Digital
 acreditada por el ONAC, para que los validadores reconozcan el sello como confiable. Mientras no lo
-configure, bb-sign sella con un certificado de pruebas de Binary Bridges. Ver
-[Certificado propio](/sign/admin/own-certificate/).
+configure, bb-sign sella con un certificado de pruebas de Binary Bridges, y la aplicación lo indica
+con el aviso «Certificado de pruebas predeterminado». Antes de que venza el certificado propio,
+bb-sign avisa por correo a los administradores de la organización (cláusula 2.4 de los
+[Términos y condiciones](/sign/legal/terms/)). Ver [Certificado propio](/sign/admin/own-certificate/).
 
 ## Elegir el mecanismo para cada documento
 

@@ -6,9 +6,11 @@ audience: admin
 source: docs/guias/certificado-propio.md
 ---
 
-import { Aside, Steps } from '@astrojs/starlight/components';
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { CERTIFICATE } from '../../../facts/sign';
+import { CERTIFICATE, EMAILS, VERIFY } from '../../../facts/sign';
+
+export const expiryEmail = EMAILS.find((email) => email.template === 'certificate-expiring');
 
 Con un certificado propio, cada documento firmado en bb-sign queda sellado a nombre de su
 organización, y validadores como Adobe Acrobat reconocen ese sello. Quien recibe el PDF ve quién lo
@@ -16,10 +18,14 @@ selló y comprueba que no cambió después de firmarse. Además, el recuadro de 
 mostrar el nombre y el motivo de su organización, que Binary Bridges configura en **Apariencia de la
 firma**.
 
+El certificado sella los documentos; no es la firma digital de las personas que firman. Ellas firman
+con el mecanismo de firma electrónica de bb-sign.
+
 <Aside type="tip" title="Configúrelo antes de enviar documentos a terceros">
   Mientras su organización no tenga certificado propio, bb-sign sella los documentos con el
   certificado de pruebas de Binary Bridges, <code><Fact of={CERTIFICATE.defaultSubject} /></code>.
-  Los validadores lo muestran como no confiable, porque está pensado para probar el servicio.
+  Los validadores lo muestran como no confiable, porque está pensado para probar el servicio. El
+  envío de sobres no se bloquea mientras tanto.
 </Aside>
 
 ## Qué certificado comprar
@@ -31,8 +37,8 @@ Antes de pagar, confirme con la entidad que el certificado cumple estos puntos:
 - Se entrega como **archivo PKCS#12 (.p12 o .pfx) con la llave privada exportable**. bb-sign necesita
   el archivo, así que un certificado entregado en un token USB o que solo existe en la nube del
   proveedor no sirve para este uso.
-- Usa una llave **RSA de al menos <Fact of={CERTIFICATE.minKeyBits} unit="bits" />**. Las llaves de
-  curva elíptica (EC) no son compatibles.
+- Usa una llave **RSA de al menos <Fact of={CERTIFICATE.minKeyBits} unit="bits" />**. Solo se
+  admiten llaves RSA: bb-sign rechaza las de curva elíptica (EC), EdDSA y RSA-PSS.
 - Tiene el uso de llave **firma digital** (`digitalSignature`) y, de preferencia, **no repudio**
   (`nonRepudiation`).
 - Incluye la **cadena de certificación completa**: el certificado de la organización, los
@@ -96,39 +102,67 @@ openssl pkcs12 -in organizacion.p12 -nokeys -info
 El resultado debe listar el certificado de la organización, los intermedios y la raíz.
 
 Para revisar un PDF sellado, ábralo en Adobe Acrobat y consulte el panel de firmas. El sello incluye
-el certificado de la organización, así que, para ver la ruta completa y la identidad como válida,
-importe en Acrobat la raíz de su entidad de certificación como confiable.
+la cadena completa que usted subió: el certificado de la organización, los intermedios y la raíz.
+Para que Acrobat muestre la identidad como válida, debe confiar en esa raíz; si no la reconoce,
+impórtela en Acrobat como confiable.
 
 ## Subir el certificado
 
-La sección **Certificado de firma** está en la página de la organización, a la que se llega desde
-**Organizaciones** en el menú lateral. Si su menú no muestra **Organizaciones**, coordine la carga
-con Binary Bridges.
-
 <Steps>
 
-1. Abra **Organizaciones**, entre a su organización y ubique la sección **Certificado de firma**. Si
-   aún no tiene certificado propio, verá «No hay certificado configurado — se usará el certificado
-   global de reserva».
-2. Pulse **Subir certificado**, o **Reemplazar certificado** si ya hay uno.
-3. Escriba una **Etiqueta** (por ejemplo, «Acme Corp 2026»), elija el **Archivo de certificado (.p12,
+1. Abra **Configuración** y elija la pestaña **Certificado**. Mientras su organización use el
+   certificado de pruebas, verá el aviso **Certificado de pruebas predeterminado**, con los enlaces
+   **Cómo configurar su certificado** y **Términos del servicio**.
+2. Escriba una **Etiqueta** (por ejemplo, «Acme Corp 2026»), elija el **Archivo de certificado (.p12,
    .pfx, .pem)** y escriba la **Contraseña (si está protegido)**.
-4. Pulse **Subir certificado**. Al terminar, la sección muestra la etiqueta y la fecha de vencimiento
-   después de **Expira:**.
+3. Pulse **Subir certificado**.
 
 </Steps>
 
+Al terminar, la pestaña muestra la etiqueta, el **Titular**, el **Emisor**, la fecha de vencimiento
+después de **Expira:**, el inicio de la huella SHA-256 y el estado de la cadena. Cuando faltan menos
+de <Fact of={CERTIFICATE.expiryHighlightDays} unit="días" /> para el vencimiento, la fecha se resalta
+con un icono de advertencia y muestra los días que faltan; un certificado vencido
+muestra **Venció:** en rojo. Para retirar el certificado, use el botón **Quitar certificado**; desde
+ese momento los documentos se sellan otra vez con el certificado de pruebas.
+
+El administrador de plataforma de Binary Bridges también puede subir el certificado de su
+organización, desde la sección **Certificado de firma** de la página de la organización.
+
+## Estado de la cadena
+
+Al recibir el archivo, bb-sign revisa la cadena de certificación y muestra su estado:
+
+| Estado | Qué significa | Qué hacer |
+|---|---|---|
+| **Cadena completa** | El archivo incluye todos los certificados hasta la raíz. | Nada. |
+| **Sin raíz** | La cadena termina antes del certificado raíz. Los validadores que ya confían en la raíz aceptan el sello. | Si sus destinatarios no confían en esa raíz, exporte de nuevo con la cadena completa. |
+| **Solo el certificado** | El archivo no incluye los certificados que emitieron el suyo. | Exporte de nuevo con la ruta de certificación completa y súbalo otra vez. |
+| **Autofirmado** | El certificado se firmó a sí mismo; ningún tercero confiará en él. | Compre un certificado a una entidad acreditada. |
+| **Sin revisar** | Se subió antes de que existiera la revisión de la cadena. | Súbalo de nuevo para revisarla. |
+
+Si la cadena tiene un problema que no impide sellar, el certificado se sube y la pestaña muestra
+«El certificado se subió, con advertencias» con el detalle. Una de esas advertencias indica que el
+archivo incluye certificados que no emitieron el suyo: exporte de nuevo solo con la ruta de
+certificación de **este** certificado. Es distinto de **Solo el certificado**, y cada caso tiene su
+propia solución.
+
+## Reglas al recibir el archivo
+
 Si aparece «No se pudo subir el certificado», revise el archivo con el comando de verificación y
-confirme la contraseña. bb-sign aplica estas reglas al recibir el archivo:
+confirme la contraseña. bb-sign aplica estas reglas:
 
 | Regla | Qué hace bb-sign |
 |---|---|
 | Extensiones aceptadas | {CERTIFICATE.allowedExtensions.value.map((ext) => `.${ext}`).join(', ')} |
 | Tamaño máximo del archivo | <Fact of={CERTIFICATE.maxFileMb} unit="MB" /> |
-| Certificado vencido | Lo rechaza. |
+| Tipo de llave | Solo RSA. Rechaza EC, EdDSA y RSA-PSS. |
 | Llave menor de <Fact of={CERTIFICATE.minKeyBits} unit="bits" /> | La rechaza. |
 | Uso de la llave | Exige <code><Fact of={CERTIFICATE.requiredKeyUsage} /></code>. |
-| Carga nueva | Reemplaza el certificado anterior. |
+| Vigencia | Rechaza el archivo si algún certificado de la cadena está vencido o todavía no es válido. |
+| Cadena | Rechaza una cadena rota o desordenada, un emisor que no es una entidad de certificación y una cadena de más de <Fact of={CERTIFICATE.maxChainLength} /> certificados. |
+| Llave privada | Rechaza el archivo si la llave no corresponde al certificado, si falta o si hay más de una. |
+| Carga nueva | Reemplaza el certificado anterior solo cuando el archivo nuevo pasa todas las reglas. Si se rechaza, el certificado vigente sigue sellando. |
 | Contraseña | Se guarda cifrada y se usa únicamente para sellar. |
 | Archivos PEM | Se aceptan al subir, pero el sello requiere un PKCS#12. Suba un archivo .p12 o .pfx. |
 
@@ -137,11 +171,27 @@ Guarde el archivo `.p12` y su contraseña en el gestor de secretos de su organiz
 
 ## Renovar el certificado
 
-Anote la fecha de vencimiento que muestra la sección **Certificado de firma** y suba el certificado
-renovado antes de esa fecha. Los sellos nuevos usan el certificado renovado en máximo
-<Fact of={CERTIFICATE.cacheMinutes} unit="minutos" />.
+Suba el certificado renovado antes de que venza el actual. Los sellos nuevos usan el certificado
+renovado en máximo <Fact of={CERTIFICATE.cacheMinutes} unit="minutos" />.
 
-La verificación por código QR compara el sello con el certificado **activo** de la organización.
-Después de un cambio de certificado, los documentos sellados con el anterior ya no aparecen como
-válidos en esa verificación; el PDF se mantiene íntegro y su panel de firmas en Acrobat sigue siendo
-válido. Ver [Verificar un documento firmado](/sign/signing/verify-a-document/).
+bb-sign envía un correo a cada administrador de la organización
+{CERTIFICATE.expiryNoticeDays.value.join(' y ')} días antes de que venza el certificado propio, con
+la fecha de vencimiento y un enlace a **Configuración**, pestaña **Certificado**. El asunto es
+«{expiryEmail?.subject}», con el número de días. El certificado de pruebas no genera estos avisos.
+
+<Aside type="note" title="Los avisos son una ayuda">
+  La cláusula 2.4 de los [Términos y condiciones](/sign/legal/terms/) lo establece: «Estos avisos son
+  una ayuda; no trasladan a Binary Bridges la responsabilidad de la renovación.»
+</Aside>
+
+Los sellos hechos desde la versión <Fact of={VERIFY.qrUsesStoredFingerprintSince} /> de bb-sign
+guardan la huella del certificado con que se sellaron, así que siguen apareciendo como válidos en la
+verificación por código QR después de un cambio de certificado. Los sellos anteriores se comparan con
+el certificado **activo**: tras un cambio, dejan de aparecer como válidos en esa verificación, aunque
+el PDF se mantiene íntegro y su panel de firmas en Acrobat sigue siendo válido. Ver
+[Verificar un documento firmado](/sign/signing/verify-a-document/).
+
+La carga y el retiro del certificado, y cada aviso de vencimiento, quedan en la
+[auditoría](/sign/admin/audit-trail/) de la organización con quién lo hizo.
+
+<LinkCard title="Guía de certificado propio" href="/sign/legal/own-certificate-guide/" description="La guía que acompaña los términos del servicio: qué comprar, cómo exportar, subir y renovar el certificado." />

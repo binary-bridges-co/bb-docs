@@ -20,9 +20,9 @@ Los roles de espacio de trabajo definen qué se puede hacer con los sobres de ca
 
 | Rol | Quién lo tiene | Alcance |
 | --- | --- | --- |
-| Administrador de plataforma (`platform_admin`) | Personal de Binary Bridges | Todo lo del administrador de organización, en cualquier organización, más la creación de organizaciones, las cuotas y la apariencia de la firma. |
-| Administrador de organización (`org_admin`) | Administradores de su organización | Usuarios, espacios, etiquetas, credenciales, webhooks y auditoría. Accede a todos los espacios sin ser miembro (`workspace:access-all`). |
-| Miembro de organización (`org_member`) | Usuarios de su organización | Consultar espacios y claves de etiqueta. El resto lo dan sus roles de espacio, incluido el de Colaborador en General. |
+| Administrador de plataforma (`platform_admin`) | Personal de Binary Bridges | Todo lo del administrador de organización, en cualquier organización, más la creación de organizaciones, las cuotas, la apariencia de la firma y el idioma de los certificados de evidencia. |
+| Administrador de organización (`org_admin`) | Administradores de su organización | Usuarios, espacios, etiquetas, credenciales, webhooks, certificado, acuerdos y auditoría. Accede a todos los espacios sin ser miembro (`workspace:access-all`). |
+| Miembro de organización (`org_member`) | Usuarios de su organización | Consultar espacios, claves de etiqueta y los textos de acuerdos publicados. El resto lo dan sus roles de espacio, incluido el de Colaborador en General. |
 | Credencial de API (`org_api`) | Integraciones | Lo mismo que un miembro, con los roles de espacio que usted le asigne. |
 
 ## Permisos por rol
@@ -34,6 +34,10 @@ recibe en ningún caso. En la segunda, Colaborador es el rol de todos los miembr
 demás espacios usted asigna Lector, Auditor o Gestor desde
 [Espacios y miembros](/sign/admin/workspaces-and-members/).
 
+Los permisos `agreement:read` y `agreement:manage` corresponden a la pestaña **Acuerdos** de
+**Configuración**, donde los administradores publican textos de acuerdos que todavía no se muestran a
+los firmantes ni se adjuntan a los sobres.
+
 ## Tareas reservadas a las personas
 
 Las credenciales de API automatizan el trabajo con sobres, y la administración queda siempre en manos
@@ -41,7 +45,7 @@ de personas. Así, si un secreto se filtra, revocar la credencial basta para cer
 credencial no pudo crear otras credenciales ni ampliar su propio alcance. bb-sign verifica esta
 regla cada vez que el servicio se inicia.
 
-Estos cinco permisos nunca se conceden a una credencial:
+Estos permisos nunca se conceden a una credencial:
 
 1. **Crear credenciales** (`credential:manage`), para que revocar una credencial cierre por
    completo su acceso.
@@ -53,6 +57,8 @@ Estos cinco permisos nunca se conceden a una credencial:
    ampliar sus propias membresías.
 5. **Acceder a todos los espacios** (`workspace:access-all`), para que cada credencial actúe solo en
    los espacios que usted le asignó.
+6. **Gestionar los acuerdos y la identificación de la organización** (`agreement:manage`), para que
+   una credencial no pueda cambiar los textos legales ni los datos de la organización.
 
 Cuando una credencial necesita más alcance, se añade como miembro de otros espacios, igual que una
 persona. Ver [Credenciales de API](/sign/admin/api-credentials/).

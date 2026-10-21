@@ -7,7 +7,7 @@ audience: user
 
 import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, URLS } from '../../../../facts/sign';
+import { ADMIN_MFA, AUTH, URLS } from '../../../../facts/sign';
 
 Your bb-sign account is created by an administrator of your organization. You receive an invitation
 by email, set your password and start working at <a href={URLS.app.value}>{URLS.app.value}</a>.
@@ -39,6 +39,11 @@ your address is spelled correctly. The invitation can be resent as many times as
 
 </Steps>
 
+If your role is an administrator role, on that first sign-in bb-sign also asks you to set up an
+authenticator app, and from then on it asks for its <Fact of={ADMIN_MFA.digits} />-digit code
+every time you sign in. Members do not need this step. See
+[Sign-in security](/en/sign/admin/sign-in-security/).
+
 From then on, sign in at that same address. If you forget your password, use the reset option on
 the sign-in screen; the email comes from the same address as the invitation. To leave, use
 **Logout** at the bottom of the side menu.
@@ -59,6 +64,8 @@ The menu adapts to that role.
 | **Storage** | No | Yes |
 | **Settings** | No | Yes |
 
+The bottom of the menu also shows the links **Terms of service** and **Certificate guide**, which open the terms of service and the own-certificate guide.
+
 The administration pages are reserved for administrators. If a member opens one of them directly,
 the application shows "Access Denied".
 
@@ -75,9 +82,10 @@ two, English.
 
 <Aside type="note" title="Emails to signers are sent in English">
   The language you choose applies to the application. The emails bb-sign sends to signers
-  (invitation, verification code, reminder and envelope completed) are sent in English. If your
-  signers do not read English, let them know in advance that they will receive that email and what
-  to do with it.
+  (invitation, turn notice, verification code, reminder, envelope completed and envelope expired) are
+  sent in English. If your signers do not read English, let them know in advance that they will
+  receive that email and what to do with it. The email that tells someone their archived copy has
+  been restored arrives in Spanish and English.
 </Aside>
 
 ## Change the theme

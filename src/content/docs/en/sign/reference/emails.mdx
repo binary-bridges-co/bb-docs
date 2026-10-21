@@ -7,12 +7,19 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { EMAILS, REMINDERS, URLS } from '../../../../facts/sign';
+import { EMAILS, EVIDENCE, REMINDERS, RESTORE, URLS } from '../../../../facts/sign';
 
 export const RECIPIENT = {
   signer: 'Signer',
   org_admin: 'Organization administrators',
   user: 'Application user',
+  requester: 'Whoever requested the restore (a user or a signer)',
+};
+
+export const LANGUAGE = {
+  en: 'English',
+  'es+en': 'Spanish and English, in the same email',
+  realm: "The identity service's",
 };
 
 export const TRIGGER = {
@@ -20,9 +27,11 @@ export const TRIGGER = {
   'signer.eligible (sequential signing)': "It is a signer's turn (sequential signing).",
   'otp.ready_for_delivery': 'The signer requests a one-time code.',
   'daily; invitation older than the threshold': 'Every day, to signers whose invitation is older than the reminder threshold and who have not signed yet.',
-  'envelope.completed': 'The envelope completes.',
+  'evidence certificate issued, or the degraded wait (without it)': 'The envelope completes and its evidence certificate is ready, or the longest wait passes without it.',
   'envelope.expired': 'The envelope expires.',
   'webhook circuit breaker': 'bb-sign disables a webhook after exhausting its retries.',
+  'daily certificate expiry check (own certificate, at each notice threshold)': "The organization's own certificate reaches one of its expiry notices (daily check).",
+  'a restore the person requested ends (restored, or failed with a reason)': 'A restore the person requested ends: the file is available, or it could not be restored, with the reason.',
   'user invited': 'An administrator invites a user.',
   'user request': 'The user asks to reset their password.',
   'realm flow': 'The identity service asks the user to verify their email.',
@@ -35,10 +44,10 @@ the envelope title.
 ## Senders
 
 Envelope emails (invitations, codes, reminders, envelope completed, envelope expired and the webhook
-notice) are sent from **<Fact of={URLS.senderAddress} />**. Account emails (invitation to the
-application, password reset and email verification) are sent from
-**<Fact of={URLS.identitySenderAddress} />**. If your organization filters incoming mail, ask your IT
-team to allow both addresses.
+notice) and the certificate expiry and restore notices are sent from
+**<Fact of={URLS.senderAddress} />**. Account emails (invitation to the application, password reset
+and email verification) are sent from **<Fact of={URLS.identitySenderAddress} />**. If your
+organization filters incoming mail, ask your IT team to allow both addresses.
 
 ## All emails
 
@@ -49,6 +58,7 @@ team to allow both addresses.
       <th>Subject</th>
       <th>Recipient</th>
       <th>When it is sent</th>
+      <th>Language</th>
     </tr>
   </thead>
   <tbody>
@@ -58,6 +68,7 @@ team to allow both addresses.
         <td>{email.subject}</td>
         <td>{RECIPIENT[email.recipient]}</td>
         <td>{TRIGGER[email.trigger] ?? email.trigger}</td>
+        <td>{LANGUAGE[email.language]}</td>
       </tr>
     ))}
   </tbody>
@@ -65,12 +76,21 @@ team to allow both addresses.
 
 Reminders are sent once a day to signers whose invitation is older than
 <Fact of={REMINDERS.thresholdHours} unit="hours" />, with at most one every
-<Fact of={REMINDERS.cooldownHours} unit="hours" /> per signer. The subjects of account emails are set
-by the identity service, which is why they appear in parentheses.
+<Fact of={REMINDERS.cooldownHours} unit="hours" /> per signer. In the expiry notice's subject, N is the
+number of days left. The subjects of account emails are set by the identity service, which is why
+they appear in parentheses.
+
+The envelope completed email waits for the evidence certificate for at most
+<Fact of={EVIDENCE.degradedAfterHours} unit="hours" /> and, when it applies, says whether it is ready or
+being prepared, at the same link. See [Evidence certificate](/en/sign/concepts/evidence-certificate/).
+
+The restore notice is only sent when the restore of an archived file ends, and today no file is moved
+to archive storage. API credentials do not receive this email: their integrations learn of it through the
+`document.restored` webhook.{RESTORE.emailLinksToEnvelopeOrSigningPage.value && ' The email attaches no files: it links to the envelope page or, when a signer asked, to their signing page.'}{RESTORE.emailGenericWithoutConfirmedAccess.value && ' If bb-sign cannot confirm that the user can still download the envelope\'s documents, the email is generic: no envelope title and no file names.'} See [Retention and restore](/en/sign/sending/retention-and-restore/).
 
 <Aside type="note" title="Language of envelope emails">
-  The emails signers receive are sent in English. If your signers do not read English, let them know
-  through your own channels which email they will receive and from which address. See
+  The envelope emails signers receive are sent in English. If your signers do not read English, let
+  them know through your own channels which email they will receive and from which address. See
   [The invitation email](/en/sign/signing/receiving-the-email/).
 </Aside>
 
@@ -82,5 +102,5 @@ These moments are handled in the application or through webhooks:
   receives it by webhook with the `envelope.completed` event.
 - **Envelope cancelled.** When you cancel an envelope, the link of pending signers stops being
   available. Let those signers know yourself. See [Cancel an envelope](/en/sign/sending/cancel/).
-- **Certificate expiry.** Keep track of your organization's certificate expiry date and renew it
-  ahead of time. See [Your own certificate](/en/sign/admin/own-certificate/).
+- **Certificate renewal.** The expiry notice goes to administrators; renew the certificate ahead of
+  time and upload it before it expires. See [Your own certificate](/en/sign/admin/own-certificate/).

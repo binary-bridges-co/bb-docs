@@ -1,0 +1,152 @@
+---
+title: "Certificado de evidencia"
+description: "El certificado de evidencia que bb-sign emite al completarse un sobre: qué contiene, quién lo descarga y cuánto tiempo se conserva."
+product: sign
+audience: all
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { EVIDENCE } from '../../../facts/sign';
+
+export const STATUS = {
+  PENDING: { label: '"Procesando el certificado de evidencia..."', meaning: 'bb-sign está emitiendo el certificado. Vuelva a consultar en unos minutos.' },
+  ISSUED: { label: 'Las descargas y "SHA-256 del certificado:"', meaning: 'El certificado existe y se puede descargar.' },
+  FAILED: { label: '"No se pudo generar; el equipo fue notificado."', meaning: 'La emisión automática falló. Binary Bridges recibe el aviso y puede volver a emitirlo; usted no necesita hacer nada.' },
+  UNAVAILABLE: { label: '"Completado antes de habilitar los certificados de evidencia."', meaning: 'El sobre se completó antes de que existieran los certificados. Nunca tendrá uno.' },
+  EXPIRED: { label: '"El periodo de conservación terminó y el certificado fue eliminado."', meaning: 'Pasó el plazo de conservación y el certificado ya no se puede descargar.' },
+};
+
+Al completarse un sobre, bb-sign emite su **certificado de evidencia**: un PDF sellado que reúne en un
+solo documento lo que ocurrió en el sobre. Presenta sus documentos con sus huellas, sus firmantes y
+cómo se identificaron, la línea de tiempo y la integridad de su registro de auditoría. bb-sign lo
+guarda junto con el **registro de auditoría** del sobre, congelado en un archivo JSON, y ninguno de
+los dos se modifica después.
+
+Es la pieza que usted entrega cuando necesita demostrar cómo se firmó un documento. Para entender los
+datos que resume, consulte [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+
+## Qué contiene
+
+| Bloque | Qué muestra |
+| --- | --- |
+| Encabezado | El identificador del certificado, el sobre y su título, la organización, el remitente, la fecha en que se completó y la copia de que se trata. |
+| Documentos | Para cada documento: su nombre, las páginas del original, la huella SHA-256 del original y cómo se calculó, la huella SHA-256 del documento firmado y la fecha de carga. |
+| Firmantes | Para cada firmante: nombre, correo, orden, método de identificación, el código de un solo uso si se exigió (canal, destino enmascarado y hora en que se aceptó), dirección IP, navegador, cuándo se le invitó, abrió el sobre y firmó, la huella del conjunto de documentos que firmó, y el hash y la versión de su sello. |
+| Acuerdos | Hoy siempre indica "Sin acuerdos adjuntos". |
+| Sello | El titular, el emisor, el número de serie, la huella y la vigencia del certificado que selló, cuántos certificados tiene su cadena y si es el de la organización o el de pruebas. |
+| Línea de tiempo | Los eventos del registro de auditoría, con su actor y su hash. |
+| Integridad | La cabeza de la cadena de auditoría (el último evento que cubre, con su hash), la cobertura de esa cadena y la huella SHA-256 del registro de auditoría. |
+| Conservación | Hasta cuándo se conserva cada archivo del sobre. |
+| Cómo verificar | Los pasos para comprobar el sello, los documentos y el registro de auditoría. |
+
+Si el sobre se selló con el certificado de pruebas de bb-sign, el bloque **Sello** lo advierte. Si
+una parte del registro de auditoría se registró con un esquema anterior, el bloque **Integridad** lo
+indica y explica qué prueba la cadena para esos eventos.
+
+## Copia de la organización y copia del firmante
+
+Cada certificado tiene dos copias:
+
+| Copia | Quién la descarga | Qué muestra |
+| --- | --- | --- |
+| De la organización | Los usuarios y las credenciales de API que pueden descargar los documentos del sobre (rol Auditor o superior en su espacio). | Todo lo que registra el certificado, junto con el registro de auditoría en JSON. |
+| Del firmante | Cada firmante, desde su enlace de firma. | El mismo sobre, con todos los correos enmascarados y sin direcciones IP, navegadores ni destinos del código de un solo uso.{!EVIDENCE.signerCopyIncludesAuditTrail.value && ' No incluye el registro de auditoría; si un firmante lo necesita, la organización puede entregárselo.'} |
+
+## Idioma
+
+El certificado se emite en el idioma de la organización: español, el valor por defecto, o inglés.
+Binary Bridges define ese idioma al configurar la organización. Cada certificado conserva el idioma en
+que se emitió; si necesita cambiar el de los próximos certificados, pídaselo a Binary Bridges.
+
+## Cuándo se emite
+
+bb-sign emite el certificado después de completarse el sobre y de sellar sus documentos{EVIDENCE.usuallyIssuedWithinMinutes.value && ', normalmente en pocos minutos'}. Mientras tanto, el detalle del sobre muestra "Procesando el certificado de
+evidencia...", y la página de firma muestra al firmante "Preparando tu certificado de evidencia".
+
+El correo "Signing complete" que reciben los firmantes espera al certificado durante un máximo de
+<Fact of={EVIDENCE.degradedAfterHours} unit="horas" />. Si el certificado aún no está listo, el correo
+sale de todos modos e indica que se está preparando, en el mismo enlace. Las integraciones reciben el
+webhook `envelope.completed` con el estado del certificado y, si llega después, `envelope.evidence_issued`.
+Consulte [Webhooks](/sign/developers/webhooks/).
+
+Estos son los estados del certificado y lo que muestra el detalle del sobre en cada uno:
+
+<table>
+  <thead>
+    <tr>
+      <th>Estado</th>
+      <th>En el detalle del sobre</th>
+      <th>Qué significa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {EVIDENCE.statuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{STATUS[status].label}</td>
+        <td>{STATUS[status].meaning}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+Binary Bridges puede volver a emitir un certificado que falló como máximo
+<Fact of={EVIDENCE.reissueMax} /> veces, y solo dentro de los
+<Fact of={EVIDENCE.reissueWindowDays} unit="días" /> siguientes al fallo y mientras el sobre no haya
+pasado a **Archivados**. Cada nueva emisión queda en el registro de auditoría del sobre.
+
+## Cómo descargarlo
+
+**Desde el detalle del sobre.** Cuando el certificado está listo, el bloque **Certificado de
+evidencia** ofrece dos descargas: **Certificado de evidencia (PDF)**, la copia de la organización, y
+**Registro de auditoría (JSON)**. Debajo aparece "SHA-256 del certificado:" con la huella del PDF.
+Quien no puede descargar los documentos del sobre ve "El certificado de evidencia está disponible para
+quienes pueden descargar los documentos de este sobre."; pida a un administrador el rol de Auditor en
+ese espacio.
+
+Cada descarga genera enlaces válidos durante <Fact of={EVIDENCE.downloadLinkMinutes} unit="minutos" />
+y queda registrada en el registro de auditoría como `EVIDENCE_CERTIFICATE_ACCESSED`. Si un enlace
+caduca, vuelva a pulsar la descarga. Los sobres que ya pasaron a **Archivados** conservan las dos
+descargas.
+
+**Desde el enlace del firmante.** Cuando el sobre se completa, la página de firma ofrece al firmante
+**Descargar tu certificado de evidencia**, con su copia. El enlace sigue sirviendo la copia después de
+que el sobre pase a Archivados. Consulte [Firmar y descargar](/sign/signing/sign-and-download/).
+
+**Por la API.** Las integraciones consultan el estado del certificado y obtienen los enlaces de
+descarga con las operaciones
+[getEvidenceCertificate](/sign/api/operations/getevidencecertificate/) y
+[downloadEvidenceCertificate](/sign/api/operations/downloadevidencecertificate/), con el mismo
+permiso que los documentos.
+
+## Cuánto tiempo se conserva
+
+bb-sign conserva el certificado, la copia del firmante y el registro de auditoría durante
+<Fact of={EVIDENCE.retentionDays} unit="días" /> desde su emisión, protegidos contra borrado y modificación durante ese plazo.
+No se trasladan nunca a almacenamiento de archivo, así que se descargan directamente durante todo el
+plazo. Al terminar, el detalle muestra "El periodo de conservación terminó y el certificado fue
+eliminado.".
+
+<Aside type="caution" title="Guarde su copia">
+  Si debe conservar la evidencia por más tiempo, descargue el certificado y el registro de auditoría
+  antes de que termine el plazo y guárdelos en sus sistemas. Consulte
+  [Alcance y conservación](/sign/legal/retention/).
+</Aside>
+
+## Sobres completados antes de los certificados de evidencia
+
+Los sobres que se completaron antes de que bb-sign empezara a emitir certificados de evidencia
+muestran "Completado antes de habilitar los certificados de evidencia." y nunca tendrán uno. Su
+evidencia sigue disponible en el **Registro de auditoría** del detalle del sobre, y sus documentos se
+descargan como siempre durante su plazo de conservación.
+
+## Comprobar lo que recibió
+
+1. **El archivo.** Calcule la huella SHA-256 del PDF descargado (por ejemplo, con `shasum -a 256`) y
+   compárela con "SHA-256 del certificado:" en el detalle del sobre.
+2. **El sello.** Abra el PDF en Adobe Acrobat u otro lector que muestre firmas: el sello cubre el
+   archivo completo, y cualquier cambio lo invalida.
+3. **Los documentos.** Compare la huella de cada documento firmado con la que imprime el bloque
+   **Documentos**, o compruébelo en la página pública con **Comprobar un archivo**. Consulte
+   [Verificar un documento firmado](/sign/signing/verify-a-document/).

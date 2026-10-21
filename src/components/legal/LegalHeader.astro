@@ -1,32 +1,24 @@
 ---
 /**
- * The header every legal text carries (LV contract D-17): version, date and
- * the "Pendiente de revisión jurídica" notice until counsel approves it.
- * `tests/unit/legal.test.ts` checks every legal page renders it.
+ * The header of a mirrored legal text: its version and date (LV contract D-17) and, on an English
+ * translation, the note that the Spanish version prevails. Rendered only by the PageTitle override
+ * (`src/lib/legal.ts` decides what it shows); `tests/unit/legal.test.ts` checks the built pages.
  */
 interface Props {
   locale: 'es' | 'en';
-  /** From the page's `legalVersion` frontmatter: "Versión 1 · 2026-10-07". */
-  version: string;
-  /** Repo-relative path of the canonical file in the product repository. */
-  source?: string;
+  /** From the page's `legalVersion` frontmatter: "Versión 4 · 2026-10-20". Absent for the guides. */
+  version?: string;
+  prevails: boolean;
 }
 
-const { locale, version } = Astro.props;
+const { locale, version, prevails } = Astro.props;
 const t = {
-  es: {
-    pending: 'Pendiente de revisión jurídica.',
-    prevails: '',
-  },
-  en: {
-    pending: 'Pending legal review.',
-    prevails: 'This translation is provided for convenience. The Spanish version prevails.',
-  },
+  es: { prevails: '' },
+  en: { prevails: 'This translation is provided for convenience. The Spanish version prevails.' },
 }[locale];
 ---
 
 <div class="bb-legal-header" data-legal-version={version}>
-  <span><strong>{version}</strong> · <strong>{t.pending}</strong></span>
-  {/* `source` stays in the frontmatter for syncing with bb-sign; readers do not need the repo path. */}
-  {t.prevails && <span>{t.prevails}</span>}
+  {version && <span><strong>{version}</strong></span>}
+  {prevails && t.prevails && <span>{t.prevails}</span>}
 </div>

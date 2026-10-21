@@ -23,19 +23,27 @@ The application is available at <a href={URLS.app.value}>{URLS.app.value}</a>.
 
 ## What bb-sign offers
 
-- **Integrity.** Every signed document is sealed, and any later change is detected.
+- **Integrity.** Every signed document is sealed, and any later change is detected. bb-sign records
+  the SHA-256 fingerprint of every document and binds each signature to those fingerprints.
 - **Identification.** Each signer is identified by their email and, when the organization requires
   it, by a one-time verification code.
-- **A record of what was accepted.** What the signer saw and accepted is recorded with date and time.
+- **A record of what was signed.** Which documents the signer saw (by their SHA-256 fingerprint),
+  when they opened them and how they were identified is recorded with date and time.
 - **Inconsistency detection.** The audit chain lets you check that no event was inserted or removed
   afterwards.
 - **Probative value.** The evidence of the process (who, what, when and from where) can be consulted
-  on each envelope.
+  on each envelope and is delivered as a PDF
+  [evidence certificate](/en/sign/concepts/evidence-certificate/) that the organization and each
+  signer can download.
+- **Public verification.** Anyone who has the signed PDF can confirm, without an account, that bb-sign
+  produced it. See [Verify a signed document](/en/sign/signing/verify-a-document/).
 - **Traceability.** Every relevant action on an envelope is kept in its history.
 
 bb-sign keeps signed documents and their evidence for a fixed period of
-<Fact of={RETENTION_POLICY.retentionDays} unit="days" />; from then on, keeping them is the
-organization's responsibility, as described in [Scope and retention](/en/sign/legal/retention/).
+<Fact of={RETENTION_POLICY.retentionDays} unit="days" />, counted for each file; from then on, keeping
+them is the organization's responsibility, as described in
+[Scope and retention](/en/sign/legal/retention/). If a file were ever archived, it can be requested
+again; see [Retention and restore](/en/sign/sending/retention-and-restore/).
 
 For each document's seal to carry your organization's name and for PDF readers to recognize it as
 trusted, we recommend configuring your [own certificate](/en/sign/admin/own-certificate/).

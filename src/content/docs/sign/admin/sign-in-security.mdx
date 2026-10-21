@@ -1,0 +1,70 @@
+---
+title: "Seguridad del inicio de sesión"
+description: "El segundo factor de los administradores, la política de contraseñas y la protección contra intentos repetidos al iniciar sesión en bb-sign."
+product: sign
+audience: admin
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { ADMIN_MFA, AUTH } from '../../../facts/sign';
+
+Las cuentas de administrador controlan usuarios, credenciales, webhooks y el certificado de su
+organización, por eso bb-sign les pide un segundo factor además de la contraseña. Todas las cuentas,
+de administrador o no, siguen además una política de contraseñas y quedan protegidas contra intentos
+repetidos.
+
+**Quién:** administradores de la organización y administradores de plataforma. Los miembros de la
+organización y los firmantes nunca reciben esta solicitud. **Dónde:** la pantalla de inicio de sesión
+de bb-sign.
+
+## Segundo factor para administradores
+
+El segundo factor es un código de una aplicación de autenticación instalada en el teléfono de la
+persona, como Google Authenticator o Microsoft Authenticator. Cada código tiene
+<Fact of={ADMIN_MFA.digits} /> dígitos, cambia cada <Fact of={ADMIN_MFA.periodSeconds} unit="segundos" />
+y sirve una sola vez.
+
+bb-sign lo pide en tres momentos:
+
+| Momento | Qué ocurre |
+| --- | --- |
+| Primer ingreso después de la invitación | Después de establecer la contraseña, la pantalla **<Fact of={ADMIN_MFA.enrolmentTitleEs} />** muestra un código QR. La persona lo escanea con su aplicación y escribe el código que esta genera. Sin ese paso no llega a la aplicación. |
+| Cada inicio de sesión | Después de la contraseña, la persona escribe el código actual de su aplicación. |
+| Restablecimiento de la contraseña | Después de elegir la contraseña nueva, la persona escribe el código de su aplicación. Así, quien tenga acceso solo al buzón de correo no puede entrar a una cuenta de administrador. |
+
+<Aside type="tip" title="Antes de cambiar de teléfono">
+  Traslade la cuenta a la aplicación de autenticación del teléfono nuevo antes de borrar la anterior.
+  Si no puede completar el inicio de sesión, comuníquese con el soporte de Binary Bridges.
+</Aside>
+
+{ADMIN_MFA.lostAuthenticatorResetBySupport.value && (
+  <p>
+    <strong>Si perdió la aplicación de autenticación.</strong> Escriba al soporte de Binary Bridges. El
+    equipo confirma su identidad por un medio distinto de bb-sign, retira el segundo factor de la cuenta
+    y, en el siguiente inicio de sesión, usted configura de nuevo la aplicación.
+    {!ADMIN_MFA.passwordResetClearsSecondFactor.value && ' Restablecer la contraseña no retira el segundo factor, así que no sirve para recuperar el acceso.'}
+  </p>
+)}
+
+## Política de contraseñas
+
+Toda contraseña de bb-sign, de cualquier rol, cumple estas reglas:
+
+- Tiene entre <Fact of={AUTH.passwordMinLength} /> y <Fact of={AUTH.passwordMaxLength} /> caracteres.
+- No es el nombre de usuario ni el correo de la persona.
+- No repite ninguna de las últimas <Fact of={AUTH.passwordHistory} /> contraseñas de la cuenta.
+
+## Protección contra intentos repetidos
+
+Tras <Fact of={AUTH.bruteForceFailures} /> intentos fallidos de inicio de sesión, bb-sign hace
+esperar a la cuenta antes de aceptar uno nuevo. Si los fallos continúan, la espera crece en pasos de
+<Fact of={AUTH.bruteForceWaitIncrementSeconds} unit="segundos" />, hasta un máximo de
+<Fact of={AUTH.bruteForceMaxWaitMinutes} unit="minutos" />. La cuenta nunca queda bloqueada de forma
+permanente, y el conteo de fallos se reinicia después de
+<Fact of={AUTH.bruteForceResetHours} unit="horas" />.
+
+Si una persona no logra entrar, pídale que espere el tiempo indicado y, si no recuerda su contraseña,
+que use el enlace para restablecerla en la pantalla de inicio de sesión.
+
+<LinkCard title="Usuarios e invitaciones" href="/sign/admin/users-and-invitations/" description="Cómo invitar a una persona, qué rol asignarle y cómo reenviar la invitación." />

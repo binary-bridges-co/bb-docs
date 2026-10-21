@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { AUDIENCES, DESCRIPTION_MAX, DESCRIPTION_MIN, PRODUCT_IDS } from '../../src/config/content-schema';
+import { LEGAL_MIRRORS } from '../../scripts/legal-mirror.mjs';
 
 const DOCS = join(process.cwd(), 'src', 'content', 'docs');
 
@@ -30,7 +31,24 @@ const FACT_DENYLIST: readonly RegExp[] = [
   /\b5\s*MB\b/,
   /\b2048\s*bits\b/i,
   /\b48\s*(h|horas|hours)\b/i,
+  // Added with bb-sign v0.34 (report 1 §2): restore window, stamp hold and the 7-day notice; restore time;
+  // verify-by-file and audit rates; the evidence wait; the restore purge.
+  /\b7\s*(d[ií]as|days)\b/i,
+  /\b3\s*(a|-)\s*5\s*(h|horas|hours)\b/i,
+  /\b10\s*(por minuto|per minute)\b/i,
+  /\b20\s*(por minuto|per minute)\b/i,
+  /\b2\s*(h|horas|hours)\b/i,
+  /\b400\s*(d[ií]as|days)\b/i,
 ];
+
+/**
+ * The legal mirrors (plan D3): the Spanish pages are generated verbatim from bb-sign and the English ones
+ * translate them faithfully, so their numbers are the legal text's own, not prose to source from the fact
+ * sheet. `tests/unit/legal.test.ts` and `sync.test.ts` guard them instead.
+ */
+const LEGAL_MIRROR_PATHS: readonly string[] = LEGAL_MIRRORS.map((m) => m.page);
+/** Generated pages are byte-faithful to the source, which may type an arrow ("Configuración → Certificado"). */
+const isGeneratedMirror = (page: Page): boolean => page.localeDir === '' && LEGAL_MIRROR_PATHS.includes(page.path);
 
 interface Page {
   readonly file: string;
@@ -107,13 +125,13 @@ describe('documentation pages', () => {
 
   test('no emoji or typed arrows anywhere, code included', () => {
     const offending = pages
-      .filter((p) => EMOJI.test(p.body) || TYPED_ARROWS.test(p.body) || EMOJI.test(p.frontmatter.title ?? ''))
+      .filter((p) => EMOJI.test(p.body) || (!isGeneratedMirror(p) && TYPED_ARROWS.test(p.body)) || EMOJI.test(p.frontmatter.title ?? ''))
       .map((p) => p.file);
     expect(offending).toEqual([]);
   });
 
   test('facts are imported from the fact sheet, not typed in prose', () => {
-    const offending = productPages.flatMap((p) => {
+    const offending = productPages.filter((p) => !LEGAL_MIRROR_PATHS.includes(p.path)).flatMap((p) => {
       const text = prose(p.body);
       return FACT_DENYLIST.filter((re) => re.test(text)).map((re) => `${relative(process.cwd(), p.file)}: ${re}`);
     });
@@ -136,5 +154,14 @@ describe('documentation pages', () => {
       const wrong = links.filter((href) => !generatedApi(href) && (page.localeDir === 'en') !== href.startsWith('/en/'));
       expect(wrong, page.file).toEqual([]);
     }
+  });
+
+  test('the denylist exemptions cover exactly the legal mirrors, in both locales', () => {
+    const mirrors = productPages.filter((p) => LEGAL_MIRROR_PATHS.includes(p.path));
+    expect(mirrors).toHaveLength(LEGAL_MIRROR_PATHS.length * 2);
+    for (const page of mirrors) expect(page.frontmatter.legal, page.file).toBe('true');
+    expect(productPages.filter((p) => p.frontmatter.legal === 'true').map((p) => p.path).sort()).toEqual(
+      [...LEGAL_MIRROR_PATHS, ...LEGAL_MIRROR_PATHS].sort(),
+    );
   });
 });

@@ -1,13 +1,13 @@
 ---
 title: Sign and download
-description: How to draw or type your signature, what information is recorded, how to download the signed copy and how long it remains available.
+description: How to draw or type your signature, what is recorded, how to download the signed copy and your evidence certificate, and how long they remain available.
 product: sign
 audience: signer
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { ENVELOPE } from '../../../../facts/sign';
+import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY } from '../../../../facts/sign';
 
 On the **Add Your Signature** screen you sign the document and, once everyone has signed, download
 your sealed copy.
@@ -29,10 +29,15 @@ When you submit your signature, bb-sign records, next to your name and email:
 - the image of your signature;
 - the date and time;
 - the IP address you signed from;
-- the browser you used.
+- the browser you used;
+- how you were identified: with the link in your email only, or with the link and the verification
+  code, with the channel, the masked destination and the time the code was accepted;
+- the SHA-256 fingerprint of the set of documents you signed, which binds your signature to those
+  exact documents.
 
-This information is part of the envelope's evidence. Your name, email and the date also appear on
-the document's seal.
+This information is part of the envelope's evidence and appears in its evidence certificate. Your
+name, email and the date also appear on the document's seal. The copy of the certificate you download
+masks email addresses and leaves out your IP address, your browser and the code's destination.{!EVIDENCE.signerCopyIncludesAuditTrail.value && ' It does not include the envelope\'s audit trail either; if you need it, ask the person who sent you the document.'}
 
 <Aside type="caution" title="A submitted signature is final">
   Once the signature is recorded, the envelope moves to the next step. If you signed by mistake or
@@ -42,7 +47,8 @@ the document's seal.
 
 ## Confirmation screen
 
-After submitting you see **Document Signed Successfully!** and one of these states:
+After submitting you see **Document Signed Successfully!** and, depending on the moment, one of these
+states of your signed copy:
 
 | What you see | What it means |
 |---|---|
@@ -51,19 +57,49 @@ After submitting you see **Document Signed Successfully!** and one of these stat
 | "Your signed copy is still being prepared. We have emailed you a link — you can download it from there once it is ready." | Sealing is taking longer. You can close the page and download the copy from the completion email. |
 | No download button | Other people still need to sign. The copy will be available once everyone has signed. |
 
+Once the copy is ready, the page also offers your evidence certificate:
+
+| What you see | What it means |
+|---|---|
+| "Preparing your evidence certificate — this can take a few minutes." | bb-sign is issuing the certificate. The page refreshes automatically. |
+| **Download Your Evidence Certificate** | The certificate is ready. |
+| "Could not download the evidence certificate. Please try again." | The download did not start. Press the button again. |
+
+If the envelope completed before evidence certificates existed, the page offers no certificate.
+
 ## Completion email
 
 When everyone has signed, you receive the email `Signing complete: {title}` with the link to your
-copy. The link opens the confirmation screen with the message "This envelope is complete. You can
-download your signed copy below." You can use it as often as you need while the copy is available.
+copy. It is usually sent once your evidence certificate is ready and, if that takes longer, without
+waiting more than <Fact of={EVIDENCE.degradedAfterHours} unit="hours" />; the email says whether the
+certificate is ready or being prepared. The link opens the confirmation screen with the message "This
+envelope is complete. You can download your signed copy below." You can use it as often as you need
+while the copy is available.
 
 ## Copy availability
 
-You can download the copy from your link for <Fact of={ENVELOPE.archiveAfterDays} unit="days" />
-counted from the envelope's creation. After that, the envelope is archived and the page shows
-"This document is no longer available for download. Please contact the administrator." In that
-case, request the document from the person who sent it. We recommend saving your copy as soon as
-you download it.
+Your signed copy and your evidence certificate can be downloaded from your link for
+<Fact of={RETENTION_POLICY.retentionDays} unit="days" /> from the envelope's completion, even after the
+signing period has ended and even once the envelope is archived. We recommend saving your copy as soon
+as you download it.
+
+If your copy were ever in archive storage, the page says so and lets you ask for it. Today bb-sign
+does not move any copy to that storage, but if it happens, you see:
+
+| What you see | What it means | What to do |
+|---|---|---|
+| "Your signed copy is archived. Request it and we will email it to you when it is available." and **Request my copy** | Your copy is in archive storage. | Press **Request my copy**. |
+| "Your signed copy is being restored. Request it and we will email it to you when it is available." | Someone else has already asked for the copy. | Press **Request my copy** to receive the email too. |
+| "We will email you your copy when it is available, usually within a few hours." | Your request was recorded. | Wait for the email `Tu solicitud de restauración de documentos / Your document restore request` and open its link. The restored copy can be downloaded for <Fact of={RESTORE.days} unit="days" />{RESTORE.requestableAgainAfterWindow.value && <>; after that you can press <strong>Request my copy</strong> again</>}. |
+| "We received many requests from this link or your connection. If you already asked, the email will arrive; if not, try again in a few minutes." | The limit of <Fact of={RATE_LIMITS.signerRestorePerLink} /> requests per link, or <Fact of={RATE_LIMITS.signerRestorePerIp} /> per connection, within <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutes" /> was reached. | If you already asked, wait for the email. If not, try again in a few minutes. |
+| "We could not request your copy. Try again in a few minutes." | The request did not complete. | Try again in a few minutes. |
+
+Your evidence certificate is never archived: it still downloads directly while you wait for your copy.
+
+Once the retention period has ended, the page shows "Your signed copy is no longer available: its
+<Fact of={RETENTION_POLICY.retentionDays} />-day retention period has ended." In that case, request
+the document from the person who sent it: from then on, keeping it is the sending organization's
+responsibility.
 
 ## What the seal contains
 
@@ -72,7 +108,9 @@ page. The seal includes the header "Verified Signature" with the envelope identi
 signature, your name, your email, the signing date (year-month-day, in UTC), a QR code and a
 circular pattern generated from the signature's fingerprint.
 
-The PDF also carries the organization's certificate seal, visible in the PDF reader's signature
-panel. To check a signature, see [Verify a signed document](/en/sign/signing/verify-a-document/).
+The PDF also carries the organization's certificate seal, with its certificate chain, visible in the
+PDF reader's signature panel. The seal's fingerprint includes the fingerprint of the set of documents
+you signed and that of the certificate that sealed it, so the seal still verifies even if the
+organization changes its certificate later. To check a signature, see [Verify a signed document](/en/sign/signing/verify-a-document/).
 The relationship between your signature and the certificate seal is explained in
 [Electronic signature and seal](/en/sign/concepts/signature-and-seal/).

@@ -8,7 +8,7 @@ source: docs/api/webhook-signature-spec.md
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { WEBHOOKS } from '../../../../facts/sign';
+import { WEBHOOKS, WEBHOOK_EVENTS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED } from '../../../../facts/sign';
 
 **Status: NORMATIVE.** This document is the single source of truth for the bb-sign webhook
 signature scheme. The dispatcher, the Java SDK and the JavaScript SDK implement it and refer to
@@ -273,16 +273,19 @@ payload.
 
 ### P3. Event types and their `data`
 
-Exactly six. Names are public and stable; they are **not** the internal routing keys.
+There are {WEBHOOK_EVENTS.length} today. Names are public and stable; they are **not** the internal
+routing keys. New types may be added: a receiver ignores one it does not know (P4).
 
 | `type` | `data` |
 |---|---|
 | `envelope.sent` | `envelope` |
-| `envelope.completed` | `envelope` |
+| `envelope.completed` | `envelope` + the completion notice fields (P3a) + `retention` (P3c) |
 | `envelope.cancelled` | `envelope` |
 | `envelope.expired` | `envelope` |
 | `signer.signed` | `envelope` + `signer` |
 | `signer.viewed` | `envelope` + `signer` |
+| `envelope.evidence_issued` | `envelope` + the completion notice fields (P3a). It follows an `envelope.completed` that went out without the certificate |
+| `document.restored` | `envelope` + `document`: a restore of an archived file ended |
 
 ```json
 "data": {
@@ -292,15 +295,32 @@ Exactly six. Names are public and stable; they are **not** the internal routing 
   },
   "signer": {
     "id": "uuid", "email": "string", "name": "string",
-    "signOrder": 1, "status": "PENDING|SIGNED", "signedAt": "iso8601|null"
+    "signOrder": 1, "status": "PENDING|SIGNED", "signedAt": "iso8601|null",
+    "authMethod": "EMAIL_LINK|EMAIL_LINK_OTP|null"
   }
 }
 ```
 
+`signer.authMethod` says how the signer was identified when they signed: `EMAIL_LINK` (the link
+only) or `EMAIL_LINK_OTP` (the link plus a one-time code sent by email). It is `null` before they
+sign, and for signatures made before the field existed. More values may be added.
+
+`document.restored` carries `data.document = {id, kind, outcome, reason, availableUntil, downloadPath}`:
+
+- `kind` is `ORIGINAL` or `SIGNED`. `outcome` is `RESTORED` (readable until `availableUntil`),
+  `AVAILABLE` (it never needed a restore) or `FAILED`, with `reason` `DELETED`, `TIMEOUT` or
+  `STORAGE_ERROR` (`null` otherwise).
+- `downloadPath` is always `/api/v1/envelopes/{id}/documents`, the same resource as
+  `documentsPath`: call it with `document:download` for the file's availability and a short-lived
+  link. **No URL is ever in the payload.**
+- One event per restore, whoever asked; its `id` is deterministic for each restore. An integration
+  that requests a restore through the API is told only this way: API credentials are never emailed.
+
 This is enough to act on without an additional call, which is the purpose of a webhook.
 **Deliberately excluded:** document content and download URLs (a presigned URL in a payload stays
 usable after delivery), `ipAddress` and `userAgent` from the signing events (internal data), and
-any field not listed above.
+any field not listed in this part. Fields ending in `Path` are API paths you call with the token,
+not links.
 
 <Aside type="tip" title="How a customer gets the signed document">
   When you receive `envelope.completed`, **call `GET /api/v1/envelopes/{id}/documents`**: it is
@@ -308,6 +328,75 @@ any field not listed above.
   `COMPLETED`. Short-lived links fetched on demand are safer than long-lived ones embedded in a
   payload that may end up stored in logs.
 </Aside>
+
+### P3a. The completion notice
+
+**One `envelope.completed` per envelope and subscription** is sent, on whichever comes first:
+
+- the evidence certificate is issued (`evidenceStatus: ISSUED`, with `evidenceCertificate`);
+- it is late (`PENDING`, after <Fact of={EVIDENCE.degradedAfterHours} unit="hours" />) or could
+  not be produced (`FAILED`);
+- the envelope will never have one (`UNAVAILABLE`: it completed while certificates were not being
+  issued).
+
+No notice is withheld more than <Fact of={EVIDENCE.degradedClampHours} unit="hours" />. A notice
+sent without the certificate is followed by **`envelope.evidence_issued`** when the certificate
+arrives (never after `UNAVAILABLE`). Subscribe to it to receive a late certificate.
+
+```json
+"data": {
+  "envelope": { ... },
+  "evidenceStatus": "ISSUED|PENDING|FAILED|UNAVAILABLE",
+  "signedDocumentsStatus": "READY|PREPARING",
+  "documents": [ { "documentId": "uuid", "filename": "string", "originalSha256": "hex|null", "signedSha256": "hex|null" } ],
+  "documentsPath": "/api/v1/envelopes/{id}/documents",
+  "evidenceCertificate": { "evidenceId": "uuid", "sha256": "hex", "auditTrailSha256": "hex", "language": "es|en",
+                           "downloadPath": "/api/v1/envelopes/{id}/evidence-certificate/download" },
+  "auditChainHead": { "seq": 12, "hash": "hex",
+                      "auditCoverage": { "level": "FULL|PARTIAL", "fullRows": 12, "partialRows": 0, "lastPartialAt": null,
+                                         "reasons": [], "migratedAt": null } }
+}
+```
+
+- These fields are on `envelope.completed` and `envelope.evidence_issued` only, and absent on an
+  `envelope.completed` sent before they existed. Absent means `null`.
+- `evidenceCertificate` and `auditChainHead` are present only when `evidenceStatus` is `ISSUED`. A
+  notice reports the state **when it was sent**: a later certificate arrives as
+  `envelope.evidence_issued`, never as a second `envelope.completed`.
+- **`signedDocumentsStatus: PREPARING`** (the signed copies did not exist yet): treat
+  `documents[].signedSha256` as unknown, do not compare or store a hash, and download the signed
+  documents later from `documentsPath`.
+- `evidenceStatus` may gain values: treat an unknown one like `PENDING`.
+- **A `PENDING` notice may never be followed by anything.** If the certificate then fails, no
+  webhook says so; `envelope.evidence_issued` arrives only if a later re-issue succeeds. A receiver
+  that must know the outcome reads `GET /api/v1/envelopes/{id}/evidence-certificate` (its `status`)
+  some days later, rather than waiting for an event.
+- The certificate is fetched on demand from `downloadPath` (JSON with a link valid for
+  <Fact of={EVIDENCE.downloadLinkSeconds} unit="s" />), never carried in the payload, for the reason
+  given in P3.
+
+### P3c. Retention dates on `envelope.completed`
+
+Every `envelope.completed`, with or without the certificate, carries the dates of the envelope's
+fixed retention (<Fact of={RETENTION_POLICY.retentionDays} unit="days" />):
+
+```json
+"data": {
+  "envelope": { ... },
+  "retention": { "archivesAt": "2027-01-16T00:00:00Z|null", "deletesAt": "2027-10-16T00:00:00Z" }
+}
+```
+
+- Both dates are rounded up to 00:00 UTC, and they are the **earliest** any file of the envelope
+  reaches. `GET documentsPath` gives each file's exact dates (`original.deletesAt`,
+  `signed.deletesAt`).
+- **`deletesAt` means "no longer available from"**: from that date the files cannot be downloaded,
+  and they are erased permanently within the following days. Archive what you must keep before it.
+- `archivesAt` is when the files may move to archive storage, from where they are restored on
+  request. It is always present, and `null` until archiving is enabled.{!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && ' It is not enabled in production today.'}
+- `retention` is on `envelope.completed` only, and absent on one sent before it existed.
+- The body is materialised once (P3b), so a notice keeps the dates it was sent with. Each file's
+  current dates are always on `GET documentsPath`.
 
 ### P3b. The body is materialised once, not per attempt
 
@@ -320,11 +409,11 @@ deduplicating on event id would arbitrarily keep the first copy received.
 those exact bytes.** Only the signature is recomputed per attempt (section 2: `t` is attempt time;
 the body is event time). A redelivery is **byte-identical**, not merely same-event-id.
 
-### P3c. `data` is read from current state at render time
+### P3d. `data` is read from current state at render time
 
 The internal events carry only identifiers, so the dispatcher loads the envelope (and, for
 `signer.*`, the signer) at render time. Because rendering reads current state, P3b pins it to first
-dispatch.
+dispatch. (In the source specification this section is also numbered P3c.)
 
 ### P4. Additive-only
 
@@ -337,6 +426,6 @@ changing its type breaks the contract and produces a new `apiVersion`.
 | Artefact | Where |
 |---|---|
 | This specification | This page, mirrored from the bb-sign repository |
-| `WebhookEvent`, `WebhookEventData`, `WebhookEventEnvelope`, `WebhookEventSigner` | `components/schemas` of the OpenAPI contract, so both SDKs generate **typed** events; see the [API reference](/sign/api/) |
+| `WebhookEvent`, `WebhookEventData`, `WebhookEventEnvelope`, `WebhookEventSigner`, `WebhookEventDocument`, `WebhookEventEvidenceCertificate`, `WebhookEventAuditChainHead`, `WebhookEventAuditCoverage`, `WebhookEventRetention`, `WebhookEventRestoredDocument` | `components/schemas` of the OpenAPI contract, so both SDKs generate **typed** events; see the [API reference](/sign/api/) |
 | The test vectors | <a href="/sync/sign/webhook-signature-vectors.json">webhook-signature-vectors.json</a> |
-| The guide to the six types | [Webhooks](/en/sign/developers/webhooks/), citing this page, not restating it |
+| The guide to the event types | [Webhooks](/en/sign/developers/webhooks/), citing this page, not restating it |

@@ -5,6 +5,9 @@ product: sign
 audience: all
 ---
 
+import Fact from '../../../../../components/facts/Fact.astro';
+import { RESTORE, WEBHOOK_EVENTS } from '../../../../facts/sign';
+
 Each term appears with its English name as used in the API, its Spanish name (the one the law and the
 Spanish application use) and, where it applies, the label the application shows. The links lead to
 the page that explains it in detail.
@@ -33,7 +36,9 @@ the page that explains it in detail.
   filter them. See [Labels](/en/sign/concepts/labels/).
 - **Archived (archivados).** The view that completed, cancelled or expired envelopes move to once a
   set period has passed since their creation. It organizes the envelope list and is independent of
-  the retention policy. See [Archived envelopes](/en/sign/sending/archived-envelopes/).
+  the retention policy: an archived envelope is read-only and its documents remain available to
+  download, from the signer's link too. It is not the same as file archiving (see below). See
+  [Archived envelopes](/en/sign/sending/archived-envelopes/).
 
 ## Signature, seal and evidence
 
@@ -54,19 +59,59 @@ the page that explains it in detail.
   types before signing, when the organization requires it on the envelope. See
   [Review and verify identity](/en/sign/signing/review-and-identity/).
 - **Audit trail (cadena de auditoría).** The hash-chained record of everything that happened to an
-  envelope: who, what, when and from where. See
-  [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
-- **Verify (verificación).** The public check, through a QR code, that a seal matches the
-  organization's active certificate. See
+  envelope: who, what, when and from where. Every envelope, every organization and the platform have
+  their own chain; events are only ever added and bb-sign verifies the chains every night. In the
+  application: "Audit Trail". See [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
+- **Actor (actor).** Whoever performed an event of the audit trail: a user, an API credential (with
+  the **API** badge), a signer or **System**. Older events that did not keep it show "Actor not
+  recorded".
+- **Identification method (método de identificación).** How a signer was identified: `EMAIL_LINK`
+  (the link sent by email) or `EMAIL_LINK_OTP` (the link and a one-time code). It is recorded with
+  every signature.
+- **SHA-256 fingerprint (huella SHA-256).** A digest of a file's content that changes completely if a
+  single byte changes. bb-sign records the original's on upload ("SHA-256 of the original:") and that
+  of every signed document. See [Documents](/en/sign/concepts/documents/).
+- **Document set fingerprint (huella del conjunto de documentos).** The fingerprint that combines the
+  fingerprints of every document in an envelope. Each signature is bound to it.
+- **Seal version (versión del sello).** The way the seal's hash is computed. Version 2 includes the
+  document set fingerprint and the fingerprint of the certificate that sealed; version 1 is that of
+  earlier seals. See [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
+- **Evidence certificate (certificado de evidencia).** The sealed PDF bb-sign issues when an envelope
+  completes, with its documents and fingerprints, its signers, the timeline and the integrity of the
+  audit trail. It has an organization copy and a signer copy. See
+  [Evidence certificate](/en/sign/concepts/evidence-certificate/).
+- **Frozen audit trail (registro de auditoría congelado).** The envelope's audit trail in a JSON file,
+  fixed when the evidence certificate is issued and downloadable with it. In the application: "Audit
+  trail (JSON)".
+- **Evidence language (idioma de la evidencia).** The language, Spanish or English, in which an
+  organization's evidence certificates are issued. Binary Bridges sets it.
+- **Verify (verificación).** The public check, through the seal's QR code, that the seal matches what
+  bb-sign recorded: the certificate that sealed and, for version 2 seals, the documents'
+  fingerprints. See [Verify a signed document](/en/sign/signing/verify-a-document/).
+- **Check a file (comprobar un archivo).** The public check that takes a PDF, computes its
+  fingerprint and looks it up among the documents signed by bb-sign. The file is not stored. See
   [Verify a signed document](/en/sign/signing/verify-a-document/).
+
+## Retention
+
+- **Retention period (plazo de conservación).** How long bb-sign keeps each file before deleting it.
+  In the envelope detail: "No longer available from". See
+  [Scope and retention](/en/sign/legal/retention/).
+- **File archiving (archivo de un archivo).** Moving a file to cheaper storage, from which it only
+  downloads after a restore. The terms of service allow it, but today no file is moved. It is not the
+  same as the Archived view.
+- **Restore (restauración).** The request to download an archived file again. The restored copy stays
+  available for <Fact of={RESTORE.days} unit="days" /> ("restored, available until"){RESTORE.requestableAgainAfterWindow.value && '; after that it can be requested again'}. See
+  [Retention and restore](/en/sign/sending/retention-and-restore/).
 
 ## Integration
 
 - **API credential (credencial de API).** An ID and a secret a system uses to call the API on the
   organization's behalf. The secret is shown once. See
   [API credentials](/en/sign/admin/api-credentials/).
-- **Webhook.** An HTTPS URL of your organization to which bb-sign sends a signed notice when an event
-  happens (envelope sent, completed, cancelled or expired; signer viewed or signed). See
+- **Webhook.** An HTTPS URL of your organization to which bb-sign sends a signed notice when one of
+  its {WEBHOOK_EVENTS.length} events happens: envelope sent, completed, cancelled or expired; signer
+  viewed or signed; evidence certificate issued; file restored. See
   [Webhooks](/en/sign/developers/webhooks/).
 - **Delivery (entrega).** Each notice bb-sign sends to a webhook for an event. See
   [Statuses](/en/sign/reference/statuses/).
@@ -82,4 +127,12 @@ the page that explains it in detail.
 - **PKCS#12 (.p12, .pfx).** The file format that packages a certificate, its chain and the private
   key protected by a password. It is the format bb-sign uses to seal.
 - **Certificate chain (cadena de certificación).** The organization's certificate together with the
-  intermediate certificates and the root that back it.
+  intermediate certificates and the root that back it. bb-sign embeds in every seal the chain the
+  certificate file contains. See [Electronic signature and seal](/en/sign/concepts/signature-and-seal/).
+- **Chain status (estado de la cadena).** The result of the chain check when the certificate is
+  uploaded: **Complete chain** (`COMPLETE`), **No root** (`NO_ROOT`), **Leaf only** (`LEAF_ONLY`) or
+  **Self-signed** (`SELF_SIGNED`). Certificates uploaded before that check show **Not checked**. See
+  [Statuses](/en/sign/reference/statuses/).
+- **Testing certificate (certificado de pruebas).** Binary Bridges' self-signed certificate that
+  bb-sign seals with until the organization configures its own. PDF readers show it as untrusted. In
+  the application: "Default testing certificate".

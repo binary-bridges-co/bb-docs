@@ -1,22 +1,24 @@
 ---
 title: Descargar documentos firmados
-description: Descargue el PDF original y el PDF firmado desde la página del sobre. Quién puede descargar, vigencia del enlace y plazos de conservación.
+description: Descargue el PDF original, el PDF firmado y el certificado de evidencia desde la página del sobre. Quién puede descargar, vigencia del enlace y plazos.
 product: sign
 audience: user
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
+import { ENVELOPE, EVIDENCE, RETENTION_POLICY } from '../../../facts/sign';
 
 Cuando un sobre se completa, bb-sign genera un PDF firmado por cada documento: el original con el
-sello de cada firmante, firmado con el certificado de la organización. Cada documento queda sellado
-y cualquier cambio posterior se detecta. Descárguelo desde la página del sobre y consérvelo en los
+sello de cada firmante, firmado con el certificado de la organización y su cadena de certificados.
+Cada documento queda sellado y cualquier cambio posterior se detecta. bb-sign emite además un
+certificado de evidencia del sobre. Descárguelos desde la página del sobre y consérvelos en los
 sistemas de su organización.
 
-## Descargar el PDF original y el PDF firmado
+## Descargar los documentos
 
-En la sección **Documentos (N)** de la página del sobre, cada archivo ofrece estas descargas:
+En la sección **Documentos (N)** de la página del sobre, cada documento muestra su huella
+("SHA-256 del original:") y ofrece estas descargas:
 
 | Botón | Contenido | Disponible |
 |---|---|---|
@@ -32,38 +34,70 @@ de verificación) y la función del certificado se describen en
 [Firma electrónica y sello](/sign/concepts/signature-and-seal/). Para comprobar un PDF firmado que
 recibió por otro medio, consulte [Verificar un documento firmado](/sign/signing/verify-a-document/).
 
+## Descargar el certificado de evidencia
+
+En un sobre completado, la misma sección termina con la fila **Certificado de evidencia**. Cuando el
+certificado está emitido, muestra su huella ("SHA-256 del certificado:") y dos botones:
+
+| Botón | Contenido |
+|---|---|
+| **Certificado de evidencia (PDF)** | El certificado sellado: documentos, firmantes, identificación de cada uno y cronología del sobre. |
+| **Registro de auditoría (JSON)** | Los eventos del sobre, guardados junto con el certificado al emitirlo. |
+
+Mientras se emite, la fila muestra "Procesando el certificado de evidencia...". Un sobre completado
+antes de que existieran los certificados muestra "Completado antes de habilitar los certificados de
+evidencia." y no tiene certificado. Si la fila muestra "No se pudo generar; el equipo fue
+notificado.", el equipo de bb-sign ya recibió el aviso: vuelva a consultar el sobre más tarde. El
+contenido completo se describe en [Certificado de evidencia](/sign/concepts/evidence-certificate/).
+
 ## Vigencia del enlace de descarga
 
-Cada botón usa un enlace temporal, válido durante <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />
-desde que se abre la página. Si la descarga no comienza, vuelva a cargar la página del sobre y
-pulse de nuevo el botón. Para compartir un documento, envíe el archivo descargado.
+Cada botón de documento usa un enlace temporal, válido durante
+<Fact of={ENVELOPE.downloadUrlSeconds} unit="s" /> desde que se abre la página. Los botones del
+certificado de evidencia piden un enlace al pulsarlos, válido durante
+<Fact of={EVIDENCE.downloadLinkMinutes} unit="minutos" />. Si una descarga no comienza, vuelva a
+cargar la página del sobre y pulse de nuevo el botón. Para compartir un documento, envíe el archivo
+descargado.
 
 ## Quién puede descargar
 
 Pueden descargar los usuarios con rol de **auditor**, **colaborador** o **gestor** en el espacio de
-trabajo del sobre, y los administradores de la organización. Los usuarios con rol de **lector** ven
-el nombre de cada documento junto con el mensaje "Puedes ver el nombre de este documento, pero no
-descargarlo. Pide acceso de auditor a un administrador."
+trabajo del sobre, y los administradores de la organización. El mismo permiso da acceso al
+certificado de evidencia y a solicitar la restauración de un archivo archivado. Los usuarios con rol
+de **lector** ven el nombre de cada documento junto con el mensaje "Puedes ver el nombre de este
+documento, pero no descargarlo. Pide acceso de auditor a un administrador." y, en lugar del
+certificado, "El certificado de evidencia está disponible para quienes pueden descargar los
+documentos de este sobre."
 
-Los firmantes descargan su copia desde su propio enlace al terminar de firmar y desde el correo
-`Signing complete: {title}`. Consulte [Firmar y descargar](/sign/signing/sign-and-download/).
+Los firmantes descargan su copia firmada y su propia copia del certificado de evidencia desde su
+enlace, al terminar de firmar y desde el correo `Signing complete: {title}`. Su copia del certificado
+enmascara los correos y no incluye la IP ni el navegador. Consulte
+[Firmar y descargar](/sign/signing/sign-and-download/).
 
 ## Plazos de descarga y conservación
 
-Descargue los PDF firmados mientras el sobre está en **Sobres**. Pasados
-<Fact of={ENVELOPE.archiveAfterDays} unit="días" /> desde su creación, un sobre completado pasa a
-[Sobres archivados](/sign/sending/archived-envelopes/), que muestra su registro sin descargas. Los archivos subidos hace más de
-<Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="días" /> pasan a almacenamiento de
-largo plazo y su descarga deja de ser inmediata.
+Pasados <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> desde su creación, un sobre completado
+pasa a [Sobres archivados](/sign/sending/archived-envelopes/). Desde allí se abre en modo de solo
+lectura y sus archivos se siguen descargando de la misma forma.
 
-bb-sign conserva los documentos durante <Fact of={RETENTION_POLICY.retentionDays} unit="días" />,
-un plazo fijo y no negociable. A partir de entonces, la conservación es responsabilidad de su
-organización. Consulte [Alcance y conservación](/sign/legal/retention/).
+bb-sign conserva cada archivo durante <Fact of={RETENTION_POLICY.retentionDays} unit="días" />, un
+plazo fijo y no negociable que se cuenta por archivo: el original desde que se sube, el PDF firmado
+desde que el sobre se completa y el certificado desde que se emite. La sección **Conservación** de
+la página del sobre indica la fecha desde la que sus archivos dejan de estar disponibles. A partir de
+entonces, la conservación es responsabilidad de su organización. Consulte
+[Alcance y conservación](/sign/legal/retention/).
 
-<Aside type="tip" title="Descargue el PDF firmado al completarse el sobre">
-  En cuanto un sobre pase a **Completado**, descargue el **PDF Firmado** de cada documento y
-  guárdelo en el sistema documental de su organización. Un administrador puede automatizar este
-  paso con el webhook `envelope.completed`; consulte [Webhooks](/sign/admin/webhooks/).
+Si un archivo está archivado, la página muestra **Solicitar restauración** en lugar del botón de
+descarga. Hoy bb-sign no traslada ningún archivo a almacenamiento de archivo; cuando una copia lo
+está, el procedimiento se describe en
+[Conservación y restauración](/sign/sending/retention-and-restore/).
+
+<Aside type="tip" title="Descargue el sobre al completarse">
+  En cuanto un sobre pase a **Completado**, descargue el **PDF Firmado** de cada documento y su
+  certificado de evidencia, y guárdelos en el sistema documental de su organización. Un administrador
+  puede automatizar este paso con los webhooks `envelope.completed` y `envelope.evidence_issued`;
+  consulte [Webhooks](/sign/admin/webhooks/) y la sección 4 de la
+  [guía de conservación y restauración](/sign/legal/retention-guide/).
 </Aside>
 
-<LinkCard title="Sobres archivados" href="/sign/sending/archived-envelopes/" description="Qué sobres pasan al archivo, cuándo y cómo consultarlos." />
+<LinkCard title="Conservación y restauración" href="/sign/sending/retention-and-restore/" description="Cuánto tiempo se conserva cada archivo y cómo se solicita uno archivado." />
