@@ -7,23 +7,24 @@ audience: legal
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
+import { ENVELOPE, EVIDENCE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
 
 bb-sign respalda cada documento firmado con integridad, identificación del firmante y evidencia, y lo
 conserva durante un plazo fijo. Esta página explica qué cubre el servicio, cuánto tiempo guarda los
-documentos y cómo su organización puede archivar cada sobre para conservarlo el tiempo que exija la
-ley o sus propias reglas.
+documentos, cómo se aplica hoy esa política y cómo su organización puede archivar cada sobre para
+conservarlo el tiempo que exija la ley o sus propias reglas.
 
 ## Qué cubre bb-sign
 
 - **Integridad.** Cada documento firmado queda sellado y cualquier cambio posterior se detecta.
 - **Identificación.** El firmante se identifica por su correo y, si la organización lo exige, por un
-  código de un solo uso.
-- **Registro del acuerdo.** Lo que el firmante vio y aceptó queda registrado con fecha y hora.
+  código de un solo uso. Cada firma registra el método con que se identificó.
+- **Registro de lo firmado.** Qué documentos vio y firmó cada firmante queda registrado con fecha y
+  hora, junto con la huella SHA-256 de esos documentos.
 - **Consistencia de la evidencia.** La cadena de auditoría permite comprobar que no se insertó ni se
   eliminó ningún registro.
-- **Valor probatorio.** La evidencia (quién, qué, cuándo y desde dónde) se puede consultar y
-  descargar.
+- **Valor probatorio.** Al completarse cada sobre, bb-sign emite un certificado de evidencia sellado
+  (quién, qué, cuándo y desde dónde), que la organización y cada firmante pueden descargar.
 - **Trazabilidad.** Cada acción relevante sobre un sobre queda en su historial.
 
 bb-sign conserva los documentos durante un plazo fijo, establecido en sus términos. Una vez vencido
@@ -31,29 +32,32 @@ ese plazo, la conservación corresponde a la organización que envió los docume
 
 ## Política de conservación
 
-Estos son los compromisos del servicio, recogidos en la cláusula de conservación de los
-[Términos y condiciones](/sign/legal/terms/) (borrador de la Versión 2).
+Estos son los compromisos del servicio, recogidos en la sección 3 de los
+[Términos y condiciones](/sign/legal/terms/). La
+[Guía de conservación y restauración](/sign/legal/retention-guide/) explica cómo aplicarlos.
 
 | Concepto | Política |
 |---|---|
-| Conservación de documentos firmados y evidencia | <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. Plazo fijo, igual para todas las organizaciones. |
-| Paso a archivo en frío | A los <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" />. Un archivo en frío no se descarga de inmediato. |
-| Restauración | A solicitud. La copia restaurada queda disponible durante <Fact of={RETENTION_POLICY.restoredCopyDays} unit="días" />. Normalmente toma pocas horas, sin un tiempo garantizado. |
+| Conservación | Los documentos originales, los documentos firmados y las evidencias de cada sobre se conservan <Fact of={RETENTION_POLICY.retentionDays} unit="días" />, contados desde que cada archivo se carga o se genera. Plazo fijo, igual para todas las organizaciones. Al cumplirse, el archivo se elimina de forma definitiva. |
+| Paso a almacenamiento de archivo | Los documentos con más de <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" /> pueden trasladarse a almacenamiento de archivo; en ese caso no se descargan de inmediato. |
+| Restauración | Un usuario autorizado de la organización, en la aplicación o por la API, puede solicitarla, y el firmante, desde su enlace, la de su copia firmada. Al terminar, bb-sign avisa por correo a quienes la pidieron y envía el webhook `document.restored` a las integraciones suscritas. Normalmente tarda unas horas, sin un tiempo garantizado. La copia restaurada queda disponible <Fact of={RETENTION_POLICY.restoredCopyDays} unit="días" />. |
+| Certificado de evidencia y registro de auditoría | No se archivan: se descargan de inmediato durante todo el plazo. |
 | Después del plazo | La conservación es responsabilidad del cliente (Ley 527 de 1999, artículo 12). |
 
-## Cómo se aplica la política actualmente
+## Cómo se aplica la política hoy
 
-Esta tabla describe el comportamiento vigente del servicio, verificado en la plataforma.
+Esta tabla describe el comportamiento vigente del servicio en producción.
 
 | Elemento | Comportamiento actual |
 |---|---|
-| Documentos: paso a almacenamiento de acceso poco frecuente | A los <Fact of={RETENTION_IMPLEMENTED.documentsStandardIaDays} unit="días" />. |
-| Documentos: paso a archivo en frío | A los <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="días" />. |
-| Restauración a solicitud | Se gestiona con Binary Bridges. Para obtener un documento que ya pasó a archivo en frío, solicítelo a Binary Bridges; no se descarga desde la aplicación. |
-| Paso del sobre a "Archivados" | <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación, un sobre completado, cancelado o vencido pasa a la vista "Archivados". El registro se conserva. |
+| Conservación de los documentos | Una sola regla: cada archivo se elimina a los <Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="días" />. |
+| Paso a almacenamiento de archivo | Ningún archivo pasa hoy a almacenamiento de archivo, así que todos se descargan de inmediato durante su plazo. |
+| Restauración a solicitud | Está disponible en la aplicación, por la API y desde el enlace del firmante. Mientras nada se archive, no hace falta usarla. |
+| Paso del sobre a "Archivados" | <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación, un sobre completado, cancelado o vencido pasa a la vista "Archivados". Es un cambio de lista: el sobre y sus archivos se siguen descargando hasta que termina su plazo de conservación. |
 
-Fuera de producción, la página **Almacenamiento** de la aplicación muestra valores por defecto de
-pruebas, no la configuración de producción. Ver [Almacenamiento](/sign/admin/storage/).
+La página **Almacenamiento** de la aplicación muestra, por separado, la política declarada del
+producto y las reglas que el almacenamiento aplica realmente. Ver
+[Almacenamiento](/sign/admin/storage/).
 
 ## Lo que dice la Ley 527 de 1999
 
@@ -92,39 +96,59 @@ guárdelo en el archivo de su organización.
 
 ## Archivar cada sobre al completarse
 
-La forma más confiable es automática: cuando llega el evento `envelope.completed`, liste los
-documentos del sobre y descargue la copia firmada de cada uno en el archivo de su organización.
+La forma más confiable es automática: cuando llega el evento `envelope.completed`, descargue la copia
+firmada de cada documento y el certificado de evidencia en el archivo de su organización, y compruebe
+que son exactamente los que bb-sign selló.
 
 <Steps>
 
-1. Cree un webhook suscrito a `envelope.completed`. Ver [Webhooks](/sign/developers/webhooks/).
-2. Verifique la firma de cada entrega antes de procesarla. El identificador del sobre llega en
-   `data.envelope.id`.
-3. Llame a `GET /api/v1/envelopes/{id}/documents` con una credencial que tenga el permiso
+1. Cree un webhook suscrito a `envelope.completed` y a `envelope.evidence_issued`, que avisa cuando el
+   certificado de evidencia llega después. Ver [Webhooks](/sign/developers/webhooks/).
+2. Verifique la firma de cada entrega antes de procesarla. Si `data.signedDocumentsStatus` es
+   `PREPARING`, los PDF firmados todavía no existen: vuelva a intentarlo más tarde.
+3. Llame a la ruta de `data.documentsPath` con una credencial que tenga el permiso
    `document:download` en el espacio del sobre (rol auditor o superior). Sin ese permiso, el campo
    `signedUrl` llega vacío.
-4. Descargue cada `signedUrl`. Los enlaces son válidos durante <Fact of={ENVELOPE.downloadUrlSeconds} unit="segundos" />;
-   descárguelos al recibirlos, sin almacenarlos.
+4. Descargue cada `signedUrl` y compare su SHA-256 con el `signedSha256` del mismo documento en
+   `data.documents`. Si coinciden, el archivo es exactamente el que bb-sign selló. Los enlaces son
+   válidos durante <Fact of={ENVELOPE.downloadUrlSeconds} unit="segundos" />; descárguelos al
+   recibirlos, sin almacenarlos.
+5. Descargue el certificado de evidencia desde `data.evidenceCertificate.downloadPath`, que devuelve
+   un enlace válido durante <Fact of={EVIDENCE.downloadLinkSeconds} unit="segundos" />, y compare su
+   SHA-256 con `data.evidenceCertificate.sha256`.
+6. Guarde `data.retention.deletesAt`: desde esa fecha bb-sign ya no tendrá los archivos.
 
 </Steps>
+
+Este código cubre los pasos 2 a 4:
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
 
 ```bash
-# After the envelope.completed webhook checks out, data.envelope.id is the envelope.
-ENVELOPE_ID="3f8c1c2e-7d0a-4f3b-9d2a-0a1b2c3d4e5f"
+# event.json is the envelope.completed delivery, after its signature checks out.
+if [ "$(jq -r '.data.signedDocumentsStatus // "READY"' event.json)" = "PREPARING" ]; then
+  echo "Signed PDFs are still being prepared: try again later" >&2
+  exit 75
+fi
+ENVELOPE_ID=$(jq -r '.data.envelope.id' event.json)
+DOCUMENTS_PATH=$(jq -r '.data.documentsPath' event.json)
 mkdir -p "archive/$ENVELOPE_ID"
 
-curl -sSf -H "Authorization: Bearer $TOKEN" \
-  "$BBSIGN_BASE_URL/api/v1/envelopes/$ENVELOPE_ID/documents" \
-  | jq -r '.[] | "\(.signedUrl // "MISSING")\t\(.filename)"' \
-  | while IFS=$'\t' read -r url filename; do
+curl -sSf -H "Authorization: Bearer $TOKEN" "$BBSIGN_BASE_URL$DOCUMENTS_PATH" \
+  | jq -r '.[] | "\(.id)\t\(.signedUrl // "MISSING")\t\(.filename)"' \
+  | while IFS=$'\t' read -r id url filename; do
       if [ "$url" = "MISSING" ]; then
         echo "No signed copy for $filename: the credential needs document:download" >&2
         exit 1
       fi
       curl -sSf -o "archive/$ENVELOPE_ID/$filename" "$url"
+      expected=$(jq -r --arg id "$id" '.data.documents[] | select(.documentId == $id) | .signedSha256' event.json)
+      actual=$(shasum -a 256 "archive/$ENVELOPE_ID/$filename" | cut -d ' ' -f 1)
+      if [ "$actual" != "$expected" ]; then
+        echo "SHA-256 of $filename does not match the webhook" >&2
+        exit 1
+      fi
     done
 ```
 
@@ -133,6 +157,7 @@ curl -sSf -H "Authorization: Bearer $TOKEN" \
 
 ```js
 import { createClient } from '@binarybridges/bb-sign-sdk'
+import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const client = createClient({
@@ -142,8 +167,13 @@ const client = createClient({
   clientSecret: process.env.BBSIGN_CLIENT_SECRET,
 })
 
-// Call this from your webhook handler once the envelope.completed signature checks out.
-export async function archiveEnvelope(envelopeId) {
+// Call this from your webhook handler with the data of an envelope.completed event whose signature checks out.
+export async function archiveEnvelope(data) {
+  if (data.signedDocumentsStatus === 'PREPARING') {
+    throw new Error('Signed PDFs are still being prepared: try again later')
+  }
+  const envelopeId = data.envelope.id
+  const expected = new Map((data.documents ?? []).map((d) => [d.documentId, d.signedSha256]))
   const documents = await client.envelopes.listEnvelopeDocuments({ id: envelopeId })
   await mkdir(`archive/${envelopeId}`, { recursive: true })
 
@@ -155,7 +185,11 @@ export async function archiveEnvelope(envelopeId) {
     if (!response.ok) {
       throw new Error(`Download of ${document.filename} failed: HTTP ${response.status}`)
     }
-    await writeFile(`archive/${envelopeId}/${document.filename}`, Buffer.from(await response.arrayBuffer()))
+    const bytes = Buffer.from(await response.arrayBuffer())
+    if (createHash('sha256').update(bytes).digest('hex') !== expected.get(document.id)) {
+      throw new Error(`SHA-256 of ${document.filename} does not match the webhook`)
+    }
+    await writeFile(`archive/${envelopeId}/${document.filename}`, bytes)
   }
 }
 ```
@@ -172,11 +206,16 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-// Call this from your webhook handler once the envelope.completed signature checks out.
-void archiveEnvelope(BbSignClient client, UUID envelopeId) throws Exception {
+// Call this from your webhook handler once the envelope.completed signature checks out,
+// unless data.signedDocumentsStatus is PREPARING (then try again later).
+// expectedSha256 maps each data.documents[].documentId to its signedSha256.
+void archiveEnvelope(BbSignClient client, UUID envelopeId, Map<UUID, String> expectedSha256) throws Exception {
     List<DocumentWithUrlsResponse> documents =
             client.execute(client.envelopes().listEnvelopeDocuments(envelopeId));
     Path folder = Files.createDirectories(Path.of("archive", envelopeId.toString()));
@@ -188,12 +227,16 @@ void archiveEnvelope(BbSignClient client, UUID envelopeId) throws Exception {
                     + ": the credential needs document:download");
         }
         HttpRequest request = HttpRequest.newBuilder(URI.create(document.getSignedUrl())).GET().build();
-        HttpResponse<Path> response = http.send(request,
-                HttpResponse.BodyHandlers.ofFile(folder.resolve(document.getFilename())));
+        HttpResponse<byte[]> response = http.send(request, HttpResponse.BodyHandlers.ofByteArray());
         if (response.statusCode() != 200) {
             throw new IllegalStateException("Download of " + document.getFilename()
                     + " failed: HTTP " + response.statusCode());
         }
+        String actual = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(response.body()));
+        if (!actual.equals(expectedSha256.get(document.getId()))) {
+            throw new IllegalStateException("SHA-256 of " + document.getFilename() + " does not match the webhook");
+        }
+        Files.write(folder.resolve(document.getFilename()), response.body());
     }
 }
 ```
@@ -201,12 +244,12 @@ void archiveEnvelope(BbSignClient client, UUID envelopeId) throws Exception {
   </TabItem>
 </Tabs>
 
-Si no cuenta con una integración, descargue los documentos firmados desde la página del sobre. Ver
+Si no cuenta con una integración, descargue los documentos firmados y el certificado de evidencia
+desde la página del sobre. Ver
 [Descargar documentos firmados](/sign/sending/download-signed-documents/).
 
-<Aside type="note" title="La copia del firmante tiene su propio plazo">
-  La copia que el firmante descarga desde su enlace está disponible hasta que el sobre pasa a la
-  vista "Archivados", <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación.
-  Ese plazo corresponde a la vista "Archivados", no a la política de conservación. Si sus firmantes
-  necesitan su copia por más tiempo, entréguela desde el archivo de su organización.
+<Aside type="note" title="La copia del firmante">
+  El firmante puede descargar su copia firmada desde su enlace durante todo el plazo de conservación,
+  también después de que el sobre pase a la vista "Archivados". Si sus firmantes necesitan su copia
+  por más tiempo, entréguela desde el archivo de su organización.
 </Aside>

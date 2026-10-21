@@ -7,7 +7,7 @@ source: docs/api/migrating-from-adobe.md
 ---
 
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, DOCUMENTS } from '../../../../facts/sign';
+import { AUTH, DOCUMENTS, EVIDENCE } from '../../../../facts/sign';
 
 If your team already has an Acrobat Sign integration, this guide lets you move it to bb-sign with a
 clear map of concepts, authentication, webhooks and endpoints. It is based on the Acrobat Sign v6
@@ -27,6 +27,7 @@ API.
 | **Webhook** with echo verification | **Webhook** with HMAC signature | See [Webhooks](#webhooks-from-echo-verification-to-hmac-signature); this is the main change |
 | **Megasign / bulk send** | One envelope per recipient | Create the envelopes in a loop with `POST /api/v1/envelopes` |
 | **Custom workflow** | Sequential or parallel signing | Set with the envelope's `sequentialSigning` boolean and each signer's `signOrder` |
+| **Audit report** | **Evidence certificate** | A sealed PDF per completed envelope, with one copy for the organization and one for each signer. See [Evidence certificate](/en/sign/concepts/evidence-certificate/) |
 | **Form fields / anchors** | A text marker in the PDF | The seal is placed where the PDF contains <code>{DOCUMENTS.placementMarker.value}</code> (N is the signer's order); without a marker, seals are placed on the last page. See [Documents](/en/sign/concepts/documents/) |
 
 ## Authentication: from integration key to client credentials
@@ -81,8 +82,10 @@ implementation. The [webhooks guide](/en/sign/developers/webhooks/) details the 
 a verifier must meet.
 
 **Event contents.** bb-sign delivers a compact, typed event: envelope id, title, status and, on
-`signer.*` events, the signer. For more data, query the API. This keeps payloads small and the
-webhook contract stable.
+`signer.*` events, the signer and how they were identified. The completion event also carries each
+document's SHA-256, the evidence certificate's hashes and the retention dates. No payload carries
+download links: the files are fetched with the API. This keeps payloads small and the webhook
+contract stable.
 
 ## Endpoint mapping
 
@@ -94,6 +97,9 @@ webhook contract stable.
 | `GET /agreements/{id}` | `GET /api/v1/envelopes/{id}` |
 | `GET /agreements/{id}/documents` | `GET /api/v1/envelopes/{id}/documents` |
 | `PUT /agreements/{id}/state` to `CANCELLED` | `POST /api/v1/envelopes/{id}/cancel` |
+| `GET /agreements/{id}/auditTrail` (the "audit report" PDF) | `GET /api/v1/envelopes/{id}/evidence-certificate/download`: links to the sealed evidence certificate and the frozen audit trail, valid for <Fact of={EVIDENCE.downloadLinkSeconds} unit="s" /> |
+| Agreement events (`GET /agreements/{id}/events`) | `GET /api/v1/audit/envelopes/{id}/events` with `audit:read` (outside the published contract; see [Machine authentication](/en/sign/developers/authentication/#archived-envelopes-and-one-envelopes-audit-trail)) |
+| `GET /agreements/{id}/formData` | No equivalent: bb-sign has no form fields |
 | `POST /webhooks` | **Settings**, tab **Webhooks** (webhooks are managed in the UI) |
 
 **Create and send are two calls.** The envelope is created in `DRAFT`, documents are attached and

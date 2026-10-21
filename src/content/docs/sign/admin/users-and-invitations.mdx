@@ -40,7 +40,7 @@ Use **Reenviar invitación** en su fila en lugar de crearla de nuevo.
 | Rol | Qué puede hacer |
 | --- | --- |
 | **Miembro de Organización** | Crear, editar y enviar sobres, subir documentos y asignar etiquetas en los espacios de trabajo donde sea Colaborador o Gestor. En el espacio General es Colaborador siempre. La cancelación de sobres corresponde a Gestores y administradores. |
-| **Administrador de Organización** | Todas las tareas de esta sección: usuarios, espacios, etiquetas, credenciales y webhooks. Ve todos los sobres de todos los espacios. |
+| **Administrador de Organización** | Todas las tareas de esta sección: usuarios, espacios, etiquetas, credenciales, webhooks, certificado y acuerdos. Ve todos los sobres de todos los espacios. Inicia sesión con un segundo factor. |
 
 Las cuentas que usted crea pertenecen siempre a su organización. El detalle de cada permiso está en
 la [Matriz de permisos](/sign/admin/permissions/).
@@ -49,7 +49,13 @@ la [Matriz de permisos](/sign/admin/permissions/).
 
 La invitación llega desde <code>{URLS.identitySenderAddress.value}</code> con un enlace para establecer
 la contraseña, válido durante <Fact of={AUTH.invitationLinkHours} unit="horas" />. Si vence, reenvíe
-la invitación; la cuenta se mantiene.
+la invitación; la cuenta se mantiene. La contraseña debe tener al menos
+<Fact of={AUTH.passwordMinLength} /> caracteres y no puede ser el nombre de usuario ni el correo.
+
+Si la invitación es para un administrador, después de la contraseña la persona configura una
+aplicación de autenticación en su teléfono, y desde entonces la usa en cada inicio de sesión. Los
+miembros no tienen este paso. El detalle está en
+[Seguridad del inicio de sesión](/sign/admin/sign-in-security/).
 
 ## Reenviar una invitación
 

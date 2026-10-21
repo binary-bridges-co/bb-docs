@@ -6,19 +6,24 @@ audience: admin
 source: docs/guias/certificado-propio.md
 ---
 
-import { Aside, Steps } from '@astrojs/starlight/components';
+import { Aside, LinkCard, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { CERTIFICATE } from '../../../../facts/sign';
+import { CERTIFICATE, EMAILS, VERIFY } from '../../../../facts/sign';
+
+export const expiryEmail = EMAILS.find((email) => email.template === 'certificate-expiring');
 
 With your own certificate, every document signed in bb-sign is sealed in your organization's name,
 and validators such as Adobe Acrobat recognize that seal. Whoever receives the PDF sees who sealed it
 and can confirm it has not changed since it was signed. The PDF's signature box can also show your
 organization's name and reason, which Binary Bridges configures in **Signature Appearance**.
 
+The certificate seals the documents; it is not the digital signature of the people who sign. They
+sign with bb-sign's electronic signature mechanism.
+
 <Aside type="tip" title="Configure it before sending documents to third parties">
   Until your organization has its own certificate, bb-sign seals documents with the Binary Bridges
   testing certificate, <code><Fact of={CERTIFICATE.defaultSubject} /></code>. Validators show it as
-  untrusted, because it is meant for trying the service.
+  untrusted, because it is meant for trying the service. Sending envelopes is not blocked meanwhile.
 </Aside>
 
 ## Which certificate to buy
@@ -30,8 +35,8 @@ Before paying, confirm with the issuer that the certificate meets these points:
 - It is delivered as a **PKCS#12 file (.p12 or .pfx) with an exportable private key**. bb-sign needs
   the file, so a certificate delivered on a USB token or that exists only in the vendor's cloud does
   not work for this use.
-- It uses an **RSA key of at least <Fact of={CERTIFICATE.minKeyBits} unit="bits" />**.
-  Elliptic-curve (EC) keys are not supported.
+- It uses an **RSA key of at least <Fact of={CERTIFICATE.minKeyBits} unit="bits" />**. Only RSA
+  keys are supported: bb-sign refuses elliptic-curve (EC), EdDSA and RSA-PSS keys.
 - It has the key usage **digital signature** (`digitalSignature`) and, preferably,
   **non-repudiation** (`nonRepudiation`).
 - It includes the **full certification chain**: the organization's certificate, the intermediates
@@ -94,38 +99,66 @@ openssl pkcs12 -in organizacion.p12 -nokeys -info
 The output must list the organization's certificate, the intermediates and the root.
 
 To review a sealed PDF, open it in Adobe Acrobat and check the signature panel. The seal carries the
-organization's certificate, so to see the full path and the identity as valid, import your
-certification entity's root into Acrobat as trusted.
+full chain you uploaded: the organization's certificate, the intermediates and the root. For Acrobat
+to show the identity as valid, it must trust that root; if it does not recognize it, import it into
+Acrobat as trusted.
 
 ## Upload the certificate
 
-The **Signing Certificate** section is on the organization's page, reached from **Organizations** in
-the sidebar. If your menu does not show **Organizations**, arrange the upload with Binary Bridges.
-
 <Steps>
 
-1. Open **Organizations**, enter your organization and find the **Signing Certificate** section. If
-   you do not have your own certificate yet, you see "No certificate configured — global fallback
-   will be used".
-2. Press **Upload certificate**, or **Replace certificate** if there already is one.
-3. Type a **Label** (for example, "Acme Corp 2026"), choose the **Certificate file (.p12, .pfx,
+1. Open **Settings** and choose the **Certificate** tab. While your organization uses the testing
+   certificate, you see the **Default testing certificate** notice, with the links **How to configure
+   your certificate** and **Terms of service (Spanish)**.
+2. Type a **Label** (for example, "Acme Corp 2026"), choose the **Certificate file (.p12, .pfx,
    .pem)** and type the **Password (if protected)**.
-4. Press **Upload Certificate**. When it finishes, the section shows the label and the expiry date
-   after **Expires:**.
+3. Press **Upload Certificate**.
 
 </Steps>
 
+When it finishes, the tab shows the label, the **Subject**, the **Issuer**, the expiry date after
+**Expires:**, the start of the SHA-256 fingerprint and the chain status. When fewer than
+<Fact of={CERTIFICATE.expiryHighlightDays} unit="days" /> remain before expiry, the date is highlighted
+with a warning icon and shows the days left; an expired certificate shows **Expired:** in red.
+To withdraw the certificate, use the **Remove certificate** button; from then on documents are sealed
+with the testing certificate again.
+
+The Binary Bridges platform administrator can also upload your organization's certificate, from the
+**Signing Certificate** section of the organization's page.
+
+## Chain status
+
+When it receives the file, bb-sign checks the certification chain and shows its status:
+
+| Status | What it means | What to do |
+|---|---|---|
+| **Complete chain** | The file includes every certificate up to the root. | Nothing. |
+| **No root** | The chain stops before the root certificate. Validators that already trust the root accept the seal. | If your recipients do not trust that root, export again with the full chain. |
+| **Leaf only** | The file does not include the certificates that issued yours. | Export again with the full certification path and upload it once more. |
+| **Self-signed** | The certificate signed itself; no third party will trust it. | Buy a certificate from an accredited entity. |
+| **Not checked** | Uploaded before chain checks existed. | Upload it again to check its chain. |
+
+If the chain has a problem that does not prevent sealing, the certificate is uploaded and the tab
+shows "The certificate was uploaded, with warnings" with the details. One of those warnings says the
+file includes certificates that did not issue yours: export again with the certification path of
+**this** certificate only. It is different from **Leaf only**, and each case has its own fix.
+
+## Rules when the file is received
+
 If "Failed to upload certificate" appears, check the file with the verification command and confirm
-the password. bb-sign applies these rules when it receives the file:
+the password. bb-sign applies these rules:
 
 | Rule | What bb-sign does |
 |---|---|
 | Accepted extensions | {CERTIFICATE.allowedExtensions.value.map((ext) => `.${ext}`).join(', ')} |
 | Maximum file size | <Fact of={CERTIFICATE.maxFileMb} unit="MB" /> |
-| Expired certificate | Rejected. |
+| Key type | RSA only. EC, EdDSA and RSA-PSS are rejected. |
 | Key under <Fact of={CERTIFICATE.minKeyBits} unit="bits" /> | Rejected. |
 | Key usage | Requires <code><Fact of={CERTIFICATE.requiredKeyUsage} /></code>. |
-| New upload | Replaces the previous certificate. |
+| Validity | The file is rejected if any certificate in the chain has expired or is not yet valid. |
+| Chain | A broken or misordered chain, an issuer that is not a certification authority and a chain of more than <Fact of={CERTIFICATE.maxChainLength} /> certificates are rejected. |
+| Private key | The file is rejected if the key does not match the certificate, is missing or there is more than one. |
+| New upload | Replaces the previous certificate only when the new file passes every rule. If it is rejected, the current certificate keeps sealing. |
 | Password | Stored encrypted and used only to seal. |
 | PEM files | Accepted on upload, but sealing requires a PKCS#12. Upload a .p12 or .pfx file. |
 
@@ -134,11 +167,26 @@ the application, never by email.
 
 ## Renew the certificate
 
-Note the expiry date shown in the **Signing Certificate** section and upload the renewed certificate
-before that date. New seals use the renewed certificate within
-<Fact of={CERTIFICATE.cacheMinutes} unit="minutes" />.
+Upload the renewed certificate before the current one expires. New seals use the renewed certificate
+within <Fact of={CERTIFICATE.cacheMinutes} unit="minutes" />.
 
-QR-code verification compares the seal with the organization's **active** certificate. After a
-certificate change, documents sealed with the previous one no longer show as valid in that check;
-the PDF stays intact and its signature panel in Acrobat remains valid. See
-[Verify a signed document](/en/sign/signing/verify-a-document/).
+bb-sign emails every organization admin {CERTIFICATE.expiryNoticeDays.value.join(' and ')} days
+before the organization's own certificate expires, with the expiry date and a link to **Settings**,
+**Certificate** tab. The subject is "{expiryEmail?.subject}", with the number of days. The testing
+certificate does not trigger these notices.
+
+<Aside type="note" title="The notices are an aid">
+  Clause 2.4 of the [Terms and conditions](/en/sign/legal/terms/) says so: "These notices are an aid;
+  they do not transfer responsibility for the renewal to Binary Bridges."
+</Aside>
+
+Seals made since bb-sign <Fact of={VERIFY.qrUsesStoredFingerprintSince} /> store the fingerprint of
+the certificate that sealed them, so they keep showing as valid in QR-code verification after a
+certificate change. Older seals are compared with the **active** certificate: after a change they no
+longer show as valid in that check, although the PDF stays intact and its signature panel in Acrobat
+remains valid. See [Verify a signed document](/en/sign/signing/verify-a-document/).
+
+Uploading and removing the certificate, and each expiry notice, are recorded in the organization's
+[audit trail](/en/sign/admin/audit-trail/) with who did it.
+
+<LinkCard title="Own certificate guide" href="/en/sign/legal/own-certificate-guide/" description="The guide that accompanies the terms of service: what to buy, how to export, upload and renew the certificate." />

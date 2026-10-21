@@ -1,6 +1,6 @@
 ---
 title: Webhooks
-description: Reciba en su sistema los cambios de estado de cada sobre. Eventos, encabezados, verificación de la firma, entrega, reintentos e historial.
+description: Reciba en su sistema los cambios de cada sobre. Eventos, contenido, verificación de la firma, entrega, reintentos, historial y conservación de los archivos.
 product: sign
 audience: developer
 source: docs/api/webhooks.md
@@ -8,10 +8,10 @@ source: docs/api/webhooks.md
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { WEBHOOKS, ENVELOPE } from '../../../facts/sign';
+import { WEBHOOKS, WEBHOOK_EVENTS, ENVELOPE, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED, RESTORE } from '../../../facts/sign';
 
-Con los webhooks, bb-sign envía un payload JSON firmado a su URL cada vez que cambia el estado
-de un sobre, y su sistema reacciona al instante sin consultas periódicas.
+Con los webhooks, bb-sign envía un payload JSON firmado a su URL cada vez que ocurre algo en un
+sobre, y su sistema reacciona al instante sin consultas periódicas.
 
 El esquema de firma se define de forma normativa en la
 [especificación de firma de webhooks](/sign/developers/webhook-signature-spec/); esta página es la
@@ -23,16 +23,21 @@ En **Configuración**, pestaña **Webhooks**, seleccione **Nuevo webhook**.
 
 - **URL del endpoint**: «Debe ser HTTPS y accesible desde internet. Rechazamos direcciones
   privadas e internas». La validación se repite en cada entrega.
-- **Eventos que quieres recibir**: seleccione los que necesite entre los seis disponibles:
+- **Eventos que quieres recibir**: seleccione los que necesite entre los {WEBHOOK_EVENTS.length} disponibles:
 
 | Evento | Cuándo |
 |---|---|
 | `envelope.sent` | Un sobre se envió a sus firmantes |
-| `envelope.completed` | Todos los firmantes firmaron |
+| `envelope.completed` | Todos los firmantes firmaron. Se envía una sola vez, con el certificado de evidencia si está listo a tiempo |
 | `envelope.cancelled` | Un sobre se canceló |
 | `envelope.expired` | Un sobre llegó a su fecha de vencimiento sin completarse |
 | `signer.signed` | Un firmante firmó; otros pueden estar pendientes |
 | `signer.viewed` | Un firmante abrió el documento |
+| `envelope.evidence_issued` | El certificado de evidencia llegó después de un `envelope.completed` que se envió sin él |
+| `document.restored` | Terminó la restauración de un archivo archivado (ver [Conservación y restauración](#conservación-y-restauración)) |
+
+Pueden añadirse tipos de evento nuevos: su receptor debe ignorar los que no conoce. Una suscripción
+recibe solo los tipos que seleccionó.
 
 El **secreto de firma se muestra una sola vez**, al crear el webhook. Guárdelo en su gestor de
 secretos. Una organización puede tener hasta <Fact of={WEBHOOKS.maxPerOrg} /> webhooks.
@@ -50,14 +55,25 @@ secretos. Una organización puede tener hasta <Fact of={WEBHOOKS.maxPerOrg} /> w
       "id": "...", "title": "Q3 Agreement", "status": "COMPLETED",
       "createdAt": "...", "expiresAt": null
     },
-    "signer": { "id": "...", "email": "...", "name": "...", "signOrder": 1, "status": "SIGNED", "signedAt": "..." }
+    "signer": { "id": "...", "email": "...", "name": "...", "signOrder": 1, "status": "SIGNED", "signedAt": "...", "authMethod": "EMAIL_LINK_OTP" }
   }
 }
 ```
 
-`data.signer` se incluye solo en los eventos `signer.*`. Los esquemas completos figuran en la
-[referencia de la API](/sign/api/) como `WebhookEvent`, de modo que un cliente generado los recibe
-tipados.
+`data.envelope` está en todos los eventos. Los demás campos de `data` dependen del tipo:
+
+| Campo | Eventos | Contenido |
+|---|---|---|
+| `signer` | `signer.*` | El firmante. `signer.authMethod` indica cómo se identificó al firmar: `EMAIL_LINK` (solo el enlace) o `EMAIL_LINK_OTP` (el enlace y un código de un solo uso enviado por correo). Es `null` antes de firmar y en las firmas anteriores a este campo |
+| `evidenceStatus`, `signedDocumentsStatus`, `documents`, `documentsPath`, `evidenceCertificate`, `auditChainHead` | `envelope.completed`, `envelope.evidence_issued` | El aviso de finalización: el estado del certificado de evidencia, el SHA-256 de cada documento (original y firmado) y, cuando el certificado está emitido, sus hashes y la ruta para descargarlo |
+| `retention` | `envelope.completed` | Las fechas de conservación del sobre (ver [Conservación y restauración](#conservación-y-restauración)) |
+| `document` | `document.restored` | El archivo cuya restauración terminó y su resultado |
+
+Pueden aparecer campos nuevos dentro de un mismo `apiVersion`: ignore los que no conozca. Los
+esquemas completos figuran en la [referencia de la API](/sign/api/) como `WebhookEvent`, de modo
+que un cliente generado los recibe tipados. La
+[especificación](/sign/developers/webhook-signature-spec/#p3a-el-aviso-de-finalización) detalla
+cada campo.
 
 Cada entrega incluye tres encabezados:
 
@@ -69,12 +85,27 @@ Cada entrega incluye tres encabezados:
 
 ### Obtener el documento firmado
 
-Al recibir `envelope.completed`, llame a `GET /api/v1/envelopes/{id}/documents` para obtener el
-archivo. La respuesta incluye `signedUrl` cuando el sobre está `COMPLETED`, válido durante
-<Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />. El payload no incluye enlaces de descarga a
-propósito: un enlace prefirmado dentro del payload seguiría siendo útil después de la entrega y
-podría quedar guardado en registros. El
-[recorrido completo](/sign/developers/envelope-walkthrough/) muestra toda la secuencia.
+Al recibir `envelope.completed`, llame a `GET /api/v1/envelopes/{id}/documents` (la ruta llega en
+`data.documentsPath`) para obtener los archivos. La respuesta incluye `signedUrl` cuando el sobre
+está `COMPLETED`, válido durante <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />. El payload no
+incluye enlaces de descarga a propósito: un enlace prefirmado dentro del payload seguiría siendo
+útil después de la entrega y podría quedar guardado en registros. Los campos que terminan en `Path`
+son rutas de la API que se consultan con el token, no enlaces.
+
+Para guardar una copia completa y comprobada de cada sobre:
+
+1. Suscríbase a `envelope.completed` y a `envelope.evidence_issued` (el certificado que llega tarde).
+2. Descargue cada documento desde `data.documentsPath`. El SHA-256 del PDF firmado debe coincidir con
+   `data.documents[].signedSha256`. Si `signedDocumentsStatus` es `PREPARING`, ese hash todavía no
+   se conoce: no lo compare y descargue los documentos más tarde.
+3. Llame a `data.evidenceCertificate.downloadPath`: devuelve un enlace al
+   [certificado de evidencia](/sign/concepts/evidence-certificate/) válido durante
+   <Fact of={EVIDENCE.downloadLinkSeconds} unit="s" />. El SHA-256 del PDF debe coincidir con
+   `data.evidenceCertificate.sha256`.
+4. Guarde `data.retention.deletesAt`: desde esa fecha, bb-sign ya no tiene los archivos.
+
+El [recorrido completo](/sign/developers/envelope-walkthrough/) muestra toda la secuencia en curl,
+JavaScript y Java.
 
 ## Verificar la firma sobre el cuerpo original
 
@@ -108,18 +139,20 @@ sea correcto. Capture el cuerpo original antes de cualquier interpretación.
     @PostMapping("/webhooks/bb-sign")
     public ResponseEntity<Void> receive(
             @RequestHeader("X-BBSign-Signature") String signature,
-            @RequestBody byte[] rawBody) {                    // byte[], NOT a DTO
+            @RequestBody byte[] rawBody) throws IOException {   // byte[], NOT a DTO
 
         if (!Webhooks.verify(signature, rawBody, System.getenv("BBSIGN_WEBHOOK_SECRET"))) {
             return ResponseEntity.status(401).build();
         }
-        WebhookEvent event = new ObjectMapper().readValue(rawBody, WebhookEvent.class);
+        WebhookEvent event = MAPPER.readValue(rawBody, WebhookEvent.class);
         // ... handle asynchronously
         return ResponseEntity.ok().build();
     }
     ```
 
-    La página del [SDK de Java](/sign/sdks/java/) explica por qué el parámetro es `byte[]`.
+    `MAPPER` es el `ObjectMapper` que se muestra en la página del [SDK de Java](/sign/sdks/java/),
+    configurado para fechas ISO-8601 y para ignorar los campos nuevos. Esa página explica también
+    por qué el parámetro es `byte[]`.
   </TabItem>
 </Tabs>
 
@@ -181,6 +214,61 @@ una entrega:
 | Abandonado | Se agotaron los reintentos | Corrija el endpoint y consulte el estado del sobre con la API; este evento no se reenvía |
 | No enviado | El endpoint estaba desactivado en ese momento | Active el endpoint y concilie el periodo con `GET /api/v1/envelopes` |
 | No se pudo construir | Un error del lado de bb-sign | Contacte a soporte |
+
+## Conservación y restauración
+
+bb-sign conserva cada archivo de un sobre durante un plazo fijo de
+<Fact of={RETENTION_POLICY.retentionDays} unit="días" />: el original desde su subida, la copia
+firmada desde la finalización y el certificado de evidencia desde su emisión. Las fechas se redondean
+a las 00:00 UTC.
+
+- **`deletesAt`** (en `data.retention` de `envelope.completed` y en cada archivo de
+  `GET /api/v1/envelopes/{id}/documents`) significa «deja de estar disponible el»: desde esa fecha
+  los archivos no se pueden descargar y se borran de forma definitiva en los días siguientes.
+  Archive antes lo que deba conservar.
+- **`archivesAt`** es la fecha desde la que un archivo puede pasar a almacenamiento de archivo. Los
+  términos del servicio lo permiten desde el día <Fact of={RETENTION_POLICY.archiveAfterDays} />.
+  {!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && <>Hoy ningún archivo se mueve a almacenamiento de archivo, de modo que <code>archivesAt</code> es <code>null</code> y todos los archivos se descargan directamente.</>}
+- El cuerpo de una entrega se fija en el primer envío. Las fechas actuales de cada archivo están
+  siempre en `GET /api/v1/envelopes/{id}/documents`.
+
+**Restaurar un archivo archivado.** `GET /api/v1/envelopes/{id}/documents` informa la disponibilidad
+de cada archivo en `original.availability` y `signed.availability`:
+
+| Valor | Significado |
+|---|---|
+| `AVAILABLE`, `RESTORED` | Se puede descargar |
+| `ARCHIVED` | Está en almacenamiento de archivo: pida su restauración |
+| `RESTORE_IN_PROGRESS` | Se está restaurando |
+| `DELETED` | Superó su plazo de conservación |
+
+Pida un archivo con `POST /api/v1/envelopes/{id}/documents/{docId}/restore` y el cuerpo
+`{"kind": "SIGNED"}` (o `"ORIGINAL"`). Responde `202` mientras se restaura, por lo general en unas
+horas, y `200` si el archivo no necesita restauración. Aunque lo pidan varias personas, se ejecuta
+una sola restauración. La copia restaurada se descarga durante
+<Fact of={RESTORE.days} unit="días" />. Una organización puede tener como máximo
+<Fact of={RESTORE.maxActivePerOrg} /> restauraciones en curso. El ciclo completo se describe en
+[Conservación y restauración](/sign/sending/retention-and-restore/).
+
+**Una integración se entera solo por `document.restored`**: las credenciales de API nunca reciben
+correos. Si su integración pide restauraciones, suscríbase a ese evento. Llega un evento por
+restauración, también por las que pidió una persona o un firmante:
+
+```json
+"data": {
+  "envelope": { "id": "...", "title": "...", "status": "COMPLETED", "createdAt": "...", "expiresAt": null },
+  "document": {
+    "id": "...", "kind": "SIGNED", "outcome": "RESTORED", "reason": null,
+    "availableUntil": "2027-03-02T14:05:00Z", "downloadPath": "/api/v1/envelopes/{id}/documents"
+  }
+}
+```
+
+- `outcome` es `RESTORED` (se descarga hasta `availableUntil`), `AVAILABLE` (nunca necesitó
+  restauración) o `FAILED`, con `reason` `DELETED` (superó su plazo), `TIMEOUT` (tardó demasiado:
+  pídala de nuevo) o `STORAGE_ERROR`. Pueden añadirse valores.
+- El payload no lleva enlaces: consulte `downloadPath` para obtener la disponibilidad y un enlace de
+  corta duración.
 
 ## Rotar el secreto
 

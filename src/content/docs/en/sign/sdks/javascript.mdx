@@ -1,6 +1,6 @@
 ---
 title: JavaScript SDK
-description: "TypeScript client for Node: installation, creating envelopes, pagination, server-side webhook verification, retries, errors and security guarantees."
+description: "TypeScript client for Node: installation, envelopes, pagination, server-side webhooks, checking a file, retries, errors and what it does not cover."
 product: sign
 audience: developer
 source: sdk-js/README.md
@@ -8,7 +8,7 @@ source: sdk-js/README.md
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { SDK, WEBHOOKS } from '../../../../facts/sign';
+import { SDK, WEBHOOKS, VERIFY, RATE_LIMITS, QUOTA } from '../../../../facts/sign';
 
 The JavaScript SDK connects your Node services to the bb-sign API: it manages tokens, retries
 safely and verifies webhook signatures. The package is
@@ -54,7 +54,22 @@ console.log('Created', envelope.id)
 ```
 
 Tokens are fetched, cached and refreshed automatically. Concurrent calls share a single token
-request. The client exposes `envelopes`, `documents` and `verification`.
+request.
+
+### What the client covers
+
+The client exposes `envelopes`, `documents` and `verification`:
+
+| Accessor | Operations |
+|---|---|
+| `envelopes` | Create, list, read, attach documents, add signers, send, cancel, count by status, list the documents with their links, and `restoreEnvelopeDocument` (request a restore of an archived file) |
+| `documents` | `uploadDocument`. The generated methods send JSON, so a multipart upload uses `fetch` (see the [walkthrough](/en/sign/developers/envelope-walkthrough/#2-upload-the-document)) |
+| `verification` | `verifyDocument` (the QR code seal) and `verifyDocumentFile` (see [Check a file](#check-a-file)) |
+
+**Not in the client:** the evidence certificate, `GET /api/v1/workspaces` and agreement copies: the
+package does not export their classes and `createClient` does not expose them. Call them with
+`fetch` and a token obtained as in the [walkthrough](/en/sign/developers/envelope-walkthrough/#1-get-a-token);
+step 8 of that walkthrough downloads the evidence certificate.
 
 ### List by page
 
@@ -167,10 +182,29 @@ verifyWebhookSignature(header, rawBody, secret, { nowSeconds: 1760000000 })
 
 A receiver behind a queue can widen the window with `toleranceSeconds`.
 
+## Check a file
+
+`verification.verifyDocumentFile` sends a PDF's bytes to `POST /api/v1/verify/file`, which computes
+their SHA-256 on the server and answers whether it is a document bb-sign signed. The route is
+public, does not store the file and accepts up to <Fact of={VERIFY.fileMaxMb} unit="MB" />,
+limited to <Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> requests a minute per client.
+
+```js
+import { openAsBlob } from 'node:fs'
+
+const result = await client.verification.verifyDocumentFile({
+  body: await openAsBlob('contract-signed.pdf', { type: 'application/octet-stream' }),
+})
+console.log(result.match, result.sha256)
+```
+
+Only signed PDFs match: an unsigned original never does. `verifyDocument`, by contrast, checks the
+seal printed in the QR code against bb-sign's records and does not read the PDF.
+
 ## Retries
 
 `GET` requests are retried on 5xx errors and transport failures, with exponential backoff and full
-jitter.
+jitter, from <Fact of={SDK.retryBaseMs} unit="ms" /> up to <Fact of={SDK.retryMaxBackoffMs} unit="ms" />.
 
 **A `POST` whose response was not received is not retried.** If `createEnvelope` times out, the
 outcome is unknown: the envelope may already exist, and a retry would create a second agreement
@@ -189,11 +223,13 @@ try {
 ```
 
 `429` and `503` are also retried for `POST`, because they indicate the server did not process the
-request.
+request. The SDK **does not honour `Retry-After`**: on a `RATE_LIMITED`, its retries arrive before
+the window opens and fail again. If you receive <code>{QUOTA.httpStatusWhenExhausted.value}</code>,
+wait the `Retry-After` seconds before calling again; that wait is up to your code.
 
 ## Errors
 
-Every failure throws a `BbSignError` with a `statusCode`. `0` indicates the request got no answer.
+Every failure throws a `BbSignError` with a `statusCode`. `0` indicates the request got no answer.{SDK.errorCarriesStatusOnly.value && <> The error carries the status only, not the body or its <code>code</code>: if you need the <code>code</code>, make that call over HTTP and read the body.</>}
 
 | Status | Meaning |
 |---|---|
@@ -201,13 +237,38 @@ Every failure throws a `BbSignError` with a `statusCode`. `0` indicates the requ
 | 401 | Credentials rejected. The SDK refreshes and retries once before surfacing this |
 | 403 | Authenticated, but this credential lacks the organization permission |
 | 404 | The resource does not exist, or belongs to another organization or a workspace the credential cannot see. Deliberately indistinguishable |
+| 408 | The upload to verify by file took longer than the deadline |
 | 409 | The resource is not in a state that allows the operation |
-| 429 | An organization quota is exhausted |
+| 410 | The file you asked to restore is past its retention period |
+| 413 | The file sent to verify by file is above the size limit |
+| 429 | The server did not process the request: an exhausted quota (`QUOTA_EXCEEDED`), a rate limit (`RATE_LIMITED`) or too many restores in progress (`RESTORE_LIMIT_REACHED`) |
+| 503 | A service the operation depends on did not answer |
 
 The error carries a status and a message, **without** the `Response` object: logging it does not
-expose your `Authorization` header. Messages never include your secret, even when bb-sign's
+expose your `Authorization` header. It does not carry the body either, so a quota 429 and a
+rate-limit 429 look the same; if you need the `code`, make that call with `fetch` and read the body. Messages never include your secret, even when bb-sign's
 response contains it. [Errors](/en/sign/developers/errors/) includes the full table and the error
 body.
+
+## What is new in the contract
+
+The SDK is generated from the OpenAPI contract, so a current handover already types the fields
+added since the first one:
+
+- `EnvelopeResponse`: `archived`, `archivedAt`, `retention` and `restoresInProgress`.
+- `DocumentWithUrlsResponse`: `originalSha256`, plus `original` and `signed` (`DocumentFile`, with
+  `availability`, `deletesAt`, `archivesAt`, `availableUntil` and `restorable`).
+- `WebhookEventData`: `evidenceStatus`, `signedDocumentsStatus`, `documents`, `documentsPath`,
+  `evidenceCertificate`, `auditChainHead`, `retention` and `document`; `WebhookEventSigner.authMethod`.
+- The `envelope.evidence_issued` and `document.restored` event types.
+
+Ignore an event of a type your code does not know: new types may be added.
+
+## Versions
+
+The version is <Fact of={SDK.js.version} />. Later handovers kept that number even though they
+added operations and fields, so the version alone does not tell you which tarball you have. If you
+are not sure you have the current handover, ask for it before you rely on the fields on this page.
 
 ## Security guarantees
 

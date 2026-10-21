@@ -54,7 +54,10 @@ export interface Product {
   readonly repo: string;
   /** Node colour on the parent arc (homepage rebrand plan, D3). */
   readonly accent: 'seal';
-  /** Files that stay canonical in the product repo and are copied in by `scripts/sync-product.mjs`. */
+  /**
+   * Files that stay canonical in the product repo and are copied in by `scripts/sync-product.mjs`
+   * (which mirrors this list). Legal texts in `extra` are rendered into pages, never published as downloads.
+   */
   readonly sync: {
     readonly openapi?: string;
     readonly extra?: readonly string[];
@@ -79,7 +82,12 @@ export const PRODUCTS: readonly Product[] = [
     accent: 'seal',
     sync: {
       openapi: 'docs/api/openapi.json',
-      extra: ['docs/api/webhook-signature-vectors.json'],
+      extra: [
+        'docs/api/webhook-signature-vectors.json',
+        'docs/legal/terminos-y-condiciones.md',
+        'docs/guias/certificado-propio.md',
+        'docs/guias/conservacion-y-restauracion.md',
+      ],
     },
     icon: 'document',
     sidebar: [
@@ -99,6 +107,7 @@ export const PRODUCTS: readonly Product[] = [
           page('sign/concepts/documents', 'Documentos', 'Documents'),
           page('sign/concepts/signature-and-seal', 'Firma electrónica y sello', 'Electronic signature and seal'),
           page('sign/concepts/evidence-and-audit', 'Evidencia y auditoría', 'Evidence and audit'),
+          page('sign/concepts/evidence-certificate', 'Certificado de evidencia', 'Evidence certificate'),
           page('sign/concepts/labels', 'Etiquetas', 'Labels'),
           page('sign/concepts/quotas', 'Cuotas', 'Quotas'),
         ],
@@ -124,6 +133,7 @@ export const PRODUCTS: readonly Product[] = [
           page('sign/sending/cancel', 'Cancelar un sobre', 'Cancel an envelope'),
           page('sign/sending/download-signed-documents', 'Descargar documentos firmados', 'Download signed documents'),
           page('sign/sending/archived-envelopes', 'Sobres archivados', 'Archived envelopes'),
+          page('sign/sending/retention-and-restore', 'Conservación y restauración', 'Retention and restore'),
         ],
       },
       {
@@ -131,6 +141,7 @@ export const PRODUCTS: readonly Product[] = [
         pages: [
           page('sign/admin/index', 'Administrar la organización', 'Administer the organization'),
           page('sign/admin/users-and-invitations', 'Usuarios e invitaciones', 'Users and invitations'),
+          page('sign/admin/sign-in-security', 'Seguridad del inicio de sesión', 'Sign-in security'),
           page('sign/admin/workspaces-and-members', 'Espacios y miembros', 'Workspaces and members'),
           page('sign/admin/labels', 'Claves de etiqueta', 'Label keys'),
           page('sign/admin/api-credentials', 'Credenciales de API', 'API credentials'),
@@ -166,6 +177,8 @@ export const PRODUCTS: readonly Product[] = [
         label: { es: 'Legal', en: 'Legal' },
         pages: [
           page('sign/legal/terms', 'Términos y condiciones', 'Terms and conditions'),
+          page('sign/legal/own-certificate-guide', 'Guía de certificado propio', 'Own certificate guide'),
+          page('sign/legal/retention-guide', 'Guía de conservación y restauración', 'Retention and restore guide'),
           page('sign/legal/retention', 'Alcance y conservación', 'Scope and retention'),
           page('sign/legal/electronic-vs-digital-signature', 'Firma electrónica y firma digital', 'Electronic and digital signature'),
         ],

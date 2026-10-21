@@ -1,6 +1,6 @@
 ---
 title: Machine authentication
-description: How a credential obtains a token, what the token contains, what it can access through workspace roles, how long it lasts and what each error status means.
+description: How a credential obtains a token, what it contains, what it can access through its roles (archived envelopes and audit trail included), how long it lasts and each error.
 product: sign
 audience: developer
 source: docs/api/machine-authentication.md
@@ -9,7 +9,9 @@ source: docs/api/machine-authentication.md
 import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import RolesMatrix from '../../../../../components/facts/RolesMatrix.astro';
-import { URLS, AUTH, ORG_API_NEVER } from '../../../../facts/sign';
+import { URLS, AUTH, ORG_API_NEVER, ORG_PERMISSIONS, AGREEMENTS, AUDIT, ENVELOPE, EVIDENCE, RATE_LIMITS } from '../../../../facts/sign';
+
+export const orgApiPermissions = ORG_PERMISSIONS.filter((p) => p.holders.includes('org_api')).map((p) => p.key);
 
 Your integrations authenticate to bb-sign with an API credential and operate under the same
 isolation guarantees as a member of the organization. An admin creates the credential in
@@ -44,6 +46,10 @@ curl -s -X POST https://auth.binarybridges.co/realms/bbsign/protocol/openid-conn
 { "access_token": "eyJ...", "expires_in": 300, "token_type": "Bearer" }
 ```
 
+Only `client_credentials` is accepted. The password grant is disabled on every client in the realm,
+so a script cannot get a token with a person's email and password (Keycloak answers
+`unauthorized_client`). An integration always uses its own credential, never a user's account.
+
 Send it as a bearer token on every request:
 
 ```bash
@@ -57,10 +63,11 @@ curl -H "Authorization: Bearer $TOKEN" https://sign-api.binarybridges.co/api/v1/
 | `bb_sign_org_id` | The owning org's UUID | Every org-scoped read and write resolves from this value. **If it is missing, the API returns 403** (see [Error statuses](#error-statuses)) |
 | `realm_access.roles` | contains `org_api` | The role the organization-scoped endpoints admit |
 | `aud` | contains `bb-sign` | If absent, the audience validator rejects the token before authorization is evaluated |
+| `iss` | <Fact of={AUTH.expectedIssuer} /> | The API accepts tokens from this issuer only. A token from another realm or another host returns `401` |
 
 Without the audience mapper, the token fails validation; without the org attribute, it fails
-authorization. In both cases access is denied. Credentials created from **Settings** carry all
-three claims.
+authorization. In both cases access is denied. Credentials created from **Settings** carry all of
+these claims.
 
 <Aside type="note" title="Token lifetime">
   A token is valid for <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> (`expires_in`). It is
@@ -71,8 +78,16 @@ three claims.
 
 ## Credential scope
 
-At organization level a credential holds only `label:read` and `workspace:read`: it can list the
-label keys and the workspaces it belongs to. What it can do **with envelopes** depends on the role
+At organization level a credential holds only these permissions:
+
+<ul>
+  {orgApiPermissions.map((key) => (
+    <li><code>{key}</code></li>
+  ))}
+</ul>
+
+With them it lists the label keys and the workspaces it belongs to, and reads agreement copies (see
+[Agreement copies](#agreement-copies)). What it can do **with envelopes** depends on the role
 it holds in each workspace. When the credential is created, the form asks for a workspace and a
 role: "General with Manager is the default." An admin can later add it to other workspaces from
 **Settings**, tab **Workspaces**, section **Members**.
@@ -80,7 +95,7 @@ role: "General with Manager is the default." An admin can later add it to other 
 <RolesMatrix locale="en" show="workspace" />
 
 - `GET /api/v1/workspaces` returns General and the workspaces the credential holds a role in. Send
-  one's `id` as `workspaceId` when creating an envelope; if you omit it, the envelope is filed in
+  one's `id` as `workspaceId` when creating an envelope; if you omit it, the envelope goes to
   General.
 - A credential can belong to at most <Fact of={AUTH.maxWorkspaceMembershipsPerPrincipal} /> workspaces.
 - A role change applies when the credential's next token is issued, so within
@@ -99,9 +114,9 @@ They are escalation guards in the permission catalog:
   ))}
 </ul>
 
-Organizations, users, quotas, certificates, labels, the archive, the audit trail, credentials,
-webhooks and workspaces are managed in the UI by an org admin. The signing ceremony
-(`/api/v1/sign/**`) is public by design and scoped to one signer by the token in its link;
+Organizations, users, quotas, certificates, labels, credentials, webhooks and workspaces are
+managed in the UI by an org admin, and so is the organization-wide audit trail. The signing
+ceremony (`/api/v1/sign/**`) is public by design and scoped to one signer by the token in its link;
 integrations do not use it.
 
 The two kinds of denial are deliberately distinct:
@@ -111,14 +126,57 @@ The two kinds of denial are deliberately distinct:
 | An operation the credential lacks the organization permission for | `403`, no body |
 | An envelope or workspace the credential cannot see, or one that does not exist | `404`, identical to "does not exist" |
 
+## Archived envelopes and one envelope's audit trail
+
+About <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after it was created, a finished envelope
+moves to **Archived**. It is not deleted: the envelope, its signers, its documents and its audit
+trail stay readable through the same routes as an active envelope, by a credential too.
+
+| Route | What the credential gets for an archived envelope | Permission in the envelope's workspace |
+|---|---|---|
+| `GET /api/v1/envelopes/{id}` | The envelope, with `archived: true` and `archivedAt` | `envelope:read` and `archive:read` |
+| `GET /api/v1/envelopes/{id}/documents` | The documents, with download links | `document:download` and `archive:read` |
+| `GET /api/v1/envelopes/{id}/evidence-certificate` and `/download` | The [evidence certificate](/en/sign/concepts/evidence-certificate/) | <code>{EVIDENCE.downloadPermission.value}</code> and `archive:read` |
+| `GET /api/v1/audit/envelopes/{id}/events` | The envelope's audit trail | `audit:read` and `archive:read` |
+
+Every workspace role from *viewer* up holds `archive:read`. Without it, or for another
+organization's envelope, the answer is `404`, the same as a missing id. An archived envelope is
+read-only: send, cancel, add-signer, upload and label changes on its id return `404`.
+
+One envelope's audit trail (active or archived) is read with `audit:read`, which the
+<code>{AUDIT.envelopeTrailReaders.value.join(', ')}</code> roles hold:
+
+| Route | Response |
+|---|---|
+| `GET /api/v1/audit/envelopes/{id}/events` | The envelope's events |
+| `GET /api/v1/audit/envelopes/{id}/verification` | Whether the hash chain verifies: <code>{AUDIT.verificationStatuses.value.join(', ')}</code> |
+| `GET /api/v1/audit/envelopes/{id}/export` | The trail in the <code>{AUDIT.exportFormat.value}</code> format, as a download |
+
+`/verification` and `/export` share a limit of <Fact of={AUDIT.readRatePerMinute} /> calls a minute
+per credential; above it they return `429 RATE_LIMITED` with `Retry-After`.
+{!RATE_LIMITS.auditReadThrottledRoutes.value.includes('events') && <> <code>/events</code> has no such limit.</>} An export of more than
+<Fact of={AUDIT.exportMaxRows} /> rows returns `413 AUDIT_EXPORT_TOO_LARGE`: request it in pages with
+`fromSeq` and `limit` (at most <Fact of={AUDIT.exportPageMaxRows} /> rows a page). Every export is
+recorded in the envelope's own trail, with the credential as the actor. These routes are not yet in
+the published OpenAPI contract or the [API reference](/sign/api/). The organization-wide trail
+(`/api/v1/audit/org-events`) and the rest of `/api/v1/audit/**` remain reserved for people.
+
+## Agreement copies
+
+With `agreement:read`, a credential reads an agreement copy with
+`GET /api/v1/agreement-copies/{copyId}`: the exact, immutable text, with its version, its language
+and its `contentSha256`. Another organization's copy returns `404`.
+{!AGREEMENTS.pinAtSendInProduction.value && ' In production, copies are not yet pinned to envelopes when they are sent, so no envelope cites a copy.'}
+
 ## Error statuses
 
 | Status | Meaning | Usual cause | Action |
 |---|---|---|---|
-| `401` | No token, expired token, or a token the realm will not validate | Missing `Authorization` header; token older than <Fact of={AUTH.tokenLifetimeSeconds} unit="s" /> | Request a new token; check the `Bearer ` prefix |
+| `401` | No token, expired token, or a token the realm will not validate | Missing `Authorization` header; token older than <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />; token issued by another realm or host (its `iss` is not <Fact of={AUTH.expectedIssuer} />) | Request a new token from the production token URL; check the `Bearer ` prefix |
 | `403` on a workflow endpoint | Authenticated, but not permitted at organization level | Calling a management operation that exists only in the UI | Confirm the operation exists in the [API reference](/sign/api/) |
 | `403` on `GET /api/v1/envelopes` specifically | The token carries `org_api` but **not `bb_sign_org_id`** | A credential not created from **Settings** | Revoke it and create a new one in **Settings**, tab **API credentials** |
 | `404` on an envelope or workspace | The credential holds no role in that workspace, or the id is wrong | A workspace never assigned to the credential | Ask an admin to add the credential under **Members**, or use General |
+| `429 RATE_LIMITED` on `/api/v1/audit/**` | The credential's audit read limit was exceeded | Repeated exports or verifications within one minute | Wait the `Retry-After` seconds before calling again |
 
 In the case of the third row, access is denied: a token without the org claim receives no
 organization's data.

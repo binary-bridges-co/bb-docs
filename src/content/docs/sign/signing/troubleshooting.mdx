@@ -1,16 +1,18 @@
 ---
 title: Si algo falla
-description: Los mensajes que puede mostrar la página de firma, qué significa cada uno y qué hacer para continuar con su firma.
+description: Los mensajes que puede ver al firmar, descargar o verificar su copia, qué significa cada uno y qué hacer para continuar.
 product: sign
 audience: signer
 ---
 
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE, OTP } from '../../../facts/sign';
+import { DOCUMENTS, ENVELOPE, OTP, RATE_LIMITS, RESTORE, RETENTION_POLICY, URLS } from '../../../facts/sign';
 
-Esta tabla reúne los mensajes que puede mostrar la página de firma y la acción que resuelve cada
-caso. Cuando necesite un cambio en el sobre, quien le envió el documento puede revisarlo, corregirlo
-o enviarle uno nuevo.
+export const verifyUrl = `${URLS.app.value}${URLS.verifyPath.value}`;
+
+Esta tabla reúne los mensajes que puede ver al firmar, al descargar su copia y al verificarla, y la
+acción que resuelve cada caso. Cuando necesite un cambio en el sobre, quien le envió el documento
+puede revisarlo, corregirlo o enviarle uno nuevo.
 
 ## Mensajes y soluciones
 
@@ -27,8 +29,16 @@ o enviarle uno nuevo.
 | "Por favor, dibuja tu firma." o "Por favor, escribe tu nombre." | Pulsó **Enviar firma** con el recuadro vacío. | Dibuje o escriba su firma y envíela de nuevo. |
 | "La firma falló. Inténtalo de nuevo." | La firma no se pudo registrar. | Pulse de nuevo **Enviar firma**. |
 | "Your identity check has expired. Please request a new code." | Pasaron más de <Fact of={OTP.verifiedValidityMinutes} unit="minutos" /> desde la verificación. | Recargue la página y solicite un código nuevo. |
-| "Este documento ya no está disponible para descarga. Por favor contacta al administrador." | El sobre se archivó <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación. | Solicite el documento a quien se lo envió; la organización conserva una copia. |
+| "Los documentos cambiaron mientras los revisabas. Revísalos de nuevo antes de firmar." | Los documentos cambiaron después de que la página los cargó, así que bb-sign no registró su firma. | Abra de nuevo cada documento, revíselo y vuelva a firmar. |
 | "Tu copia firmada aún se está preparando. Te enviamos un enlace por correo — podrás descargarla desde ahí cuando esté lista." | El sellado está tomando más tiempo. | Cierre la página y descargue la copia más tarde desde el correo `Signing complete: {title}`. |
+| "No se pudo descargar el certificado de evidencia. Inténtalo de nuevo." | La descarga del certificado no comenzó. | Pulse de nuevo **Descargar tu certificado de evidencia**. |
+| "Tu copia firmada está archivada. Solicítala y te la enviaremos por correo cuando esté disponible." | Su copia está en almacenamiento de archivo. | Pulse **Solicitar mi copia**. La restauración tarda normalmente unas horas; después recibirá un correo con el enlace. |
+| "Tu copia firmada se está restaurando. Solicítala para que te la enviemos por correo cuando esté disponible." | Otra persona ya pidió la copia y la restauración está en curso. | Pulse **Solicitar mi copia** para recibir también el correo. |
+| "Recibimos muchas solicitudes desde este enlace o tu conexión. Si ya la solicitaste, te llegará el correo; si no, inténtalo de nuevo en unos minutos." | Se alcanzó el límite de <Fact of={RATE_LIMITS.signerRestorePerLink} /> solicitudes por enlace o de <Fact of={RATE_LIMITS.signerRestorePerIp} /> por conexión en <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutos" />. | Si ya la solicitó, espere el correo. Si no, vuelva a intentarlo en unos minutos. |
+| "No pudimos solicitar tu copia. Inténtalo de nuevo en unos minutos." | La solicitud no se completó. | Vuelva a pulsar **Solicitar mi copia** en unos minutos. |
+| El correo de restauración dice "La restauración tardó más de lo previsto; puedes volver a solicitarla." o "No se pudo restaurar." | La restauración no terminó en <Fact of={RESTORE.timeoutHours} unit="horas" />, o falló. | Abra su enlace y pulse de nuevo **Solicitar mi copia**. Si vuelve a fallar, comuníquese con quien le envió el documento. |
+| "Tu copia firmada ya no está disponible: se cumplió su plazo de conservación de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />." | Pasó el plazo de conservación de su copia, contado desde que el sobre se completó, y se eliminó. | Solicite el documento a quien se lo envió: desde entonces, su organización es la responsable de conservarlo. |
+| **Firma no válida** al escanear el código QR del sello | Si el sobre ya pasó a **Archivados** (<Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación), hoy la comprobación del código QR falla aunque el documento esté intacto. | Si el documento se firmó desde la versión <Fact of={DOCUMENTS.signedSha256Since} /> de bb-sign, compruébelo con **Comprobar un archivo** en <a href={verifyUrl}>{verifyUrl}</a>. Si se firmó antes, o si esa comprobación tampoco lo confirma, abra el PDF en un lector y revise su panel de firmas. Si tiene dudas, consulte a quien le envió el documento. Consulte [Verificar un documento firmado](/sign/signing/verify-a-document/). |
 
 Algunos mensajes del servicio pueden aparecer en inglés.
 

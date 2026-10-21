@@ -7,7 +7,7 @@ audience: user
 
 import { Aside, Steps, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { AUTH, URLS } from '../../../facts/sign';
+import { ADMIN_MFA, AUTH, URLS } from '../../../facts/sign';
 
 Su cuenta de bb-sign la crea un administrador de su organización. Usted recibe una invitación por
 correo, define su contraseña y empieza a trabajar en <a href={URLS.app.value}>{URLS.app.value}</a>.
@@ -40,6 +40,11 @@ que sea necesario.
 
 </Steps>
 
+Si su rol es de administrador, en ese primer ingreso bb-sign le pide además configurar una aplicación
+de autenticación, y desde entonces le solicita su código de <Fact of={ADMIN_MFA.digits} unit="dígitos" />
+cada vez que inicia sesión. Los miembros no necesitan este paso. Consulte
+[Seguridad del inicio de sesión](/sign/admin/sign-in-security/).
+
 Desde entonces, inicie sesión en esa misma dirección. Si olvida su contraseña, use la opción de
 restablecimiento de la pantalla de inicio de sesión; el correo llega desde la misma dirección que la
 invitación. Para salir, use **Cerrar sesión** al final del menú lateral.
@@ -60,6 +65,8 @@ Su rol aparece bajo su nombre, al final del menú lateral: **Administrador de Or
 | **Almacenamiento** | No | Sí |
 | **Configuración** | No | Sí |
 
+Al final del menú aparecen también los enlaces **Términos del servicio** y **Guía de certificado**, que abren los términos del servicio y la guía del certificado propio.
+
 Las páginas de administración están reservadas a los administradores. Si un miembro abre una de
 ellas directamente, la aplicación muestra "Acceso Denegado".
 
@@ -76,9 +83,10 @@ los dos, inglés.
 
 <Aside type="note" title="Los correos a los firmantes se envían en inglés">
   El idioma que elija aplica a la aplicación. Los correos que bb-sign envía a los firmantes
-  (invitación, código de verificación, recordatorio y sobre completado) se envían en inglés. Si sus
-  firmantes no leen inglés, avíseles con anticipación que recibirán ese correo y qué deben hacer con
-  él.
+  (invitación, aviso de turno, código de verificación, recordatorio, sobre completado y sobre
+  vencido) se envían en inglés. Si sus firmantes no leen inglés, avíseles con anticipación que
+  recibirán ese correo y qué deben hacer con él. El correo que avisa a quien pidió restaurar una copia
+  archivada llega en español y en inglés.
 </Aside>
 
 ## Cambiar el tema

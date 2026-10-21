@@ -1,13 +1,13 @@
 ---
 title: "Estados"
-description: "Los estados de sobres, firmantes, entregas de webhooks y credenciales de API, con la etiqueta que muestra la aplicación para cada uno."
+description: "Los estados de sobres, firmantes, certificados de evidencia, archivos, restauraciones, certificados, webhooks y credenciales, con su etiqueta en la aplicación."
 product: sign
 audience: all
 ---
 
 import Fact from '../../../../components/facts/Fact.astro';
 import StatusFlow from '../../../../components/facts/StatusFlow.astro';
-import { AUTH, DELIVERY_STATUSES, WEBHOOKS } from '../../../facts/sign';
+import { AUDIT, AUTH, CERTIFICATE, DELIVERY_STATUSES, ENVELOPE, EVIDENCE, RESTORE, WEBHOOKS } from '../../../facts/sign';
 
 export const DELIVERY = {
   PENDING_RENDER: { label: 'Preparando', meaning: 'bb-sign está preparando el contenido de la entrega. El envío comienza cuando esté listo.' },
@@ -16,6 +16,50 @@ export const DELIVERY = {
   FAILED_PERMANENT: { label: 'No se pudo construir', meaning: 'bb-sign no pudo generar el contenido de la entrega, por lo que no se realizó ningún envío.' },
   SKIPPED: { label: 'No enviado', meaning: 'El endpoint estaba desactivado cuando ocurrió el evento, así que este evento no se envió. Explica un vacío en los eventos recibidos.' },
   DEAD_LETTERED: { label: 'Abandonado', meaning: 'Se agotaron los reintentos sin una respuesta 2xx. La entrega queda cerrada.' },
+};
+
+export const EVIDENCE_STATUS = {
+  PENDING: { label: '"Procesando el certificado de evidencia..."', meaning: 'bb-sign está emitiendo el certificado.' },
+  ISSUED: { label: 'Las descargas "Certificado de evidencia (PDF)" y "Registro de auditoría (JSON)"', meaning: 'El certificado existe y se puede descargar.' },
+  FAILED: { label: '"No se pudo generar; el equipo fue notificado."', meaning: 'La emisión automática falló. Binary Bridges puede volver a emitirlo.' },
+  UNAVAILABLE: { label: '"Completado antes de habilitar los certificados de evidencia."', meaning: 'El sobre se completó antes de que existieran los certificados y nunca tendrá uno.' },
+  EXPIRED: { label: '"El periodo de conservación terminó y el certificado fue eliminado."', meaning: 'Terminó el plazo de conservación del certificado.' },
+};
+
+export const FILE_AVAILABILITY = {
+  AVAILABLE: { label: 'Las descargas "PDF Original" y "PDF Firmado"', meaning: 'El archivo se descarga directamente.' },
+  ARCHIVED: { label: '"archivado. Solicita su restauración para descargarlo."', meaning: 'El archivo está en almacenamiento de archivo y debe restaurarse antes de descargarlo.' },
+  RESTORE_IN_PROGRESS: { label: '"restaurando" o "se está restaurando"', meaning: 'Hay una restauración en curso. Quien la solicitó recibe un aviso al terminar.' },
+  RESTORED: { label: '"restaurado, disponible hasta el" y la fecha', meaning: 'La copia restaurada se descarga directamente hasta esa fecha.' },
+  DELETED: { label: '"ya no está disponible"', meaning: 'Terminó el plazo de conservación y el archivo se eliminó.' },
+};
+
+export const RESTORE_STATUS = {
+  REQUESTED: 'Se solicitó la restauración y aún no empieza.',
+  IN_PROGRESS: 'El almacenamiento de archivo está restaurando el archivo.',
+  RESTORED: 'La copia restaurada se puede descargar hasta la fecha indicada.',
+  AVAILABLE: 'El archivo no necesitaba restauración: se descarga directamente.',
+  EXPIRED: 'La copia restaurada dejó de estar disponible.',
+  FAILED: 'La restauración no se completó; el motivo lo indica.',
+};
+
+export const RESTORE_REASON = {
+  DELETED: 'El archivo ya cumplió su plazo de conservación y se eliminó.',
+  TIMEOUT: 'La restauración tardó demasiado. Solicítela de nuevo.',
+  STORAGE_ERROR: 'El almacenamiento de archivo falló. Solicítela de nuevo más tarde.',
+};
+
+export const CHAIN_STATUS = {
+  COMPLETE: { label: 'Cadena completa', meaning: 'El archivo incluye todos los certificados hasta la raíz.' },
+  NO_ROOT: { label: 'Sin raíz', meaning: 'La cadena termina antes del certificado raíz. Los validadores que ya confían en la raíz aceptan el sello.' },
+  LEAF_ONLY: { label: 'Solo el certificado', meaning: 'El archivo no incluye la cadena, así que los validadores no pueden enlazar el certificado con quien lo emitió. Expórtelo de nuevo con la ruta de certificación completa.' },
+  SELF_SIGNED: { label: 'Autofirmado', meaning: 'El certificado se firmó a sí mismo, así que ningún tercero confiará en él.' },
+};
+
+export const AUDIT_VERIFICATION = {
+  VALID: 'La cadena del sobre está completa y cada hash coincide.',
+  BROKEN: 'La cadena no coincide a partir de un evento, que la respuesta indica. Avise a Binary Bridges.',
+  EMPTY: 'La cadena del sobre no tiene eventos.',
 };
 
 Use esta referencia para interpretar cada estado que muestran la aplicación y la API. Cada estado
@@ -31,12 +75,159 @@ Un sobre pasa a `EXPIRED` cuando se le fijó una fecha de vencimiento al crearlo
 Después del envío, la cancelación es la transición que inicia una persona; el vencimiento y la
 finalización ocurren automáticamente.
 
+**Archivados** no es un estado. Un sobre completado, cancelado o vencido pasa a esa vista a los
+<Fact of={ENVELOPE.archiveAfterDays} unit="días" /> de su creación y conserva su estado; la API lo
+indica con los campos `archived` y `archivedAt`, y el registro de auditoría con el evento
+`ENVELOPE_ARCHIVED`.
+
 ## Estados del firmante
 
 <StatusFlow locale="es" of="signer" />
 
 En un sobre con firma secuencial, los firmantes de los turnos siguientes permanecen en `PENDING` hasta
 que el turno anterior termina; entonces reciben su enlace y pasan a `NOTIFIED`.
+
+## Certificado de evidencia
+
+El estado del certificado de evidencia de un sobre completado. Ver
+[Certificado de evidencia](/sign/concepts/evidence-certificate/).
+
+<table>
+  <thead>
+    <tr>
+      <th>Estado</th>
+      <th>En el detalle del sobre</th>
+      <th>Qué significa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {EVIDENCE.statuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{EVIDENCE_STATUS[status].label}</td>
+        <td>{EVIDENCE_STATUS[status].meaning}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Disponibilidad de los archivos
+
+Cada archivo de un sobre (el PDF original y el PDF firmado) tiene una disponibilidad, que la API
+devuelve con la lista de documentos y el bloque **Conservación** del detalle muestra junto al nombre
+del archivo. Hoy ningún archivo se traslada a almacenamiento de archivo, así que en la práctica solo
+se ven `AVAILABLE` y, al terminar el plazo de conservación, `DELETED`. Ver
+[Conservación y restauración](/sign/sending/retention-and-restore/).
+
+<table>
+  <thead>
+    <tr>
+      <th>Disponibilidad</th>
+      <th>En la aplicación</th>
+      <th>Qué significa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {RESTORE.fileAvailability.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{FILE_AVAILABILITY[status].label}</td>
+        <td>{FILE_AVAILABILITY[status].meaning}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Restauraciones
+
+Cada solicitud de restauración avanza por estos estados, que aparecen en la API y en el webhook
+`document.restored`. La aplicación no los muestra con estos nombres: muestra la disponibilidad del
+archivo. Una restauración que no termina en <Fact of={RESTORE.timeoutHours} unit="horas" /> se da por
+fallida con el motivo `TIMEOUT`.
+
+<table>
+  <thead>
+    <tr>
+      <th>Estado</th>
+      <th>Qué significa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {RESTORE.statuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{RESTORE_STATUS[status]}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+Cuando una restauración falla, su motivo es uno de estos:
+
+<table>
+  <thead>
+    <tr>
+      <th>Motivo</th>
+      <th>Qué significa y qué hacer</th>
+    </tr>
+  </thead>
+  <tbody>
+    {RESTORE.failureReasons.value.map((reason) => (
+      <tr>
+        <td><code>{reason}</code></td>
+        <td>{RESTORE_REASON[reason]}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Cadena del certificado
+
+Al subir un certificado propio, bb-sign revisa su cadena y muestra su estado en **Configuración**,
+pestaña **Certificado**. Los certificados subidos antes de que existiera esta revisión muestran
+**Sin revisar** (`UNCHECKED`); vuelva a subirlos para revisarlos. Ver
+[Certificado propio](/sign/admin/own-certificate/).
+
+<table>
+  <thead>
+    <tr>
+      <th>Estado</th>
+      <th>Etiqueta en la aplicación</th>
+      <th>Qué significa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {CERTIFICATE.chainStatuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{CHAIN_STATUS[status].label}</td>
+        <td>{CHAIN_STATUS[status].meaning}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Verificación de la cadena de auditoría
+
+Las integraciones con el permiso `audit:read` pueden pedir a la API que verifique la cadena de
+auditoría de un sobre. La respuesta es uno de estos resultados:
+
+<table>
+  <thead>
+    <tr>
+      <th>Resultado</th>
+      <th>Qué significa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {AUDIT.verificationStatuses.value.map((status) => (
+      <tr>
+        <td><code>{status}</code></td>
+        <td>{AUDIT_VERIFICATION[status]}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 ## Entregas de webhooks
 

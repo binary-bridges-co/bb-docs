@@ -1,60 +1,122 @@
 ---
 title: Auditoría
-description: "Qué registra la auditoría de cada sobre, quién puede consultarla, qué cambios de configuración quedan registrados y cómo se protege el registro."
+description: "Qué registra la auditoría de cada sobre, quién aparece como autor de cada evento, cómo se protege el registro y cómo descargar la evidencia de un sobre."
 product: sign
 audience: admin
 ---
 
 import { LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import { AUDIT, EVIDENCE } from '../../../facts/sign';
 
-bb-sign registra lo que ocurre con cada sobre durante la firma: quién abrió el enlace, quién firmó,
-cuándo y desde qué dirección IP. Cada evento queda encadenado al anterior, de modo que cualquier
-alteración del registro se detecta. Así usted cuenta con la trazabilidad completa de cada documento.
+bb-sign registra todo lo que ocurre con cada sobre, desde que se crea hasta que se archiva: quién lo
+envió, quién abrió el enlace, quién firmó, cuándo y desde qué dirección IP. Cada evento queda
+encadenado al anterior, de modo que cualquier alteración del registro se detecta. Al completarse el
+sobre, esa evidencia se entrega además como un certificado de evidencia en PDF.
 
-**Quién:** administradores de la organización y administradores de plataforma. **Dónde:** sección
-**Registro de auditoría** en el detalle de cada sobre.
+**Quién:** administradores de la organización y administradores de plataforma, y los Auditores,
+Colaboradores y Gestores del espacio del sobre. **Dónde:** sección **Registro de auditoría** en el
+detalle de cada sobre.
 
 ## Consultar el registro de un sobre
 
 En el detalle del sobre, la sección **Registro de auditoría** lista cada evento con su tipo, quién lo
-originó (el correo de la persona o «Sistema»), la fecha y hora, y su hash.
+originó, la fecha y hora, y su hash. Los eventos de documentos y firmas muestran además las huellas
+SHA-256 que registraron, por ejemplo «SHA-256 del original: …».
 
 Pueden consultarlo los Auditores, Colaboradores y Gestores del espacio del sobre, además de todos los
-administradores. Para que un Lector lo consulte, asígnele el rol Auditor en
-[Espacios y miembros](/sign/admin/workspaces-and-members/).
+administradores. Quien no tiene ese permiso ve «El registro de auditoría está disponible para los
+auditores y gestores de este espacio de trabajo.» Para que un Lector lo consulte, asígnele el rol
+Auditor en [Espacios y miembros](/sign/admin/workspaces-and-members/).
 
-| Evento | Cuándo se registra |
+### Quién aparece como autor
+
+| Autor | Cómo se muestra |
 | --- | --- |
-| `SIGNING_LINK_CLICKED` | Un firmante abrió su enlace de firma. |
-| `SIGNING_VIEW_OPENED`, `SIGNING_VIEW_CLOSED` | Un firmante abrió o cerró la vista de los documentos. |
-| `SIGNER_ELIGIBLE` | En la firma secuencial, llegó el turno de un firmante. |
-| `SIGNER_SIGNED` | Un firmante firmó; se registra su dirección IP. |
-| `ENVELOPE_COMPLETED` | Firmó el último firmante. |
-| `SIGNED_COPY_ACCESSED` | Se descargó la copia firmada desde el enlace del firmante. |
-| `EMAIL_SENT`, `EMAIL_DELIVERED`, `EMAIL_OPENED`, `EMAIL_BOUNCED` | Un correo del sobre se envió, se entregó, se abrió o rebotó. |
+| Una persona de su organización | Su nombre o, si no lo tiene, su correo. Sin ninguno de los dos, «Usuario desconocido». |
+| Una credencial de API | La etiqueta y el ID de cliente de la credencial, con la insignia **API**. Sin ninguno de los dos, «Credencial de API». |
+| Un firmante | Su nombre o su correo. |
+| bb-sign | «Sistema», para las acciones automáticas. |
+| Sin autor registrado | «Actor no registrado», cuando el evento llegó sin su autor. |
 
-El estado general del sobre (creado, enviado, cancelado o vencido) se consulta en el propio sobre y
-llega a sus sistemas por [webhooks](/sign/admin/webhooks/).
+### Eventos del sobre
+
+| Evento | Nombre en la aplicación | Cuándo se registra |
+| --- | --- | --- |
+| `ENVELOPE_CREATED` | Sobre creado | Alguien creó el sobre. |
+| `DOCUMENT_ADDED` | Documento añadido | Se añadió un documento; queda la huella SHA-256 del original. |
+| `ENVELOPE_SENT` | Sobre enviado | Alguien envió el sobre a sus firmantes. |
+| `EMAIL_SENT`, `EMAIL_DELIVERED`, `EMAIL_OPENED`, `EMAIL_BOUNCED` | | Un correo del sobre se envió, se entregó, se abrió o rebotó. |
+| `SIGNING_LINK_CLICKED` | | Un firmante abrió su enlace de firma. |
+| `SIGNING_VIEW_OPENED`, `SIGNING_VIEW_CLOSED` | | Un firmante abrió o cerró la vista de los documentos. |
+| `SIGNER_ELIGIBLE` | | En la firma secuencial, llegó el turno de un firmante. |
+| `OTP_REQUESTED`, `OTP_VERIFIED`, `OTP_FAILED`, `OTP_LOCKED` | | Un firmante pidió un código de un solo uso, lo validó, escribió uno incorrecto o agotó los intentos. |
+| `SIGNER_SIGNED` | Firmante firmó | Un firmante firmó; quedan su dirección IP, el método de identificación y la huella del conjunto de documentos que firmó. |
+| `ENVELOPE_COMPLETED` | Sobre completado | Firmó el último firmante. |
+| `DOCUMENTS_SEALED` | Documentos firmados sellados | Los PDF firmados quedaron sellados. |
+| `EVIDENCE_CERTIFICATE_ISSUED`, `EVIDENCE_CERTIFICATE_FAILED` | Certificado de evidencia emitido, No se pudo generar el certificado de evidencia | Se emitió el certificado de evidencia, o no se pudo generar. |
+| `EVIDENCE_CERTIFICATE_ACCESSED` | Certificado de evidencia descargado | Alguien descargó el certificado de evidencia. |
+| `EVIDENCE_CERTIFICATE_REISSUE_REQUESTED` | Certificado de evidencia reemitido por el equipo de la plataforma | Binary Bridges volvió a emitir un certificado que no se pudo generar. |
+| `SIGNED_COPY_ACCESSED` | | Un firmante descargó su copia firmada desde su enlace. |
+| `ENVELOPE_CANCELLED`, `ENVELOPE_EXPIRED` | Sobre cancelado, Sobre vencido | Alguien canceló el sobre, o venció sin completarse. |
+| `ENVELOPE_ARCHIVED` | Sobre archivado | El sobre pasó a la vista **Archivados**. |
+| `AUDIT_TRAIL_EXPORTED` | | Alguien exportó el registro del sobre por la API. |
+| `DOCUMENT_RESTORE_REQUESTED`, `DOCUMENT_RESTORED` | Restauración de un documento archivado solicitada, Restauración de un documento archivado terminada | Alguien pidió restaurar un archivo archivado, y la restauración terminó. |
+
+Los eventos sin nombre en la aplicación se muestran con su código.
 
 ## Cambios de configuración de la organización
 
-bb-sign también registra los cambios de configuración que afectan el acceso a su organización:
+bb-sign también registra, con quién lo hizo, los cambios de configuración que afectan a su
+organización:
 
 - La creación y la revocación de credenciales de API.
 - La creación, la rotación del secreto y la eliminación de webhooks.
 - La creación, el cambio de nombre y la eliminación de espacios de trabajo.
 - La asignación y el retiro de roles de espacio a personas y claves de API.
+- La carga y el retiro del certificado de la organización, y cada aviso de su vencimiento.
+- La publicación de textos de acuerdos.
 
-Estos eventos pertenecen a su organización. Para obtenerlos, solicítelos al soporte de Binary Bridges.
+Estos eventos no aparecen en el detalle de un sobre. Si los necesita, solicítelos al soporte de
+Binary Bridges.
 
 ## Cómo se protege el registro
 
-Cada evento lleva un hash SHA-256 calculado sobre su contenido y sobre el hash del evento anterior del
-mismo sobre. Por eso, modificar, insertar o borrar un evento rompe la cadena desde ese punto y la
-alteración se hace evidente. Los eventos de configuración de la organización llevan también su
-propio hash.
+Cada evento pertenece a una cadena: la de su sobre, la de su organización o la general de la
+plataforma. Dentro de cada cadena los eventos llevan un número consecutivo sin huecos, y el hash
+SHA-256 de cada uno cubre su contenido, su posición y el hash del anterior. Por eso, modificar,
+insertar o borrar un evento rompe la cadena desde ese punto y la alteración se hace evidente.
 
-Si necesita presentar la evidencia de un sobre ante un tercero, solicítela al soporte de Binary
-Bridges.
+El registro solo admite eventos nuevos: ningún usuario de la base de datos puede modificar ni borrar
+un evento. bb-sign verifica todas las cadenas cada noche, a las
+<Fact of={AUDIT.nightlyVerifyTime} /> (zona horaria <Fact of={AUDIT.nightlyVerifyTimeZone} />).
 
+## Descargar la evidencia de un sobre
+
+Cuando el sobre se completa, bb-sign emite su certificado de evidencia: un PDF sellado con quién
+firmó, cómo se identificó, cuándo y qué documentos, junto con una copia fija del registro de
+auditoría hasta ese momento. En el detalle del sobre, la fila **Certificado de evidencia** ofrece:
+
+- **Certificado de evidencia (PDF)**, el certificado sellado.
+- **Registro de auditoría (JSON)**, la copia del registro que acompaña al certificado.
+
+Pueden descargarlos quienes pueden descargar los documentos del sobre
+(<code><Fact of={EVIDENCE.downloadPermission} /></code>): Auditores, Colaboradores, Gestores y
+administradores. Cada descarga genera un enlace válido durante
+<Fact of={EVIDENCE.downloadLinkMinutes} unit="minutos" /> y queda en el registro como
+`EVIDENCE_CERTIFICATE_ACCESSED`.
+
+| La fila muestra | Qué ocurrió y qué hacer |
+| --- | --- |
+| «Procesando el certificado de evidencia...» | bb-sign está emitiendo el certificado. La página se actualiza sola cuando está listo. |
+| «No se pudo generar; el equipo fue notificado.» | La emisión falló y Binary Bridges ya lo sabe; puede volver a emitirlo dentro de los <Fact of={EVIDENCE.reissueWindowDays} unit="días" /> siguientes al fallo, mientras el sobre no esté archivado. Si lo necesita, escriba al soporte antes de ese plazo. |
+| «Completado antes de habilitar los certificados de evidencia.» | El sobre se completó antes de que existieran los certificados. Use los documentos firmados y el registro de auditoría de la página. |
+| «El periodo de conservación terminó y el certificado fue eliminado.» | Pasaron los <Fact of={EVIDENCE.retentionDays} unit="días" /> de conservación. Use la copia que su organización guardó. |
+| «El certificado de evidencia está disponible para quienes pueden descargar los documentos de este sobre.» | Usted no tiene ese permiso en el espacio del sobre. Pida a un administrador el rol Auditor o superior. |
+
+Una integración puede obtener lo mismo por la API, y exportar el registro completo de un sobre con
+<code><Fact of={AUDIT.exportPath} /></code> (permiso `audit:read`, formato
+<code><Fact of={AUDIT.exportFormat} /></code>). Cada exportación queda en el registro del sobre.
+
+<LinkCard title="Certificado de evidencia" href="/sign/concepts/evidence-certificate/" description="Qué contiene el certificado de evidencia, quién lo descarga y cuánto tiempo se conserva." />
 <LinkCard title="Evidencia y auditoría" href="/sign/concepts/evidence-and-audit/" description="Qué demuestra cada elemento de evidencia y cómo verificar un documento firmado." />

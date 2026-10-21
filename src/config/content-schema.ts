@@ -6,7 +6,7 @@
 export const PRODUCT_IDS = ['sign'] as const;
 export const AUDIENCES = ['admin', 'user', 'signer', 'developer', 'legal', 'all'] as const;
 
-/** "Versión 1 · 2026-10-07" — the header every legal text carries (LV contract D-17). */
+/** "Versión 1 · 2026-10-07": the version header a versioned legal text carries (LV contract D-17). */
 export const LEGAL_VERSION = /^Versión \d+ · \d{4}-\d{2}-\d{2}$/;
 
 /** Search engines cut descriptions around 155-160 characters; the limits are a little looser. */

@@ -7,11 +7,19 @@ audience: user
 
 import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { DOCUMENTS } from '../../../../facts/sign';
+import { DOCUMENTS, RETENTION_POLICY } from '../../../../facts/sign';
 
 In the **Documents** step of the **Create Envelope** wizard you attach the files to be signed.
 Each document uploads right away and is fixed when you send the envelope, so every signer signs
 exactly the same content.
+
+## Each document's fingerprint
+
+When each file is uploaded, bb-sign computes and records its SHA-256 fingerprint. The fingerprint
+appears on the envelope page ("SHA-256 of the original:"), the signer sees it next to each document
+while reviewing them and the evidence certificate includes it. Each signature is bound to the
+fingerprints of the documents the signer saw: if a document changed, the signature would not be
+recorded.
 
 ## Upload the documents
 
@@ -30,6 +38,12 @@ If a file cannot be uploaded, the application shows its name and the reason:
 | "Your organization has run out of document storage." | Your organization reached its limit of unattached documents or the plan's storage quota. | Send your pending envelopes or wait for unattached documents to be released. If it continues, ask your administrator to raise the limit. |
 | The file is not a PDF | The accepted format is <code>{DOCUMENTS.contentType.value}</code>. | Convert the document to PDF and upload it. |
 
+When you send the envelope, this message can also appear:
+
+| Message | What happened | What to do |
+|---|---|---|
+| "One of the documents does not have its fingerprint recorded yet, so the envelope cannot be sent. Wait a few minutes or upload it again." | A document does not have its SHA-256 fingerprint recorded yet, and bb-sign does not send an envelope without it. The envelope stays in **Draft**. | Wait a few minutes and press **Send Envelope** again. If the message continues, cancel the draft and create the envelope again with the document uploaded anew. |
+
 ## Prepare the PDF
 
 bb-sign signs PDF documents. Convert any text document, image or spreadsheet to PDF first. The PDF
@@ -43,6 +57,7 @@ envelope completes.
 | Maximum size per file | <Fact of={DOCUMENTS.maxUploadMb} unit="MB" /> |
 | Unattached documents per organization | <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" /> |
 | How long an unattached document is kept | <Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> |
+| How long each file of an envelope is kept | <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. See [Retention and restore](/en/sign/sending/retention-and-restore/). |
 
 An envelope can include as many documents as you need. Each one counts towards your
 organization's storage quota when the envelope is created. See [Quotas](/en/sign/concepts/quotas/).

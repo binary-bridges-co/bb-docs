@@ -1,51 +1,77 @@
 ---
 title: Storage
-description: "What the Storage page shows, how long bb-sign keeps your organization's documents and how to save your copies in time."
+description: "What the Storage page shows, how long bb-sign keeps your organization's files, what is archived today and how to save your copies in time."
 product: sign
 audience: admin
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../../facts/sign';
+import { ENVELOPE, EVIDENCE, RESTORE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../../facts/sign';
 
-bb-sign keeps your organization's documents for a fixed retention period and moves them over time
-to lower-cost storage tiers. The **Storage** page shows you those rules in read-only mode.
+bb-sign keeps each of your organization's files for a fixed period, the same for every organization.
+The **Storage** page shows you the service's policy and the rules the storage actually applies. For
+organization admins it is read-only.
 
-**Who:** organization admins, read-only; platform admins can change it. **Where:** **Storage**, in
-the sidebar.
+**Who:** organization admins and platform admins. **Where:** **Storage**, in the sidebar.
 
 ## What the page shows
 
 The **Storage Lifecycle** page has two parts:
 
-- **Configuration** shows, in days, when files move to lower-cost storage tiers and the **Object
-  Expiration** value.
-- The rules list shows which files they apply to. The organization's certificates are excluded: they
-  do not expire.
+- **Configuration** shows the product's declared policy: **Standard-IA Transition**, **Glacier
+  Transition** and **Object Expiration**, in days. The values are the same for every organization.
+- **Bucket Rules** shows the rules each storage bucket actually has. The organization's certificates
+  are excluded: they do not expire.
 
-This configuration is the same for every organization.
+The two parts are shown separately so you can see whether the storage applies something different
+from the policy. Today, in production, the documents storage has a single rule:
+<Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="days" /> of retention, with no
+transitions. No file moves to archive storage today.
 
-## How long your documents are kept
+{RETENTION_IMPLEMENTED.storageApplyWritesProduction.value && (
+  <p>
+    Platform admins also see, under <strong>Object Expiration</strong>, a days field with an{' '}
+    <strong>Apply</strong> button. In production that button does write: it replaces the rules of the
+    documents storage and of the evidence storage with a single expiration rule. Do not use it to
+    change retention, which is fixed: in production the rules are set by Binary Bridges'
+    infrastructure.
+  </p>
+)}
 
-| Stage | When |
-| --- | --- |
-| Retention of signed documents | <Fact of={RETENTION_POLICY.retentionDays} unit="days" />, a fixed period, the same for every organization |
-| Move to archive storage | After <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="days" /> |
+## How long your files are kept
 
-Documents in archive storage are kept intact; retrieving them takes longer than a recent document.
-When the retention period ends, keeping the documents is your organization's responsibility.
+| Item | Service policy | Today |
+| --- | --- | --- |
+| Retention | <Fact of={RETENTION_POLICY.retentionDays} unit="days" /> per file: the original from upload, the signed document from the envelope's completion and the evidence certificate from issue. After that, the file is deleted permanently. | Applied as stated. |
+| Move to archive storage | Documents older than <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> may move to archive storage, and then need a restore before they can be downloaded. | No file is moved. |
+| Restore | An archived copy is restored on request, from the envelope page, through the API or by the signer from their link. The restored copy stays available for <Fact of={RESTORE.days} unit="days" />. | Available, unused while nothing is archived. |
+| Evidence certificate and audit trail | Never archived: they download immediately throughout their <Fact of={EVIDENCE.retentionDays} unit="days" />. | Applied as stated. |
 
-<Aside type="caution" title="Save your copies within the period">
-  Download and archive the signed documents your organization must keep before the
-  <Fact of={RETENTION_POLICY.retentionDays} unit="days" /> period ends. The recommended way is in
-  [Scope and retention](/en/sign/legal/retention/).
+The period is fixed and is not configured per organization. The terms that set it are in section 3
+of the [Terms and conditions](/en/sign/legal/terms/).
+
+## Retention dates of each envelope
+
+The **Retention** section of each envelope's detail page shows "No longer available from …": from
+that date, at 00:00 UTC, the envelope's files can no longer be downloaded. The "Archived from …" date
+only appears when automatic archiving is active, and is not shown today. See
+[Retention and restore](/en/sign/sending/retention-and-restore/).
+
+<Aside type="note" title="The Archived view is not archive storage">
+  <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after creation, a completed, cancelled or
+  expired envelope moves to the **Archived** view. It is only a change of list: the envelope and its
+  files can still be downloaded, including from the signer's link, until their retention period
+  ends.
 </Aside>
 
-## Who can change the configuration
+## Save your copies within the period
 
-Organization admins view the page. The Binary Bridges platform administrator is the one who can
-change the **Object Expiration** with the **Apply** button. The retention period is fixed and is not
-configured per organization.
+<Aside type="caution" title="When the period ends, retention is your organization's">
+  Download and archive the signed documents and evidence certificates your organization must keep
+  before the <Fact of={RETENTION_POLICY.retentionDays} unit="days" /> period ends. The recommended
+  way, automatic as each envelope completes, is in the
+  [Retention and restore guide](/en/sign/legal/retention-guide/).
+</Aside>
 
-<LinkCard title="Scope and retention" href="/en/sign/legal/retention/" description="The service's retention terms and how to archive your signed documents." />
+<LinkCard title="Scope and retention" href="/en/sign/legal/retention/" description="The service's retention terms, how they apply today and how to archive your signed documents." />

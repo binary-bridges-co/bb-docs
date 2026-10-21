@@ -6,7 +6,7 @@ audience: signer
 ---
 
 import Fact from '../../../../components/facts/Fact.astro';
-import { OTP } from '../../../facts/sign';
+import { OTP, SIGNER } from '../../../facts/sign';
 
 Antes de firmar, usted revisa cada documento y, si el sobre lo requiere, confirma su identidad con
 un código que llega a su correo. El indicador en la parte superior muestra en qué paso está:
@@ -28,6 +28,20 @@ Si su navegador no puede mostrar el PDF, verá "Tu navegador no puede mostrar es
 incrustado." Use **Descargar el documento** para abrirlo; esa descarga también cuenta como
 revisión.
 
+## La huella de cada documento
+
+Junto a cada documento verá su huella, "Huella (SHA-256):", con los primeros y los últimos <Fact of={SIGNER.fingerprintShownChars} /> caracteres;
+al pasar el cursor sobre ella aparece completa. Es la huella que bb-sign registró al subirse el
+documento, y su firma quedará vinculada a ella. Puede compararla después con la que figura en su
+certificado de evidencia.
+
+Si los documentos cambian mientras usted los revisa, bb-sign no registra la firma y la página
+muestra:
+
+| Mensaje | Qué pasó | Qué hacer |
+|---|---|---|
+| "Los documentos cambiaron mientras los revisabas. Revísalos de nuevo antes de firmar." | Los documentos registrados ya no son los que la página le mostró, así que su firma no se registró. La página vuelve al paso **Revisar** con los documentos actuales. | Abra de nuevo cada documento, revíselo y vuelva a firmar. |
+
 ## Verificar su identidad
 
 Cuando el sobre requiere verificación, al pulsar **He revisado el documento** bb-sign le envía un
@@ -39,6 +53,7 @@ validez del código.
 - Puede solicitar otro con **Reenviar código** <Fact of={OTP.resendCooldownSeconds} unit="s" />
   después del último envío; mientras tanto, el botón muestra la cuenta regresiva.
 - La página acepta siempre el código más reciente.
+- Cada código sirve solo para usted: un código enviado a otro firmante no es válido en su enlace.
 
 Escriba el código y pulse **Verificar y continuar**.
 
@@ -56,5 +71,6 @@ Escriba el código y pulse **Verificar y continuar**.
 ## Después de verificar
 
 Una vez verificado el código, tiene <Fact of={OTP.verifiedValidityMinutes} unit="minutos" /> para
-firmar. Si ese tiempo se cumple, recargue la página, abra de nuevo los documentos y solicite un
+firmar. La verificación queda registrada (el método, el canal, el destino enmascarado y la hora en que
+se aceptó el código) y aparece en el certificado de evidencia del sobre. Si ese tiempo se cumple, recargue la página, abra de nuevo los documentos y solicite un
 código nuevo. Continúe en [Firmar y descargar](/sign/signing/sign-and-download/).

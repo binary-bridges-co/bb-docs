@@ -54,8 +54,13 @@ available. The signer can request a new code after <Fact of={OTP.resendCooldownS
 Once verified, they have <Fact of={OTP.verifiedValidityMinutes} unit="min" /> to submit their
 signature.
 
-Without this option, the link in the email is the signer's only identification. Keep it checked
-whenever you need evidence that the signer controls their email.
+Each code works only for the signer it was sent to: a code issued for another signer is not valid on
+their link.
+
+Without this option, the link in the email is the signer's only identification. The evidence
+certificate states the method used with each signer ("link sent by email" or "link by email and
+one-time code (OTP)") and, with OTP, the channel, the masked destination and the time the code was
+accepted. Keep it checked whenever you need evidence that the signer controls their email.
 
 ## Set the signing order
 

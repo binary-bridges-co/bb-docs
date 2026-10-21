@@ -1,53 +1,80 @@
 ---
 title: Almacenamiento
-description: "Qué muestra la página Almacenamiento, cuánto tiempo conserva bb-sign los documentos de su organización y cómo guardar sus copias a tiempo."
+description: "Qué muestra la página Almacenamiento, cuánto tiempo conserva bb-sign los archivos de su organización, qué se archiva hoy y cómo guardar sus copias a tiempo."
 product: sign
 audience: admin
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
+import { ENVELOPE, EVIDENCE, RESTORE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
 
-bb-sign guarda los documentos de su organización durante un plazo fijo de conservación y los
-traslada con el tiempo a niveles de almacenamiento de menor costo. La página **Almacenamiento** le
-muestra esas reglas en modo de consulta.
+bb-sign conserva cada archivo de su organización durante un plazo fijo, igual para todas las
+organizaciones. La página **Almacenamiento** le muestra la política del servicio y las reglas que el
+almacenamiento aplica realmente. Para los administradores de la organización es solo de consulta.
 
-**Quién:** administradores de la organización, en modo de consulta; los administradores de
-plataforma pueden modificarla. **Dónde:** **Almacenamiento**, en el menú lateral.
+**Quién:** administradores de la organización y administradores de plataforma. **Dónde:**
+**Almacenamiento**, en el menú lateral.
 
 ## Qué muestra la página
 
 La página **Ciclo de vida del almacenamiento** tiene dos partes:
 
-- **Configuración** indica, en días, cuándo los archivos pasan a niveles de almacenamiento de menor
-  costo y el valor de **Expiración de objetos**.
-- La lista de reglas muestra a qué archivos se aplican. Los certificados de la organización quedan
-  excluidos: no expiran.
+- **Configuración** muestra la política declarada del producto: **Transición a Standard-IA**,
+  **Transición a Glacier** y **Expiración de objetos**, en días. Son los mismos valores para todas las
+  organizaciones.
+- **Reglas de los buckets** muestra las reglas que cada depósito de almacenamiento tiene en realidad.
+  Los certificados de la organización quedan excluidos: no expiran.
 
-Esta configuración es la misma para todas las organizaciones.
+Las dos partes se muestran por separado para que se vea si el almacenamiento aplica algo distinto de
+la política. Hoy, en producción, el almacenamiento de documentos tiene una sola regla:
+<Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="días" /> de conservación, sin
+transiciones. Ningún archivo pasa hoy a almacenamiento de archivo.
 
-## Cuánto tiempo se conservan sus documentos
+{RETENTION_IMPLEMENTED.storageApplyWritesProduction.value && (
+  <p>
+    Los administradores de plataforma ven además, en <strong>Expiración de objetos</strong>, un campo
+    de días con el botón <strong>Aplicar</strong>. En producción ese botón sí escribe: reemplaza las
+    reglas del almacenamiento de documentos y del de evidencias por una sola regla de expiración. No
+    lo use para cambiar la conservación, que es fija: en producción las reglas las define la
+    infraestructura de Binary Bridges.
+  </p>
+)}
 
-| Etapa | Cuándo |
-| --- | --- |
-| Conservación de los documentos firmados | <Fact of={RETENTION_POLICY.retentionDays} unit="días" />, plazo fijo e igual para todas las organizaciones |
-| Paso a almacenamiento de archivo | A los <Fact of={RETENTION_IMPLEMENTED.documentsGlacierDays} unit="días" /> |
+## Cuánto tiempo se conservan sus archivos
 
-Los documentos en almacenamiento de archivo se conservan íntegros; su recuperación toma más tiempo
-que la de un documento reciente. Al terminar el plazo de conservación, la conservación de los
-documentos es responsabilidad de su organización.
+| Concepto | Política del servicio | Hoy |
+| --- | --- | --- |
+| Conservación | <Fact of={RETENTION_POLICY.retentionDays} unit="días" /> por archivo: el original desde que se carga, el documento firmado desde que el sobre se completa y el certificado de evidencia desde que se emite. Después, el archivo se elimina de forma definitiva. | Se aplica así. |
+| Paso a almacenamiento de archivo | Los documentos con más de <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" /> pueden trasladarse a almacenamiento de archivo y entonces requieren una restauración antes de descargarse. | Ningún archivo se traslada. |
+| Restauración | Una copia archivada se restaura a solicitud, desde la página del sobre, por la API o por el firmante desde su enlace. La copia restaurada queda disponible <Fact of={RESTORE.days} unit="días" />. | Disponible, sin uso mientras nada se archive. |
+| Certificado de evidencia y registro de auditoría | Nunca se archivan: se descargan de inmediato durante sus <Fact of={EVIDENCE.retentionDays} unit="días" />. | Se aplica así. |
 
-<Aside type="caution" title="Guarde sus copias dentro del plazo">
-  Descargue y archive los documentos firmados que su organización deba conservar antes de que
-  termine el plazo de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. La forma recomendada
-  está en [Alcance y conservación](/sign/legal/retention/).
+El plazo es fijo y no se configura por organización. Los términos que lo establecen están en la
+sección 3 de los [Términos y condiciones](/sign/legal/terms/).
+
+## Fechas de conservación de cada sobre
+
+La sección **Conservación** del detalle de cada sobre muestra «Deja de estar disponible el …»: desde
+esa fecha, a las 00:00 UTC, los archivos del sobre ya no se pueden descargar. La fecha «Se archiva a
+partir del …» solo aparece cuando el archivo automático está activo, y hoy no se muestra. Ver
+[Conservación y restauración](/sign/sending/retention-and-restore/).
+
+<Aside type="note" title="La vista Archivados no es almacenamiento de archivo">
+  <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación, un sobre completado,
+  cancelado o vencido pasa a la vista **Archivados**. Es solo un cambio de lista: el sobre y sus
+  archivos se siguen descargando, incluido desde el enlace del firmante, hasta que termina su plazo de
+  conservación.
 </Aside>
 
-## Quién puede cambiar la configuración
+## Guarde sus copias dentro del plazo
 
-Los administradores de la organización consultan la página. El administrador de plataforma de
-Binary Bridges es quien puede modificar la **Expiración de objetos** con el botón **Aplicar**. El
-plazo de conservación es fijo y no se configura por organización.
+<Aside type="caution" title="Al terminar el plazo, la conservación es de su organización">
+  Descargue y archive los documentos firmados y los certificados de evidencia que su organización deba
+  conservar antes de que termine el plazo de
+  <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. La forma recomendada, automática al
+  completarse cada sobre, está en la
+  [Guía de conservación y restauración](/sign/legal/retention-guide/).
+</Aside>
 
-<LinkCard title="Alcance y conservación" href="/sign/legal/retention/" description="Los términos de conservación del servicio y cómo archivar sus documentos firmados." />
+<LinkCard title="Alcance y conservación" href="/sign/legal/retention/" description="Los términos de conservación del servicio, cómo se aplican hoy y cómo archivar sus documentos firmados." />

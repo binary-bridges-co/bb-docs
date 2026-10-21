@@ -30,6 +30,10 @@ ellos.
 - Al completarse el sobre, bb-sign sella cada documento con el certificado de la organización.
   Mientras lo hace, el detalle muestra "Procesando el PDF firmado...". Consulte
   [Firma electrónica y sello](/sign/concepts/signature-and-seal/).
+- Después emite el **certificado de evidencia** del sobre, un PDF sellado que resume sus documentos,
+  sus firmantes y su registro de auditoría. Mientras se emite, el detalle muestra "Procesando el
+  certificado de evidencia...". Consulte
+  [Certificado de evidencia](/sign/concepts/evidence-certificate/).
 
 ## Estados del firmante
 
@@ -83,13 +87,15 @@ bb-sign no envía un correo de cancelación a los firmantes; si es necesario, av
 
 ## Enviar un sobre
 
-Para enviarlo, el sobre debe estar en `DRAFT` y tener al menos un firmante y un documento. Al
-enviarlo, bb-sign genera un enlace de firma único para cada firmante.
+Para enviarlo, el sobre debe estar en `DRAFT` y tener al menos un firmante y un documento, y cada
+documento debe tener registrada su huella SHA-256 (consulte
+[Documentos](/sign/concepts/documents/#la-huella-de-cada-documento)). Al enviarlo, bb-sign genera un
+enlace de firma único para cada firmante.
 
 <Aside type="caution" title="Revise el resumen antes de enviar">
   Al enviar, los documentos, la lista de firmantes y la modalidad de firma quedan fijos, para que
-  todos firmen exactamente lo mismo. Si algo debe cambiar después, cancele el sobre y cree uno
-  nuevo.
+  todos firmen exactamente lo mismo, y cada firma queda ligada a la huella de esos documentos. Si
+  algo debe cambiar después, cancele el sobre y cree uno nuevo.
 </Aside>
 
 Las etiquetas se pueden cambiar en cualquier estado del sobre. Consulte

@@ -39,7 +39,7 @@ If "User created, but the set-up email could not be sent" appears, the account a
 | Role | What they can do |
 | --- | --- |
 | **Org Member** | Create, edit and send envelopes, upload documents and set labels in the workspaces where they are Contributor or Manager. In the General workspace they are always a Contributor. Cancelling envelopes is for Managers and admins. |
-| **Org Admin** | Every task in this section: users, workspaces, labels, credentials and webhooks. They see every envelope in every workspace. |
+| **Org Admin** | Every task in this section: users, workspaces, labels, credentials, webhooks, certificate and agreements. They see every envelope in every workspace. They sign in with a second factor. |
 
 The accounts you create always belong to your organization. Each permission is detailed in the
 [Permissions matrix](/en/sign/admin/permissions/).
@@ -48,7 +48,12 @@ The accounts you create always belong to your organization. Each permission is d
 
 The invitation comes from <code>{URLS.identitySenderAddress.value}</code> with a link to set the
 password, valid for <Fact of={AUTH.invitationLinkHours} unit="hours" />. If it expires, resend the
-invitation; the account remains.
+invitation; the account remains. The password must have at least
+<Fact of={AUTH.passwordMinLength} /> characters and cannot be the username or the email.
+
+If the invitation is for an admin, after the password the person sets up an authenticator app on their
+phone, and from then on uses it at every sign-in. Members do not have this step. The details are in
+[Sign-in security](/en/sign/admin/sign-in-security/).
 
 ## Resend an invitation
 

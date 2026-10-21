@@ -19,9 +19,9 @@ Workspace roles define what can be done with the envelopes of each workspace.
 
 | Role | Who holds it | Scope |
 | --- | --- | --- |
-| Platform admin (`platform_admin`) | Binary Bridges staff | Everything an organization admin can do, in any organization, plus creating organizations, quotas and the signature appearance. |
-| Organization admin (`org_admin`) | Your organization's admins | Users, workspaces, labels, credentials, webhooks and audit. Reaches every workspace without being a member (`workspace:access-all`). |
-| Organization member (`org_member`) | Your organization's users | View workspaces and label keys. Everything else comes from their workspace roles, including Contributor in General. |
+| Platform admin (`platform_admin`) | Binary Bridges staff | Everything an organization admin can do, in any organization, plus creating organizations, quotas, the signature appearance and the language of evidence certificates. |
+| Organization admin (`org_admin`) | Your organization's admins | Users, workspaces, labels, credentials, webhooks, certificate, agreements and audit. Reaches every workspace without being a member (`workspace:access-all`). |
+| Organization member (`org_member`) | Your organization's users | View workspaces, label keys and the published agreement texts. Everything else comes from their workspace roles, including Contributor in General. |
 | API credential (`org_api`) | Integrations | The same as a member, with the workspace roles you assign. |
 
 ## Permissions by role
@@ -32,6 +32,10 @@ In the first table, "Never" marks a permission reserved for people: an API crede
 it. In the second, Contributor is every member's role in General; in other workspaces you assign
 Viewer, Auditor or Manager from [Workspaces and members](/en/sign/admin/workspaces-and-members/).
 
+The `agreement:read` and `agreement:manage` permissions belong to the **Agreements** tab of
+**Settings**, where admins publish agreement texts that are not yet shown to signers nor attached to
+envelopes.
+
 ## Tasks reserved for people
 
 API credentials automate work with envelopes, and administration always stays with people. That way,
@@ -39,7 +43,7 @@ if a secret leaks, revoking the credential is enough to close the access: the cr
 have created other credentials or widened its own reach. bb-sign checks this rule every time the
 service starts.
 
-These five permissions are never granted to a credential:
+These permissions are never granted to a credential:
 
 1. **Create credentials** (`credential:manage`), so that revoking a credential fully closes its
    access.
@@ -51,6 +55,8 @@ These five permissions are never granted to a credential:
    widen its own memberships.
 5. **Access every workspace** (`workspace:access-all`), so that each credential acts only in the
    workspaces you assigned.
+6. **Manage the organization's agreements and identification** (`agreement:manage`), so that a
+   credential cannot change the legal texts or the organization's details.
 
 When a credential needs more reach, it is added as a member of other workspaces, like a person. See
 [API credentials](/en/sign/admin/api-credentials/).

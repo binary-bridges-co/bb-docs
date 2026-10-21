@@ -22,7 +22,7 @@ The status appears in the list, on the Dashboard and on the detail page:
 | **Draft** | Created and waiting to be sent. No signer has a link. |
 | **Sent** | Sent; no signer has signed yet. |
 | **In Progress** | At least one signer has signed and others remain. |
-| **Completed** | Everyone signed. The signed PDFs are generated next. |
+| **Completed** | Everyone signed. The signed PDFs and the evidence certificate are generated next. |
 | **Cancelled** | A manager or an administrator cancelled it. The links are closed. |
 | **Expired** | The **Expires at** date arrived before completion. The links are closed. |
 
@@ -59,10 +59,11 @@ sections:
 | Section | Contents |
 |---|---|
 | Envelope details | **Status**, **OTP Required** (Yes or No), **Created** and, if set, **Expires**, with the suffix **(Expired)** once the date has passed. |
-| **Documents (N)** | Each file with **Original PDF** and, on a completed envelope, **Signed PDF**. While the signed PDF is being generated, **Signed PDF processing...** is shown. See [Download signed documents](/en/sign/sending/download-signed-documents/). |
+| **Documents (N)** | Each document with its fingerprint ("SHA-256 of the original:"), **Original PDF** and, on a completed envelope, **Signed PDF**. While the signed PDF is being generated, **Signed PDF processing...** is shown. A completed envelope adds the **Evidence certificate** row, with **Evidence certificate (PDF)** and **Audit trail (JSON)**. If a file is archived, **Request restore** appears instead of its download. See [Download signed documents](/en/sign/sending/download-signed-documents/). |
+| **Retention** | The date from which the envelope's files are no longer available ("No longer available from \{date\}; it is then deleted permanently."), with links to the terms and the retention guide. See [Retention and restore](/en/sign/sending/retention-and-restore/). |
 | **Signers (N)** | The mode (**Sequential signing** or **Parallel signing**) and, per signer, name, email, **Order #N**, signing date and status. |
-| **Audit Trail (N events)** | Each event with its type, who triggered it (the signer's email or **System**), the date and time and its hash. Available to the workspace's auditors and managers. See [Evidence and audit](/en/sign/concepts/evidence-and-audit/). |
-| Actions | **Cancel Envelope**, for those who can cancel, on envelopes in Draft, Sent or In Progress. See [Cancel an envelope](/en/sign/sending/cancel/). |
+| **Audit Trail (N events)** | Each event with its type ("Envelope created", "Signer signed", "Signed documents sealed", "Evidence certificate issued"...), who triggered it, the date and time and its hash. Whoever triggered it can be a user (their name or email), an API credential (its name and identifier, with the **API** badge), a signer or **System**; an event with no recorded author shows "Actor not recorded". Some events add the documents' fingerprints, for example "Original SHA-256: ...". Available to the workspace's auditors, contributors and managers. See [Evidence and audit](/en/sign/concepts/evidence-and-audit/). |
+| Actions | **Cancel Envelope**, for those who can cancel, on envelopes in Draft, Sent or In Progress. An archived envelope has no actions. See [Cancel an envelope](/en/sign/sending/cancel/). |
 
 If an envelope does not exist or you do not have access to it, the application shows "Envelope not
 found, or you don't have access to it." For security, the answer is the same in both cases.
@@ -87,8 +88,9 @@ subjects shown on this page. See [The invitation email](/en/sign/signing/receivi
 
 <Aside type="tip" title="Know when an envelope completes">
   Check the Envelopes list or the Dashboard to see completed envelopes. If your organization
-  integrates other systems, an administrator can set up a webhook for the `envelope.completed`
-  event; see [Webhooks](/en/sign/admin/webhooks/).
+  integrates other systems, an administrator can set up a webhook for the `envelope.completed` event
+  and, for an evidence certificate that arrives later, `envelope.evidence_issued`; see
+  [Webhooks](/en/sign/admin/webhooks/).
 </Aside>
 
 <LinkCard title="Download signed documents" href="/en/sign/sending/download-signed-documents/" description="Original and signed PDF, how long a download link lasts and who can download." />

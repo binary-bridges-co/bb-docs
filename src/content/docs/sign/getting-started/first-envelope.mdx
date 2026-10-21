@@ -61,20 +61,31 @@ dejó. Para descartar el borrador, use **Empezar de nuevo**.
 
 Al enviar, el sobre pasa de **Borrador** a **Enviado** y cada firmante recibe un enlace único por
 correo. Desde ese momento, los documentos y la lista de firmantes quedan fijos, lo que garantiza que
-todos firman exactamente lo mismo. Si necesita corregir algo,
+todos firman exactamente lo mismo: bb-sign registra la huella SHA-256 de cada documento al subirlo y
+vincula cada firma a esas huellas. Si necesita corregir algo,
 [cancele el sobre](/sign/sending/cancel/) y cree uno nuevo.
 
 A partir de entonces, siga el avance desde **Sobres**. Consulte
-[Enviar y seguir](/sign/sending/send-and-track/).
+[Enviar y seguir](/sign/sending/send-and-track/). Cuando el sobre se completa, su página ofrece
+también el certificado de evidencia y la sección **Conservación**, con la fecha desde la que sus
+archivos dejan de estar disponibles. Consulte
+[Descargar documentos firmados](/sign/sending/download-signed-documents/) y
+[Conservación y restauración](/sign/sending/retention-and-restore/).
 
 ## Completar un envío pendiente
 
 **Enviar sobre** crea el sobre con todo lo que reunió y luego lo envía. Si el sobre se crea pero el
-envío no se completa (por ejemplo, porque su organización alcanzó un límite de su plan), el sobre
-queda en **Borrador** y el asistente lo indica:
+envío no se completa, el sobre queda en **Borrador** y el asistente lo indica:
 
 > El sobre se creó pero no se envió. Si vuelves a enviar, se envía tal como está; para cambiarlo,
 > ábrelo desde Sobres.
+
+Las causas más comunes son dos:
+
+| Causa | Qué hacer |
+|---|---|
+| Su organización alcanzó un límite de su plan. | Pida a su administrador que revise el plan y, una vez resuelto, pulse de nuevo **Enviar sobre**. |
+| "Uno de los documentos aún no tiene su huella digital registrada, así que el sobre no se puede enviar todavía. Espera unos minutos o vuelve a subirlo." | Espere unos minutos y pulse de nuevo **Enviar sobre**. Si el mensaje continúa, cancele el borrador y cree el sobre de nuevo con el documento subido otra vez. |
 
 Una vez resuelta la causa, pulse de nuevo **Enviar sobre**. Si cierra el asistente y vuelve más
 tarde, este reconoce el sobre ("Ya creaste este sobre, pero no se envió.") y ofrece **Enviar el
@@ -87,7 +98,8 @@ necesita otros documentos o firmantes, cancélelo y cree uno nuevo.
 
 El firmante no necesita cuenta. Recibe un correo en inglés con el asunto
 `You have a document to sign: {title}`, abre el enlace, revisa cada documento, ingresa el código de
-verificación si usted lo solicitó, dibuja o escribe su firma y descarga su copia al final. Conocer
+verificación si usted lo solicitó, dibuja o escribe su firma y, al final, descarga su copia firmada y
+su certificado de evidencia. Mientras revisa, ve la huella SHA-256 de cada documento. Conocer
 ese recorrido le ayudará a responder sus preguntas.
 
 <LinkCard title="El camino del firmante" href="/sign/signing/" description="Lo que ve y hace cada firmante, de principio a fin, en una sola página." />

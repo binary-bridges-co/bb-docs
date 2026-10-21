@@ -54,8 +54,14 @@ disponibles. El firmante puede solicitar un código nuevo pasados
 <Fact of={OTP.resendCooldownSeconds} unit="s" />. Una vez verificado, dispone de
 <Fact of={OTP.verifiedValidityMinutes} unit="min" /> para enviar su firma.
 
-Sin esta opción, el enlace del correo es la única identificación del firmante. Manténgala marcada
-siempre que necesite evidencia de que el firmante controla su correo.
+Cada código sirve solo para el firmante al que se envió: un código emitido para otro firmante no es
+válido en su enlace.
+
+Sin esta opción, el enlace del correo es la única identificación del firmante. El certificado de
+evidencia indica el método que se usó con cada firmante ("enlace enviado por correo electrónico" o
+"enlace por correo electrónico y código de un solo uso (OTP)") y, con OTP, el canal, el destino
+enmascarado y la hora en que se aceptó el código. Manténgala marcada siempre que necesite evidencia de
+que el firmante controla su correo.
 
 ## Definir el orden de firma
 

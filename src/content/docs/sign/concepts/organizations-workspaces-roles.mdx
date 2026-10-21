@@ -8,7 +8,7 @@ audience: all
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
 import RolesMatrix from '../../../../components/facts/RolesMatrix.astro';
-import { AUTH } from '../../../facts/sign';
+import { ADMIN_MFA, AUTH } from '../../../facts/sign';
 
 bb-sign organiza el trabajo en dos capas para que cada persona vea y haga exactamente lo que le
 corresponde. Los sobres viven en **espacios de trabajo** dentro de una **organización**: el **rol en
@@ -47,7 +47,7 @@ llama **Lector**, **Auditor**, **Colaborador** y **Gestor**; la API usa `viewer`
 | Rol | Qué añade |
 | --- | --- |
 | `viewer` (Lector) | Ver la lista y el detalle de los sobres, incluidos los archivados. |
-| `auditor` (Auditor) | Descargar documentos y consultar el registro de auditoría de cada sobre. |
+| `auditor` (Auditor) | Descargar documentos y el certificado de evidencia, solicitar la restauración de un archivo archivado y consultar el registro de auditoría de cada sobre. |
 | `contributor` (Colaborador) | Crear sobres, editarlos antes del envío, subir documentos, asignar etiquetas y enviar. |
 | `manager` (Gestor) | Cancelar sobres. |
 
@@ -64,13 +64,18 @@ El rol de organización define qué secciones de la aplicación ve una persona y
 | Rol | Nombre en la aplicación | Qué permite |
 | --- | --- | --- |
 | `org_member` | Miembro de Organización | Trabajar con sobres según sus roles de espacio, desde el **Panel**, **Sobres** y **Archivados**. |
-| `org_admin` | Administrador de Organización | Todo lo anterior en **todos** los espacios, sin necesidad de pertenecer a ellos, además de invitar usuarios, crear espacios y conceder roles, definir claves de etiqueta, administrar credenciales de API y webhooks, configurar el certificado y consultar la auditoría de la organización. |
+| `org_admin` | Administrador de Organización | Todo lo anterior en **todos** los espacios, sin necesidad de pertenecer a ellos, además de invitar usuarios, crear espacios y conceder roles, definir claves de etiqueta, administrar credenciales de API y webhooks, configurar el certificado y consultar la auditoría de la organización. También publica textos en la pestaña **Acuerdos**, que todavía no se muestran a los firmantes ni se adjuntan a los sobres. |
 | `org_api` | Credencial de API | Una integración. Lista espacios y claves de etiqueta; lo que puede hacer con los sobres depende de sus roles de espacio. La administración de la organización queda reservada a las personas. |
-| `platform_admin` | Administrador de Plataforma | Binary Bridges. Crea organizaciones y define las cuotas y la apariencia del sello. |
+| `platform_admin` | Administrador de Plataforma | Binary Bridges. Crea organizaciones y define las cuotas, la apariencia del sello y el idioma de los certificados de evidencia de cada organización. |
 
 Los administradores ven todos los espacios de la organización sin ser miembros de ninguno, por lo
 que no se agregan a espacios. La matriz completa de permisos está en
 [Matriz de permisos](/sign/admin/permissions/).
+
+Los administradores de organización y de plataforma inician sesión con un segundo factor: además de
+la contraseña, un código de <Fact of={ADMIN_MFA.digits} /> dígitos de una aplicación de autenticación
+(TOTP). Los miembros y los firmantes no lo necesitan. Consulte
+[Seguridad del inicio de sesión](/sign/admin/sign-in-security/).
 
 ## Tareas reservadas a Gestores y administradores
 

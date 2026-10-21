@@ -1,13 +1,33 @@
 ---
 title: Errors
-description: The statuses the bb-sign API returns, the ErrorResponse and QuotaViolation bodies, the 404-instead-of-403 rule and how the SDKs report failures.
+description: The statuses and codes the bb-sign API returns, quota versus rate limit, the ErrorResponse and QuotaViolation bodies and how the SDKs report failures.
 product: sign
 audience: developer
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, QUOTA } from '../../../../facts/sign';
+import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK } from '../../../../facts/sign';
+
+export const codeHelp = {
+  QUOTA_EXCEEDED: ['Creating or sending an envelope while an organization quota is exhausted; the body carries `quota`', 'Ask the platform administrator to raise or renew the quota. Retrying does not help'],
+  RATE_LIMITED: ['Too many calls in a row to verify by file, or to the audit trail verification or export', 'Wait the seconds given in `Retry-After`, then call again'],
+  RESTORE_LIMIT_REACHED: ['Requesting a restore while the organization already has the maximum number of restores in progress', 'Wait for the running ones to end (the `document.restored` event), then request it again'],
+  VERIFY_TIMEOUT: ['The upload to `POST /api/v1/verify/file` took longer than the deadline', 'Try again over a faster connection'],
+  PAYLOAD_TOO_LARGE: ['The file sent to `POST /api/v1/verify/file` is above the size limit', 'Check that you are sending the signed PDF and not another file'],
+  AUDIT_EXPORT_TOO_LARGE: ['The audit trail export is above the row limit', 'Request it in pages with `fromSeq` and `limit`'],
+  DOCUMENT_DELETED: ['Restoring a file that is past its retention period', 'None: bb-sign no longer has the file. Use the copy your system archived'],
+  DOCUMENT_NOT_SIGNED: ['Restoring the signed copy of a document that has none', 'Request the original (`"kind": "ORIGINAL"`) or wait for the envelope to complete'],
+  ARCHIVAL_STORAGE_UNAVAILABLE: ['The archive storage did not answer a restore', 'Try again later'],
+  SERVICE_UNAVAILABLE: ['The audit service did not answer a read or an export', 'Try again later'],
+  ENVELOPE_NOT_COMPLETED: ['Reading or downloading the evidence certificate of an envelope that is not completed', 'Wait for `envelope.completed`'],
+  EVIDENCE_NOT_AVAILABLE: ['Downloading an evidence certificate that is not `ISSUED`; the message names its status', 'Read the status with `GET /api/v1/envelopes/{id}/evidence-certificate`; if it is `PENDING`, wait for `envelope.evidence_issued`'],
+  DOCUMENT_HASH_MISMATCH: ['Signing with `documentHashes` that no longer match the envelope documents', 'The signer has to open the link again and review the current documents'],
+  DOCUMENT_HASH_MISSING: ['Sending (or signing) while a document has no recorded SHA-256; only older drafts can hit it', 'Try again later, because older documents are filled in periodically, or upload the document again'],
+};
+
+{/* Renders `code` spans inside the short help texts above. */}
+export const inline = (text) => text.split('`').map((part, i) => (i % 2 ? <code>{part}</code> : part));
 
 The API returns a small set of statuses and each has a single meaning, so your integration can
 decide what to do from the code alone. This page describes each status, the body that comes with
@@ -18,19 +38,60 @@ it and why an envelope the credential cannot access returns `404`.
 | Status | Meaning | Action |
 |---|---|---|
 | `400` | Malformed request or failed validation | Compare the body with the schema in the [API reference](/sign/api/); dates must be ISO-8601 |
-| `401` | Credentials rejected: no token, an expired token (a token is valid for <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />) or a token the realm will not validate | Request a new token and check the `Bearer ` prefix. Both SDKs refresh the token and retry once before reporting this status |
+| `401` | Credentials rejected: no token, an expired token (a token is valid for <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />), a token from another issuer or a token the realm will not validate | Request a new token and check the `Bearer ` prefix. Both SDKs refresh the token and retry once before reporting this status |
 | `403` | Authenticated, but the credential lacks the organization permission | The operation is a management operation that exists only in the UI, or the token has no `bb_sign_org_id`. See [Machine authentication](/en/sign/developers/authentication/) |
 | `404` | The resource does not exist, or belongs to another organization or a workspace the credential cannot see. Deliberately indistinguishable | Check the id; if the workspace is the issue, ask an admin to grant the credential a role there |
-| `409` | The resource is not in a state that allows the operation, for example sending an already-sent envelope | Read the envelope first and act on its `status` |
+| `408` | The upload to verify by file took longer than the deadline (<Fact of={VERIFY.fileMaxSeconds} unit="s" />) | Try again |
+| `409` | The resource is not in a state that allows the operation, for example sending an already-sent envelope, requesting the certificate of an envelope that is not completed, or signing documents that changed | Read the resource first and act on its state; `code` names the case (next table) |
+| `410` | The file you asked to restore is past its retention period | None: use the copy your system archived |
+| `413` | The body is too large: a file above <Fact of={VERIFY.fileMaxMb} unit="MB" /> on verify by file, or an audit export above <Fact of={AUDIT.exportMaxRows} /> rows | Send the right file, or request the export in pages |
 | `422` | A business rule rejected the request, for example sending an envelope with no document or no signer | Fix the envelope and try again |
-| <code>{QUOTA.httpStatusWhenExhausted.value}</code> | An organization quota is exhausted. The body says which one | Ask the platform administrator to raise or renew the quota; the SDKs retry this status |
+| <code>{QUOTA.httpStatusWhenExhausted.value}</code> | The server did not process the request. `code` says why: an exhausted quota (`QUOTA_EXCEEDED`), a rate limit (`RATE_LIMITED`) or too many restores in progress (`RESTORE_LIMIT_REACHED`) | Depends on `code`: raise the quota, wait for `Retry-After`, or wait for the restores to end |
+| `503` | A service the operation depends on did not answer | Try again later |
 | `0` (SDKs only) | The request got no answer: it never reached bb-sign or the reply was lost | For a `POST`, **list before you retry** (see below) |
 
 `401` and `403` are produced by the security filter chain and carry **no body**. Every other error
 carries an `ErrorResponse`.
 
-A <code>{QUOTA.httpStatusWhenExhausted.value}</code> always indicates an exhausted quota; the API
-does not apply rate limits.
+## Quota or rate limit
+
+A <code>{QUOTA.httpStatusWhenExhausted.value}</code> is not always a quota. Read `code` before you
+decide:
+
+- **`QUOTA_EXCEEDED`**: the organization has exhausted a quota (the body carries `quota`). Retrying
+  does not help until the platform administrator raises or renews it.
+- **`RATE_LIMITED`**: the call exceeded a rate limit, and the response carries `Retry-After` with the
+  seconds to wait. There are limits on verify by file
+  (<Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> a minute per client) and on the audit
+  trail verification and export (<Fact of={RATE_LIMITS.auditReadPerMinutePerCaller} /> a minute per
+  credential). The API applies no general rate limit.
+- **`RESTORE_LIMIT_REACHED`**: the organization has <Fact of={RESTORE.maxActivePerOrg} /> restores in
+  progress. Wait for one to end.
+
+The OpenAPI contract, and so the [API reference](/sign/api/), describes every
+<code>{QUOTA.httpStatusWhenExhausted.value}</code> as an exhausted quota, including on the
+rate-limited routes: what tells the cases apart is `code`.
+
+## Common codes
+
+`code` is stable and meant for machines. These are the codes an integration meets most often,
+besides `NOT_FOUND` and `WORKSPACE_NOT_FOUND`:
+
+<table>
+  <thead>
+    <tr><th><code>code</code></th><th>Status</th><th>When</th><th>What to do</th></tr>
+  </thead>
+  <tbody>
+    {ERROR_CODES.map((c) => (
+      <tr>
+        <td><code>{c.code}</code></td>
+        <td><code>{c.status}</code></td>
+        <td>{inline(codeHelp[c.code]?.[0] ?? c.where)}</td>
+        <td>{inline(codeHelp[c.code]?.[1] ?? '')}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 ## Error body
 
@@ -106,6 +167,14 @@ bb-sign's response contains them.
 | Status | `error.statusCode` | `e.statusCode()` |
 | No answer | `statusCode === 0` | `statusCode() == 0` |
 
+{SDK.errorCarriesStatusOnly.value && (
+  <p>
+    The exception carries no body, so it does not expose <code>code</code>: with an SDK, a quota{' '}
+    <code>{QUOTA.httpStatusWhenExhausted.value}</code> and a rate-limit one look the same. If your
+    integration needs to tell them apart, make that call over HTTP and read the body.
+  </p>
+)}
+
 ```js
 try {
   await client.envelopes.createEnvelope({ createEnvelopeRequest: request })
@@ -131,3 +200,9 @@ these are agreements sent to real people. `GET` requests are retried on 5xx erro
 failures; <code>{QUOTA.httpStatusWhenExhausted.value}</code> and `503` are retried for every
 method, because they indicate the server did not process the request. The
 [walkthrough](/en/sign/developers/envelope-walkthrough/) shows how to list before retrying.
+
+The SDKs wait between retries with their own exponential backoff, from
+<Fact of={SDK.retryBaseMs} unit="ms" /> up to <Fact of={SDK.retryMaxBackoffMs} unit="ms" />, and
+**do not honour `Retry-After`**. On a `RATE_LIMITED`, the retries arrive before the window opens and
+fail again; a `QUOTA_EXCEEDED` does not change on retry either. If your integration receives
+<code>{QUOTA.httpStatusWhenExhausted.value}</code> repeatedly, wait before calling again.

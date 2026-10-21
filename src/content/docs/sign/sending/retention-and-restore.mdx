@@ -1,0 +1,166 @@
+---
+title: "Conservación y restauración"
+description: "Cuánto tiempo conserva bb-sign los archivos de cada sobre, qué significan sus fechas y cómo se solicita un archivo archivado."
+product: sign
+audience: user
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import {
+  ENVELOPE,
+  EVIDENCE,
+  RATE_LIMITS,
+  RESTORE,
+  RETENTION_IMPLEMENTED,
+  RETENTION_POLICY,
+} from '../../../facts/sign';
+
+bb-sign conserva cada archivo de un sobre durante un plazo fijo de
+<Fact of={RETENTION_POLICY.retentionDays} unit="días" />. Esta página explica cómo se cuenta ese
+plazo, qué indica la sección **Conservación** de cada sobre y cómo se pide un archivo que esté en
+almacenamiento de archivo, tanto desde la organización como desde el enlace del firmante.
+
+## Cuánto tiempo se conserva cada archivo
+
+El plazo es el mismo para todas las organizaciones y no se puede configurar. Se cuenta por separado
+para cada archivo:
+
+| Archivo | El plazo cuenta desde |
+|---|---|
+| **PDF original** | Que se sube el documento. |
+| **PDF firmado** | Que el sobre se completa. |
+| Certificado de evidencia y registro de auditoría | Que se emite el certificado. |
+
+Cuando se cumple el plazo, el archivo deja de estar disponible y se elimina de forma definitiva; después
+no se puede recuperar. En producción, el almacenamiento de documentos aplica ese mismo plazo: elimina
+cada archivo al cumplir <Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="días" />. Lo que
+su organización deba conservar por más tiempo, guárdelo en sus propios sistemas. Consulte
+[Alcance y conservación](/sign/legal/retention/).
+
+## La sección Conservación del sobre
+
+La página de cada sobre tiene una sección **Conservación** con la fecha desde la que sus archivos ya
+no se pueden descargar:
+
+> Deja de estar disponible el \{fecha\}; después se elimina de forma definitiva.
+
+La fecha es la más temprana entre los archivos del sobre, a medianoche (UTC). Debajo aparece la nota
+"bb-sign conserva cada archivo <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. Guarda en
+tus sistemas lo que debas conservar por más tiempo." y dos enlaces: **Términos: conservación de
+documentos** y **Guía de conservación y restauración**, que abren los mismos textos que publica esta
+documentación: los [términos del servicio](/sign/legal/terms/) y la
+[guía de conservación y restauración](/sign/legal/retention-guide/).
+
+La sección puede mostrar también una línea "Se archiva a partir del \{fecha\}", que solo aparece cuando
+el archivo automático está activo. Hoy no se muestra.
+
+## Sobres archivados y almacenamiento de archivo
+
+En bb-sign, "archivar" se refiere a dos cosas distintas:
+
+- **Un sobre pasa a Archivados.** Pasados <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> desde
+  su creación, un sobre cerrado se traslada a la vista **Archivados**. Es un cambio de lista, no de
+  almacenamiento: el sobre queda de solo lectura, sus documentos y su certificado de evidencia se
+  siguen descargando con normalidad y el enlace de cada firmante sigue dando acceso a su copia.
+  Consulte [Sobres archivados](/sign/sending/archived-envelopes/).
+- **Un archivo pasa a almacenamiento de archivo.** Los términos del servicio permiten trasladar un
+  PDF firmado, o el original de un sobre completado, a almacenamiento de archivo cuando tiene más de
+  <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" />. Un archivo en ese almacenamiento se
+  conserva igual, pero para descargarlo primero hay que solicitar su restauración. El certificado de
+  evidencia y el registro de auditoría nunca se trasladan.
+
+<Aside type="note" title="Hoy ningún archivo se traslada a almacenamiento de archivo">
+  bb-sign no mueve hoy ningún archivo a almacenamiento de archivo: cada archivo se descarga
+  directamente hasta que termina su plazo de conservación. La restauración que se describe a
+  continuación solo aplica si una copia está archivada.
+</Aside>
+
+## Solicitar la restauración desde la página del sobre
+
+Si un archivo está archivado, la sección **Documentos (N)** del sobre muestra, en lugar de su botón de
+descarga, el botón **Solicitar restauración** y la nota
+"\{archivo\}: archivado. Solicita su restauración para descargarlo." El sobre puede estar en **Sobres**
+o en **Archivados**: en ambos casos se abre desde su título.
+
+Pulse **Solicitar restauración**. Mientras se restaura, el archivo indica que está restaurando y, cuando
+está disponible, usted recibe un correo. Vuelva entonces a la página del sobre: el botón de descarga
+aparece de nuevo con la fecha hasta la que puede usarlo. La copia restaurada se puede descargar durante
+<Fact of={RESTORE.days} unit="días" />; después vuelve al almacenamiento de
+archivo{RESTORE.requestableAgainAfterWindow.value && ' y se puede solicitar de nuevo'}.
+
+Pueden solicitar una restauración quienes pueden descargar los documentos del sobre: los auditores,
+colaboradores y gestores de su espacio de trabajo y los administradores de la organización. Sin ese
+permiso, la página no ofrece el botón.
+
+### Estados de un archivo
+
+| Lo que ve junto al archivo | Qué significa | Qué hacer |
+|---|---|---|
+| "\{archivo\}: archivado. Solicita su restauración para descargarlo." | El archivo está en almacenamiento de archivo. | Pulse **Solicitar restauración**. |
+| "\{archivo\}: restaurando. Te enviaremos un correo cuando esté disponible (normalmente en unas horas)." | Su solicitud está en curso. | Espere el correo. No necesita volver a pulsar el botón. |
+| "\{archivo\}: se está restaurando (normalmente tarda unas horas). Si no lo solicitaste tú, solicítalo para que te avisemos por correo." | Otra persona pidió el mismo archivo y la restauración está en curso. | Pulse **Solicitar restauración** si quiere recibir el correo: su solicitud se suma a la que ya está en curso. |
+| "\{archivo\}: restaurado, disponible hasta el \{fecha\}." | La copia restaurada se puede descargar. | Descárguela antes de esa fecha y guárdela en sus sistemas. |
+| "\{archivo\}: ya no está disponible (plazo de <Fact of={RETENTION_POLICY.retentionDays} unit="días" /> cumplido)." | El archivo cumplió su plazo de conservación y se eliminó. | Recurra a la copia que guardó su organización. |
+
+### Cuánto tarda
+
+Una restauración tarda normalmente unas horas, sin un tiempo garantizado. Si varias personas piden el
+mismo archivo, bb-sign hace una sola restauración y avisa por correo a cada una. Si la restauración no
+termina en <Fact of={RESTORE.timeoutHours} unit="horas" />, se da por fallida y el correo lo indica;
+puede solicitarla de nuevo.
+
+### Si la solicitud no se acepta
+
+| Mensaje | Qué pasó | Qué hacer |
+|---|---|---|
+| "Tu organización ya tiene demasiadas restauraciones en curso. Inténtalo de nuevo cuando termine alguna." | Su organización tiene en curso el máximo de <Fact of={RESTORE.maxActivePerOrg} /> restauraciones. Cuentan las de los usuarios y las credenciales de API; las de los firmantes no. | Espere a que termine alguna y vuelva a pulsar **Solicitar restauración**. |
+| "El almacenamiento de archivo no responde en este momento. Inténtalo de nuevo en unos minutos." | El almacenamiento de archivo no respondió y la solicitud no se registró. | Vuelva a intentarlo en unos minutos. |
+| "Este archivo ya no está disponible: se cumplió su plazo de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />." | El archivo se eliminó al cumplir su plazo. | Recurra a la copia que guardó su organización. |
+| "No se pudo solicitar la restauración" | La solicitud no se completó por otra causa. | Recargue la página y vuelva a intentarlo. Si se repite, envíe a su administrador la referencia que aparece en el aviso. |
+
+## Solicitar la restauración desde una integración
+
+Una integración pide la restauración de un archivo con la API, con el mismo permiso de descarga:
+`POST /api/v1/envelopes/{id}/documents/{docId}/restore`. Las credenciales
+de API no reciben correo: la integración sabe que el archivo está disponible por el webhook
+`document.restored`. Consulte [Webhooks](/sign/developers/webhooks/) y la
+[guía de conservación y restauración](/sign/legal/retention-guide/).
+
+## La copia del firmante
+
+Cada firmante puede pedir su propia copia firmada desde el enlace con el que firmó, aunque el plazo
+para firmar haya vencido. Si su copia está archivada, la página muestra "Tu copia firmada está
+archivada. Solicítala y te la enviaremos por correo cuando esté disponible." y el botón
+**Solicitar mi copia**. Al pulsarlo, la página confirma "Te enviaremos tu copia por correo cuando esté
+disponible, normalmente en unas horas." y el firmante recibe el correo de restauración cuando la copia
+está lista.
+
+Cada enlace admite <Fact of={RATE_LIMITS.signerRestorePerLink} /> solicitudes y cada conexión
+<Fact of={RATE_LIMITS.signerRestorePerIp} /> en <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutos" />.
+Lo que ve el firmante en cada caso se describe en [Firmar y descargar](/sign/signing/sign-and-download/).
+
+## El correo de restauración
+
+Cuando termina una restauración, cada persona que la pidió, en la aplicación o como firmante, recibe el
+correo `Tu solicitud de restauración de documentos / Your document restore request`, en español y luego
+en inglés. El correo indica, para cada archivo, si está disponible y hasta qué fecha (en UTC), o por
+qué no lo está.{RESTORE.emailLinksToEnvelopeOrSigningPage.value && ' No trae los archivos: su enlace lleva a la página del sobre, o a la página de firma si la pidió como firmante, donde se descargan.'}{RESTORE.emailGenericWithoutConfirmedAccess.value && ' Si bb-sign no puede confirmar que usted sigue pudiendo descargar los documentos del sobre, recibe un correo genérico, sin el título del sobre ni los nombres de los archivos, solo con el enlace.'}
+
+| Lo que dice el correo | Qué hacer |
+|---|---|
+| "Ya no está disponible: se eliminó al cumplir sus <Fact of={RETENTION_POLICY.retentionDays} unit="días" />." | Recurra a la copia que guardó su organización. |
+| "La restauración tardó más de lo previsto; puedes volver a solicitarla." | Vuelva a pulsar **Solicitar restauración** o **Solicitar mi copia**. |
+| "No se pudo restaurar." | Vuelva a solicitarla. Si se repite, contacte a su administrador. |
+
+El certificado de evidencia nunca necesita restauración: se descarga directamente durante sus
+<Fact of={EVIDENCE.retentionDays} unit="días" />.
+
+<Aside type="tip" title="Guarde cada sobre al completarse">
+  La forma más segura de cumplir el plazo es copiar cada sobre a los sistemas de su organización en
+  cuanto se completa. Un administrador puede automatizarlo con los webhooks `envelope.completed` y
+  `envelope.evidence_issued`, y comparar el SHA-256 de cada PDF descargado con el que trae el webhook.
+  Consulte la sección 4 de la [guía de conservación y restauración](/sign/legal/retention-guide/).
+</Aside>
+
+<LinkCard title="Guía de conservación y restauración" href="/sign/legal/retention-guide/" description="El texto de bb-sign sobre las fechas, la restauración y la copia automática de cada sobre." />

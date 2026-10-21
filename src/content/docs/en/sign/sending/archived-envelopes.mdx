@@ -1,16 +1,17 @@
 ---
 title: Archived envelopes
-description: "The Archived Envelopes view: which envelopes move to the archive and when, what it shows and how to find a closed envelope."
+description: "The Archived Envelopes view: which envelopes move there and when, how to open an archived envelope and what stays available to download."
 product: sign
 audience: user
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { ENVELOPE } from '../../../../facts/sign';
+import { DOCUMENTS, ENVELOPE, RETENTION_POLICY } from '../../../../facts/sign';
 
 bb-sign keeps the Envelopes list focused on work in progress. After a while, closed envelopes move
-to the **Archived Envelopes** view, where they remain available for read-only reference.
+to the **Archived Envelopes** view, where they remain available read-only, with their documents, their
+evidence and their audit trail.
 
 ## Which envelopes are archived and when
 
@@ -20,6 +21,9 @@ Every night at <Fact of={ENVELOPE.archiveCron} />, bb-sign archives envelopes in
 
 - The period counts from the envelope's **creation**. An envelope that took long to complete is
   archived shortly after completing.
+- A completed envelope is only archived once its signed PDFs have been generated. If one is still
+  missing <Fact of={ENVELOPE.stampHoldDays} unit="days" /> later, the envelope stays in **Envelopes**
+  and the bb-sign team is alerted.
 - Envelopes in **Draft**, **Sent** or **In Progress** stay in the active list. If one of them is not
   going to complete, [cancel it](/en/sign/sending/cancel/).
 
@@ -37,17 +41,44 @@ shows:
   ...");
 - the workspace and the status it was archived with.
 
-## How the information is kept
+## Open an archived envelope
 
-Archiving an envelope deletes nothing: the envelope, its signers, its documents and its evidence
-are kept according to [Scope and retention](/en/sign/legal/retention/). The archive view shows each
-envelope's row; download the signed PDFs and review the audit trail while the envelope is in
-**Envelopes**. See [Download signed documents](/en/sign/sending/download-signed-documents/).
+Press a row's title to open the envelope. The page is the same as in **Envelopes**, with the notice
+"Archived on \{date\}. This envelope is read-only; its documents are still available to download." From
+it you can:
 
-<Aside type="caution" title="Give signers their copy before archiving">
-  While the envelope is in **Envelopes**, each signer can return to their link and download their
-  signed copy. Once archived, that link opens **Link Unavailable**. If a signer needs their copy
-  later, send them the signed PDF you downloaded.
+- download each document's **Original PDF** and **Signed PDF**, with the same permission as in
+  **Envelopes**. See [Download signed documents](/en/sign/sending/download-signed-documents/);
+- if the envelope completed, download its evidence certificate and the audit trail as JSON. See
+  [Evidence certificate](/en/sign/concepts/evidence-certificate/);
+- review the audit trail and the **Retention** section.
+
+An archived envelope has no actions: its labels cannot be changed and it cannot be cancelled.
+
+## Archived is not archive storage
+
+Moving to **Archived** is a change of list, not of storage: the envelope's files download just as
+before. Archive storage is something else: the terms allow a file more than
+<Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> old to be moved there, and it then has to
+be restored before it can be downloaded. Today bb-sign does not move any file to that storage. See
+[Retention and restore](/en/sign/sending/retention-and-restore/).
+
+Archiving an envelope deletes nothing: the envelope, its signers, its documents and its evidence are
+kept until each file's period ends, <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. See
+[Scope and retention](/en/sign/legal/retention/).
+
+## Signers keep their access
+
+Each signer's link still gives access to their signed copy and their evidence certificate after the
+envelope moves to **Archived**, until their copy's retention period ends, counted from when the
+envelope completed. If their copy were ever in archive storage, the signer can request it from their
+own link. See [Sign and download](/en/sign/signing/sign-and-download/).
+
+<Aside type="caution" title="Verifying an archived envelope">
+  Today, scanning the QR code on the seal of an envelope that is already in **Archived** makes the
+  verification page show **Invalid Signature**, even though the document is intact. A document signed
+  since bb-sign <Fact of={DOCUMENTS.signedSha256Since} /> is confirmed with **Check a file**; an earlier
+  one, with a PDF reader's signature panel. See [Verify a signed document](/en/sign/signing/verify-a-document/).
 </Aside>
 
 ## Find a closed envelope
@@ -56,4 +87,4 @@ If a completed, cancelled or expired envelope no longer appears in **Envelopes**
 **Archived**. If it is not there either, it may belong to a workspace you do not have access to:
 ask an administrator to check.
 
-<LinkCard title="Send and track" href="/en/sign/sending/send-and-track/" description="The statuses and filters of the active envelopes list." />
+<LinkCard title="Retention and restore" href="/en/sign/sending/retention-and-restore/" description="How long each file is kept and how to request an archived one." />

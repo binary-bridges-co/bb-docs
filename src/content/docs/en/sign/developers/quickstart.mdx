@@ -194,7 +194,7 @@ The `201` response confirms the envelope exists, in `DRAFT` status.
 
 Every envelope belongs to a **workspace**, and a credential accesses the workspaces assigned to it.
 A new credential is **Manager** in your organization's **General** workspace unless the admin chose
-another. Without `workspaceId`, the envelope is filed in General. To file it in another workspace,
+another. Without `workspaceId`, the envelope goes to General. To create it in another workspace,
 list the workspaces available to the credential and send one's `id`:
 
 ```bash
@@ -233,6 +233,8 @@ these calls in the three languages.
 | `403` | The credential is valid, but the operation is not available to credentials | Confirm the operation is listed in the [API reference](/sign/api/); administration is done in the UI |
 | `404 WORKSPACE_NOT_FOUND` | The credential has no role that allows creating in that workspace, or the workspace does not exist | Omit `workspaceId`, or ask the admin to grant the credential a role in that workspace from **Settings**, tab **Workspaces** |
 | `400` with no detail | Usually a malformed body | Compare it field by field with the example; `expiresAt` must be ISO-8601 |
+| `409 DOCUMENT_HASH_MISSING` on send | A document has no recorded SHA-256 yet. Only drafts from before hashes were recorded can hit it; every new upload computes it | Try again later, because those documents are filled in periodically, or upload the document again |
+| `unauthorized_client` from the token URL | A token was requested with a username and password | Use `grant_type=client_credentials` with an API credential |
 | `NoClassDefFoundError` at runtime (Java) | `-DpomFile` was omitted during install | Reinstall with that parameter |
 | `ERR_REQUIRE_ESM` (JavaScript) | The package is ESM only | Use `import` |
 
@@ -242,6 +244,10 @@ If your case is not in the table, write to us with a description of what you wer
 
 - **[API reference](/sign/api/)**: every endpoint, generated from the contract.
 - **[Webhooks](/en/sign/developers/webhooks/)**: receive events and verify their origin.
+- **[Evidence certificate](/en/sign/concepts/evidence-certificate/)**: the sealed summary of a
+  completed envelope and its audit trail.
+- **[Errors](/en/sign/developers/errors/)**: every status and code, and the difference between a
+  quota and a rate limit.
 - **[Migrating from Adobe Acrobat Sign](/en/sign/developers/migrating-from-adobe/)**: concept mapping.
 - <a href={URLS.api.value + URLS.openapiPath.value}><code>openapi.json</code></a>: the
   machine-readable contract, to generate your own client.

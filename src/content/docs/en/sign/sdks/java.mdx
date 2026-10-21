@@ -1,6 +1,6 @@
 ---
 title: Java SDK
-description: "Java client: installing the jar with -DpomFile, creating envelopes, pagination, webhook verification, retries, errors and security guarantees."
+description: "Java client: installing with -DpomFile, envelopes, pagination, webhooks, checking a file, retries, errors, what it does not cover and security guarantees."
 product: sign
 audience: developer
 source: sdk-java/README.md
@@ -8,7 +8,7 @@ source: sdk-java/README.md
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { SDK, WEBHOOKS } from '../../../../facts/sign';
+import { SDK, WEBHOOKS, VERIFY, RATE_LIMITS, QUOTA } from '../../../../facts/sign';
 
 The Java SDK connects your services to the bb-sign API: it manages tokens, retries safely and
 verifies webhook signatures. The coordinates are
@@ -24,7 +24,8 @@ can also build it from source (see [Build from source](#build-from-source)). Ins
 your local Maven repository and declare it as a dependency.
 
 <Steps>
-1. Verify the integrity of the file you received:
+1. Verify the integrity of the file you received, and that the `.sha256` is the one from the most
+   recent handover (see [Versions](#versions)):
 
    ```bash
    shasum -a 256 -c bb-sign-sdk-java-0.1.0-SNAPSHOT.jar.sha256
@@ -98,7 +99,22 @@ try (BbSignClient client = BbSignClient.builder()
 
 Read the credentials from environment variables, outside your source code. The secret is stored
 only in Keycloak and bb-sign keeps no copy; if it is lost, rotate it, which invalidates the old one
-**immediately**. The client exposes `envelopes()`, `documents()` and `verification()`.
+**immediately**.
+
+### What the client covers
+
+The client exposes `envelopes()`, `documents()` and `verification()`:
+
+| Accessor | Operations |
+|---|---|
+| `envelopes()` | Create, list, read, attach documents, add signers, send, cancel, count by status, list the documents with their links, and `restoreEnvelopeDocument` (request a restore of an archived file) |
+| `documents()` | `uploadDocument`. The generated methods send JSON, so a multipart upload uses okhttp (see the [walkthrough](/en/sign/developers/envelope-walkthrough/#2-upload-the-document)) |
+| `verification()` | `verifyDocument` (the QR code seal) and `verifyDocumentFile`, which **does not work today**: see [Check a file](#check-a-file) |
+
+**Not in the client:** the evidence certificate, `GET /api/v1/workspaces` and agreement copies.
+Their interfaces are generated, but `BbSignClient` does not expose them. Call them over HTTP with a
+token obtained as in the [walkthrough](/en/sign/developers/envelope-walkthrough/#1-get-a-token);
+step 8 of that walkthrough downloads the evidence certificate in Java.
 
 ### List by page
 
@@ -115,29 +131,51 @@ them all into memory.
 ## Verify a webhook
 
 `Webhooks.verify` checks the signature over the body exactly as received. Declare the body as
-`byte[]` in your handler:
+`byte[]` in your handler, and read the event with an `ObjectMapper` configured like the SDK's own:
 
 ```java
 import co.binarybridges.sign.sdk.Webhooks;
+import co.binarybridges.sign.sdk.generated.model.WebhookEvent;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+// ISO-8601 dates (JavaTimeModule), and new fields ignored instead of fatal.
+private static final ObjectMapper MAPPER = new ObjectMapper()
+        .registerModule(new JavaTimeModule())
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
 @PostMapping("/webhooks/bb-sign")
 public ResponseEntity<Void> receive(
         @RequestHeader("X-BBSign-Signature") String signature,
-        @RequestBody byte[] rawBody) {                 // byte[], NOT a DTO
+        @RequestBody byte[] rawBody) throws IOException {   // byte[], NOT a DTO
 
     if (!Webhooks.verify(signature, rawBody, System.getenv("BBSIGN_WEBHOOK_SECRET"))) {
         return ResponseEntity.status(401).build();
     }
 
-    WebhookEvent event = new ObjectMapper().readValue(rawBody, WebhookEvent.class);
+    WebhookEvent event = MAPPER.readValue(rawBody, WebhookEvent.class);
     switch (event.getType()) {
-        case "envelope.completed" -> onCompleted(event.getData().getEnvelope());
-        case "signer.signed"      -> onSigned(event.getData().getSigner());
-        default                   -> { /* ignore unknown types: more will be added */ }
+        case ENVELOPE_COMPLETED -> onCompleted(event.getData());
+        case SIGNER_SIGNED      -> onSigned(event.getData().getSigner());
+        default                 -> { /* ignore other types, UNKNOWN_DEFAULT_OPEN_API included */ }
     }
     return ResponseEntity.ok().build();
 }
 ```
+
+`event.getType()` returns the `WebhookEvent.TypeEnum` enum, not a `String`, so the `case` labels use
+its constants. An unconfigured `new ObjectMapper()` does not work: it cannot read the dates
+(`OffsetDateTime`) and fails on any new field, and the contract adds fields without changing
+version. <code>{SDK.java.jsr310Dependency.value}</code> is already a dependency of the SDK, at the
+Jackson version <Fact of={SDK.java.jacksonVersion} /> its pom declares.
+
+<Aside type="caution" title="Use the current SDK handover">
+  An event type the SDK does not know reads as `UNKNOWN_DEFAULT_OPEN_API`. Earlier handovers of
+  <code><Fact of={SDK.java.version} /></code>, with the same version number, throw an exception on a
+  new type such as `envelope.evidence_issued` or `document.restored`. Check the `.sha256` against
+  the one from the most recent handover.
+</Aside>
 
 ### Capture the raw body
 
@@ -178,10 +216,43 @@ stops being valid. Use the clock-bearing overload:
 Webhooks.verify(signature, rawBody, secret, Duration.ofSeconds(300), Instant.ofEpochSecond(1760000000L));
 ```
 
+## Check a file
+
+`POST /api/v1/verify/file` takes a PDF's bytes (`application/octet-stream`, not multipart), computes
+their SHA-256 on the server and answers whether it is a document bb-sign signed. It is public, does
+not store the file and accepts up to <Fact of={VERIFY.fileMaxMb} unit="MB" />, limited to
+<Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> requests a minute per client.
+
+{SDK.javaVerifyFileSendsPath.value && (
+  <Aside type="caution" title="verifyDocumentFile sends the path, not the file">
+    <code>client.verification().verifyDocumentFile(File)</code> serializes the <code>File</code> as
+    JSON, so it sends the file's path in quotes instead of its bytes, and the answer never matches.
+    This is a known SDK defect. Until it is fixed, make this call over HTTP:
+  </Aside>
+)}
+
+```java
+HttpRequest check = HttpRequest.newBuilder(URI.create(System.getenv("BBSIGN_BASE_URL") + "/api/v1/verify/file"))
+        .header("Content-Type", "application/octet-stream")
+        .POST(HttpRequest.BodyPublishers.ofFile(Path.of("contract-signed.pdf")))
+        .build();
+HttpResponse<String> response = HttpClient.newHttpClient().send(check, HttpResponse.BodyHandlers.ofString());
+if (response.statusCode() == 429) {
+    String retryAfter = response.headers().firstValue("Retry-After").orElseThrow();
+    // RATE_LIMITED: wait retryAfter seconds, then check again
+} else {
+    VerifyFileResponse result = MAPPER.readValue(response.body(), VerifyFileResponse.class);
+    System.out.println(result.getMatch() + " " + result.getSha256());
+}
+```
+
+Only signed PDFs match: an unsigned original never does. `GET /api/v1/verify`, by contrast, checks
+the seal printed in the QR code against bb-sign's records and does not read the PDF.
+
 ## Retries
 
 `GET` requests are retried on 5xx errors and connect timeouts, with exponential backoff and full
-jitter.
+jitter, from <Fact of={SDK.retryBaseMs} unit="ms" /> up to <Fact of={SDK.retryMaxBackoffMs} unit="ms" />.
 
 **A `POST` whose response was not received is not retried.** If `createEnvelope` times out, the
 outcome is unknown: the envelope may already exist, and a retry would create a second agreement
@@ -200,7 +271,9 @@ try {
 ```
 
 `429` and `503` are also retried for `POST`, because they indicate the server did not process the
-request.
+request. The SDK **does not honour `Retry-After`**: on a `RATE_LIMITED`, its retries arrive before
+the window opens and fail again. If you receive <code>{QUOTA.httpStatusWhenExhausted.value}</code>,
+wait the `Retry-After` seconds before calling again; that wait is up to your code.
 
 ## Errors
 
@@ -213,11 +286,44 @@ request got no answer.
 | 401 | Credentials rejected. The SDK refreshes the token and retries once before surfacing this |
 | 403 | Authenticated, but this credential lacks the organization permission |
 | 404 | The resource does not exist, or belongs to another organization or a workspace the credential cannot see. Deliberately indistinguishable |
-| 409 | The resource is not in a state that allows the operation, e.g. sending an already-sent envelope |
-| 429 | An organization quota is exhausted |
+| 408 | The upload to verify by file took longer than the deadline |
+| 409 | The resource is not in a state that allows the operation, e.g. sending an already-sent envelope or requesting the certificate of an envelope that is not completed |
+| 410 | The file you asked to restore is past its retention period |
+| 413 | The file sent to verify by file is above the size limit |
+| 429 | The server did not process the request: an exhausted quota (`QUOTA_EXCEEDED`), a rate limit (`RATE_LIMITED`) or too many restores in progress (`RESTORE_LIMIT_REACHED`) |
+| 503 | A service the operation depends on did not answer |
+
+{SDK.errorCarriesStatusOnly.value && (
+  <p>
+    <code>BbSignException</code> carries the status only, not the body or its <code>code</code>: a
+    quota 429 and a rate-limit 429 look the same. If you need the <code>code</code>, make that call over
+    HTTP and read the body.
+  </p>
+)}
 
 Exception messages never include your secret or access token, even when bb-sign's response
 contains them. [Errors](/en/sign/developers/errors/) includes the full table and the error body.
+
+## What is new in the contract
+
+The SDK is generated from the OpenAPI contract, so a current handover already types the fields
+added since the first one:
+
+- `EnvelopeResponse`: `archived`, `archivedAt`, `retention` and `restoresInProgress`.
+- `DocumentWithUrlsResponse`: `originalSha256`, plus `original` and `signed` (`DocumentFile`, with
+  `availability`, `deletesAt`, `archivesAt`, `availableUntil` and `restorable`).
+- `WebhookEventData`: `evidenceStatus`, `signedDocumentsStatus`, `documents`, `documentsPath`,
+  `evidenceCertificate`, `auditChainHead`, `retention` and `document`; `WebhookEventSigner.authMethod`.
+- The `ENVELOPE_EVIDENCE_ISSUED` and `DOCUMENT_RESTORED` event types.
+
+The SDK's `CHANGELOG.md` lists every change, including the ones that need a source change on your
+side.
+
+## Versions
+
+The version is <code><Fact of={SDK.java.version} /></code>. Later handovers kept that number even
+though they added operations and fields, so the version alone does not tell you which jar you have.
+Compare your jar's `.sha256` with the one from the most recent handover we sent you.
 
 ## Security guarantees
 

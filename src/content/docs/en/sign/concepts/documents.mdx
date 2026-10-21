@@ -7,7 +7,7 @@ audience: user
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { DOCUMENTS } from '../../../../facts/sign';
+import { DOCUMENTS, RETENTION_IMPLEMENTED } from '../../../../facts/sign';
 
 An envelope contains one or more documents, and every signer signs all of them. You decide where on
 each document each signer's seal appears. This page explains which files bb-sign accepts, how they
@@ -22,7 +22,12 @@ Each file can weigh up to <Fact of={DOCUMENTS.maxUploadMb} unit="MB" />. If a fi
 application shows "That file is too large."; shrink the PDF (for example, by lowering the resolution
 of its images) and upload it again.
 
-An envelope needs at least one document to be sent.
+An envelope needs at least one document to be sent, and every document must have its fingerprint
+recorded (see [Each document's fingerprint](#each-documents-fingerprint)). bb-sign computes it when
+the file is uploaded; if one is missing, sending shows "One of the documents does not have its
+fingerprint recorded yet, so the envelope cannot be sent. Wait a few minutes or upload it again.".
+Wait a few minutes, because bb-sign fills in the fingerprints of older drafts in the background, or
+remove the document and upload it again.
 
 ## Documents uploaded before sending
 
@@ -77,10 +82,39 @@ order. If they do not fit on the last page, bb-sign adds a page at the end and c
 
 In the envelope detail, every document offers two downloads: **Original PDF**, the file as uploaded,
 and **Signed PDF**, the same file with the seals stamped and the organization's certificate
-signature. The signed document is available once the envelope is `COMPLETED`; while it is being
-generated, the detail shows "Signed PDF processing...".
+signature. Next to each document is its fingerprint, "SHA-256 of the original:". The signed document
+is available once the envelope is `COMPLETED`; while it is being generated, the detail shows
+"Signed PDF processing...".
 
-Downloading documents requires the Auditor role or higher in the workspace; a Viewer sees their
-names. See [Download signed documents](/en/sign/sending/download-signed-documents/).
+When the envelope completes, the detail adds the **Evidence certificate** block, with the downloads
+**Evidence certificate (PDF)** and **Audit trail (JSON)**. See
+[Evidence certificate](/en/sign/concepts/evidence-certificate/).
 
-The signed document corresponds exactly to the PDF you attached when sending the envelope.
+Downloading documents and the evidence certificate requires the Auditor role or higher in the
+workspace; a Viewer sees their names. See
+[Download signed documents](/en/sign/sending/download-signed-documents/).
+
+## Each document's fingerprint
+
+While it receives each PDF, bb-sign computes its SHA-256 fingerprint, a digest that changes
+completely if a single byte of the file changes, and stores it together with the exact stored
+version. On signing, each signature is bound to the fingerprints of the envelope's documents. If the
+documents changed while a signer was reviewing them, bb-sign refuses the signature and shows "The
+documents changed while you were reviewing them. Please review them again before signing.".
+{DOCUMENTS.sealRefusedOnHashMismatch.value && ' Before sealing, bb-sign checks the fingerprints again: if the stored file no longer matches its recorded fingerprint, or the documents are no longer the ones each signer signed, it does not seal the document.'}
+
+That is why the signed document corresponds exactly to the PDF you attached when sending the
+envelope, and anyone can check it: the original's fingerprint appears in the envelope detail, in the
+audit trail and in the evidence certificate.
+
+## File retention
+
+bb-sign keeps each file for <Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="days" />:
+the original from upload and the signed document from the envelope's completion. It then deletes it
+permanently. In the envelope detail, the **Retention** block shows the date ("No longer available
+from...") for each envelope.
+
+Today no file is moved to archive storage: for the whole period, documents download directly. If a
+file were ever archived, the detail says so and lets you request its restore; see
+[Retention and restore](/en/sign/sending/retention-and-restore/). Keep in your own systems whatever
+you must retain for longer. The terms are in [Scope and retention](/en/sign/legal/retention/).

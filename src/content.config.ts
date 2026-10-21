@@ -22,6 +22,8 @@ export const collections = {
           .string()
           .regex(/^[a-z0-9./_-]+$/i, 'source must be a repo-relative path')
           .optional(),
+        /** Marks a mirrored legal text (generated Spanish page or its English translation); PageTitle renders its header. */
+        legal: z.boolean().optional(),
         /** Legal pages only. */
         legalVersion: z.string().regex(LEGAL_VERSION, 'legalVersion must look like "Versión 1 · 2026-10-07"').optional(),
       }),

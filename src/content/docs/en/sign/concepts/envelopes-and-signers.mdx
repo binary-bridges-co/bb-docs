@@ -28,6 +28,9 @@ The application shows these statuses as **DRAFT**, **SENT**, **IN_PROGRESS**, **
 - When the envelope completes, bb-sign seals every document with the organization's certificate.
   While it does, the detail shows "Signed PDF processing...". See
   [Electronic signature and seal](/en/sign/concepts/signature-and-seal/).
+- It then issues the envelope's **evidence certificate**, a sealed PDF that summarizes its
+  documents, its signers and its audit trail. While it is being issued, the detail shows "Evidence
+  certificate processing...". See [Evidence certificate](/en/sign/concepts/evidence-certificate/).
 
 ## Signer statuses
 
@@ -82,13 +85,15 @@ bb-sign does not send a cancellation email to signers; if needed, let them know 
 
 ## Send an envelope
 
-To be sent, the envelope must be in `DRAFT` and have at least one signer and one document. On send,
-bb-sign generates a unique signing link for each signer.
+To be sent, the envelope must be in `DRAFT` and have at least one signer and one document, and every
+document must have its SHA-256 fingerprint recorded (see
+[Documents](/en/sign/concepts/documents/#each-documents-fingerprint)). On send, bb-sign generates a
+unique signing link for each signer.
 
 <Aside type="caution" title="Review the summary before sending">
   On send, the documents, the signer list and the signing mode are fixed, so that everyone signs
-  exactly the same thing. If something needs to change afterwards, cancel the envelope and create a
-  new one.
+  exactly the same thing, and each signature is bound to the fingerprint of those documents. If
+  something needs to change afterwards, cancel the envelope and create a new one.
 </Aside>
 
 Labels can be changed in any envelope status. See [Labels](/en/sign/concepts/labels/).

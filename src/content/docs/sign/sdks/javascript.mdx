@@ -1,6 +1,6 @@
 ---
 title: "SDK de JavaScript"
-description: "Cliente TypeScript para Node: instalación, creación de sobres, paginación, verificación de webhooks en el servidor, reintentos, errores y garantías de seguridad."
+description: "Cliente TypeScript para Node: instalación, sobres, paginación, webhooks en el servidor, comprobación de un archivo, reintentos, errores y lo que no cubre."
 product: sign
 audience: developer
 source: sdk-js/README.md
@@ -8,7 +8,7 @@ source: sdk-js/README.md
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { SDK, WEBHOOKS } from '../../../facts/sign';
+import { SDK, WEBHOOKS, VERIFY, RATE_LIMITS, QUOTA } from '../../../facts/sign';
 
 El SDK de JavaScript conecta sus servicios de Node con la API de bb-sign: gestiona los tokens,
 reintenta de forma segura y verifica las firmas de los webhooks. El paquete es
@@ -55,8 +55,22 @@ console.log('Created', envelope.id)
 ```
 
 Los tokens se obtienen, se guardan en caché y se renuevan automáticamente. Las llamadas
-concurrentes comparten una sola solicitud de token. El cliente expone `envelopes`, `documents` y
-`verification`.
+concurrentes comparten una sola solicitud de token.
+
+### Qué cubre el cliente
+
+El cliente expone `envelopes`, `documents` y `verification`:
+
+| Acceso | Operaciones |
+|---|---|
+| `envelopes` | Crear, listar, consultar, adjuntar documentos, agregar firmantes, enviar, cancelar, contar por estado, listar los documentos con sus enlaces y `restoreEnvelopeDocument` (pedir la restauración de un archivo archivado) |
+| `documents` | `uploadDocument`. Los métodos generados envían JSON, de modo que una subida multipart se hace con `fetch` (ver el [recorrido completo](/sign/developers/envelope-walkthrough/#2-subir-el-documento)) |
+| `verification` | `verifyDocument` (el sello del código QR) y `verifyDocumentFile` (ver [Comprobar un archivo](#comprobar-un-archivo)) |
+
+**No están en el cliente** el certificado de evidencia, `GET /api/v1/workspaces` ni las copias de
+acuerdos: el paquete no exporta sus clases y `createClient` no las expone. Llámelas con `fetch` y un
+token obtenido como en el [recorrido completo](/sign/developers/envelope-walkthrough/#1-obtener-un-token);
+el paso 8 de ese recorrido descarga el certificado de evidencia.
 
 ### Listar por páginas
 
@@ -172,10 +186,30 @@ verifyWebhookSignature(header, rawBody, secret, { nowSeconds: 1760000000 })
 
 Un receptor detrás de una cola puede ampliar la ventana con `toleranceSeconds`.
 
+## Comprobar un archivo
+
+`verification.verifyDocumentFile` envía los bytes de un PDF a `POST /api/v1/verify/file`, que calcula
+su SHA-256 en el servidor y responde si es un documento firmado por bb-sign. La ruta es pública, no
+guarda el archivo y acepta hasta <Fact of={VERIFY.fileMaxMb} unit="MB" />, con un límite de
+<Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> solicitudes por minuto por cliente.
+
+```js
+import { openAsBlob } from 'node:fs'
+
+const result = await client.verification.verifyDocumentFile({
+  body: await openAsBlob('contract-signed.pdf', { type: 'application/octet-stream' }),
+})
+console.log(result.match, result.sha256)
+```
+
+Solo coinciden los PDF firmados: un original sin firmar nunca coincide. `verifyDocument`, en cambio,
+comprueba el sello impreso en el código QR contra los registros de bb-sign y no lee el PDF.
+
 ## Reintentos
 
 Las solicitudes `GET` se reintentan ante errores 5xx y fallos de transporte, con backoff
-exponencial y jitter completo.
+exponencial y jitter completo, desde <Fact of={SDK.retryBaseMs} unit="ms" /> y como máximo
+<Fact of={SDK.retryMaxBackoffMs} unit="ms" />.
 
 **Un `POST` cuya respuesta no se recibió no se reintenta.** Si `createEnvelope` agota el tiempo de
 espera, el resultado es desconocido: el sobre puede existir ya, y un reintento crearía un segundo
@@ -195,12 +229,14 @@ try {
 ```
 
 `429` y `503` se reintentan también en `POST`, porque indican que el servidor no procesó la
-solicitud.
+solicitud. El SDK **no respeta `Retry-After`**: ante un `RATE_LIMITED`, sus reintentos llegan
+antes de que se abra la ventana y fallan de nuevo. Si recibe <code>{QUOTA.httpStatusWhenExhausted.value}</code>,
+espere los segundos de `Retry-After` antes de volver a llamar; esa espera queda a cargo de su código.
 
 ## Errores
 
 Cada fallo lanza un `BbSignError` con un `statusCode`. `0` indica que la solicitud no obtuvo
-respuesta.
+respuesta.{SDK.errorCarriesStatusOnly.value && <> El error lleva solo el estado, no el cuerpo ni su <code>code</code>: si necesita el <code>code</code>, haga esa llamada por HTTP y lea el cuerpo.</>}
 
 | Estado | Significado |
 |---|---|
@@ -208,13 +244,39 @@ respuesta.
 | 401 | Credenciales rechazadas. El SDK renueva y reintenta una vez antes de reportarlo |
 | 403 | Autenticado, pero esta credencial no tiene el permiso de la organización |
 | 404 | El recurso no existe, o pertenece a otra organización o a un espacio de trabajo que la credencial no puede ver. No se distinguen, de forma intencional |
+| 408 | La subida a la verificación por archivo superó el tiempo máximo |
 | 409 | El recurso no está en un estado que permita la operación |
-| 429 | Una cuota de la organización está agotada |
+| 410 | El archivo que se pide restaurar ya superó su plazo de conservación |
+| 413 | El archivo enviado a la verificación supera el tamaño máximo |
+| 429 | El servidor no procesó la solicitud: una cuota agotada (`QUOTA_EXCEEDED`), un límite de tasa (`RATE_LIMITED`) o demasiadas restauraciones en curso (`RESTORE_LIMIT_REACHED`) |
+| 503 | Un servicio del que depende la operación no respondió |
 
 El error contiene un estado y un mensaje, **sin** el objeto `Response`: registrarlo en un log no
-expone su encabezado `Authorization`. Los mensajes nunca incluyen su secreto, aunque la respuesta
+expone su encabezado `Authorization`. Tampoco trae el cuerpo, de modo que un 429 por cuota y uno
+por límite de tasa se ven iguales; si necesita el `code`, haga esa llamada con `fetch` y lea el
+cuerpo. Los mensajes nunca incluyen su secreto, aunque la respuesta
 de bb-sign lo contenga. [Errores](/sign/developers/errors/) incluye la tabla completa y el cuerpo
 del error.
+
+## Novedades del contrato
+
+El SDK se genera a partir del contrato OpenAPI, de modo que una entrega actual ya tiene tipados los
+campos que se agregaron desde la primera:
+
+- `EnvelopeResponse`: `archived`, `archivedAt`, `retention` y `restoresInProgress`.
+- `DocumentWithUrlsResponse`: `originalSha256`, y `original` y `signed` (`DocumentFile`, con
+  `availability`, `deletesAt`, `archivesAt`, `availableUntil` y `restorable`).
+- `WebhookEventData`: `evidenceStatus`, `signedDocumentsStatus`, `documents`, `documentsPath`,
+  `evidenceCertificate`, `auditChainHead`, `retention` y `document`; `WebhookEventSigner.authMethod`.
+- Los tipos de evento `envelope.evidence_issued` y `document.restored`.
+
+Un evento de un tipo que su código no conoce debe ignorarse: pueden añadirse tipos nuevos.
+
+## Versiones
+
+La versión es <Fact of={SDK.js.version} />. Las entregas posteriores conservaron ese número aunque
+agregaron operaciones y campos, de modo que la versión no basta para saber qué tarball tiene. Si
+no está seguro de tener la entrega actual, pídala antes de integrar los campos de esta página.
 
 ## Garantías de seguridad
 

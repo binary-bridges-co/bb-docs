@@ -1,0 +1,66 @@
+---
+title: "Sign-in security"
+description: "The administrators' second factor, the password policy and the protection against repeated attempts when signing in to bb-sign."
+product: sign
+audience: admin
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../../components/facts/Fact.astro';
+import { ADMIN_MFA, AUTH } from '../../../../facts/sign';
+
+Administrator accounts control your organization's users, credentials, webhooks and certificate, so
+bb-sign asks them for a second factor on top of the password. Every account, admin or not, also
+follows a password policy and is protected against repeated attempts.
+
+**Who:** organization admins and platform admins. Organization members and signers are never asked.
+**Where:** the bb-sign sign-in screen.
+
+## Second factor for administrators
+
+The second factor is a code from an authenticator app installed on the person's phone, such as
+Google Authenticator or Microsoft Authenticator. Each code has <Fact of={ADMIN_MFA.digits} /> digits,
+changes every <Fact of={ADMIN_MFA.periodSeconds} unit="seconds" /> and works only once.
+
+bb-sign asks for it at three moments:
+
+| Moment | What happens |
+| --- | --- |
+| First sign-in after the invitation | After setting the password, the **<Fact of={ADMIN_MFA.enrolmentTitleEn} />** screen shows a QR code. The person scans it with their app and types the code it generates. Without this step they do not reach the app. |
+| Every sign-in | After the password, the person types the current code from their app. |
+| Password reset | After choosing the new password, the person types the code from their app. That way, someone with access to the mailbox alone cannot get into an administrator account. |
+
+<Aside type="tip" title="Before you change phones">
+  Move the account to the authenticator app on the new phone before you delete the old one. If you
+  cannot complete the sign-in, contact Binary Bridges support.
+</Aside>
+
+{ADMIN_MFA.lostAuthenticatorResetBySupport.value && (
+  <p>
+    <strong>If you lost the authenticator app.</strong> Write to Binary Bridges support. The team
+    confirms your identity by a channel other than bb-sign, removes the second factor from the account
+    and, at the next sign-in, you set up the app again.
+    {!ADMIN_MFA.passwordResetClearsSecondFactor.value && ' Resetting the password does not remove the second factor, so it does not restore access.'}
+  </p>
+)}
+
+## Password policy
+
+Every bb-sign password, for any role, follows these rules:
+
+- It has between <Fact of={AUTH.passwordMinLength} /> and <Fact of={AUTH.passwordMaxLength} /> characters.
+- It is not the person's username or email.
+- It does not repeat any of the account's last <Fact of={AUTH.passwordHistory} /> passwords.
+
+## Protection against repeated attempts
+
+After <Fact of={AUTH.bruteForceFailures} /> failed sign-in attempts, bb-sign makes the account wait
+before it accepts a new one. If the failures continue, the wait grows in steps of
+<Fact of={AUTH.bruteForceWaitIncrementSeconds} unit="seconds" />, up to
+<Fact of={AUTH.bruteForceMaxWaitMinutes} unit="minutes" />. The account is never locked permanently,
+and the failure count resets after <Fact of={AUTH.bruteForceResetHours} unit="hours" />.
+
+If someone cannot get in, ask them to wait for the time shown and, if they do not remember their
+password, to use the reset link on the sign-in screen.
+
+<LinkCard title="Users and invitations" href="/en/sign/admin/users-and-invitations/" description="How to invite a person, which role to give them and how to resend the invitation." />

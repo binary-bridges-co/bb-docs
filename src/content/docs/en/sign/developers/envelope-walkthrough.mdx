@@ -1,17 +1,17 @@
 ---
 title: From credential to signed document
-description: Every call from the token to the signed PDF, in curl, JavaScript and Java, and how to safely retry a POST that got no response.
+description: Every call from the token to the signed PDF and the evidence certificate, in curl, JavaScript and Java, and how to retry a POST that got no response.
 product: sign
 audience: developer
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS } from '../../../../facts/sign';
+import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED } from '../../../../facts/sign';
 
 This guide walks through the complete integration flow: upload a PDF, create the envelope, add a
-second signer, send it, receive webhook confirmation that everyone signed and download the sealed
-PDF. It continues where the [quickstart](/en/sign/developers/quickstart/) ends. Each step shows the
+second signer, send it, receive webhook confirmation that everyone signed, download the sealed PDF
+and check its hash, and keep the evidence certificate. It continues where the [quickstart](/en/sign/developers/quickstart/) ends. Each step shows the
 same call in `curl`, JavaScript and Java; the tab you choose stays selected across the page.
 
 Requirements: the four environment variables from the quickstart (`BBSIGN_BASE_URL`,
@@ -222,11 +222,16 @@ response is a `SendResponse` with each signer's signing tokens.
 
 ## 6. Receive `envelope.completed`
 
-Register a webhook in **Settings**, tab **Webhooks**, subscribed to `envelope.completed`. When the
-last signer signs, bb-sign sends a signed event to your URL. Verify the signature over the raw
-body, respond `2xx` and then process the event. The payload contains the envelope id and status;
-the document is retrieved in step 7. [Webhooks](/en/sign/developers/webhooks/) describes delivery
-and retries.
+Register a webhook in **Settings**, tab **Webhooks**, subscribed to `envelope.completed` and
+`envelope.evidence_issued`. When the last signer signs, bb-sign sends a signed event to your URL
+**once** per envelope and subscription, with the evidence certificate when it is ready in time; if
+it is not, the certificate follows in `envelope.evidence_issued`. Verify the signature over the raw
+body, respond `2xx`, then process the event.
+
+The payload carries the envelope, each document's SHA-256 (`data.documents[].signedSha256`), the
+documents path, the evidence certificate's hashes and path, and the retention dates
+(`data.retention`). The files are fetched in step 7. [Webhooks](/en/sign/developers/webhooks/)
+describes delivery and retries.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
@@ -239,7 +244,15 @@ and retries.
 
     {"id":"3f8c1e2a-7d44-4b1a-9c0e-5a6b7c8d9e0f","type":"envelope.completed","apiVersion":"2026-08-09",
      "createdAt":"2026-10-10T14:22:31Z","data":{"envelope":{"id":"...","title":"Service agreement",
-     "status":"COMPLETED","createdAt":"...","expiresAt":null}}}
+     "status":"COMPLETED","createdAt":"...","expiresAt":null},
+     "evidenceStatus":"ISSUED","signedDocumentsStatus":"READY",
+     "documents":[{"documentId":"...","filename":"contract.pdf","originalSha256":"9f2c...","signedSha256":"4b7e..."}],
+     "documentsPath":"/api/v1/envelopes/.../documents",
+     "evidenceCertificate":{"evidenceId":"...","sha256":"c01d...","auditTrailSha256":"77aa...","language":"es",
+      "downloadPath":"/api/v1/envelopes/.../evidence-certificate/download"},
+     "auditChainHead":{"seq":12,"hash":"e3b0...","auditCoverage":{"level":"FULL","fullRows":12,"partialRows":0,
+      "lastPartialAt":null,"reasons":[],"migratedAt":null}},
+     "retention":{"archivesAt":null,"deletesAt":"2027-10-16T00:00:00Z"}}}
     ```
   </TabItem>
   <TabItem label="JavaScript">
@@ -256,7 +269,7 @@ and retries.
       }
       const event = JSON.parse(req.rawBody.toString('utf8'))
       res.sendStatus(200)
-      if (event.type === 'envelope.completed') void downloadSigned(event.data.envelope.id)
+      if (event.type === 'envelope.completed') void downloadSigned(event.data)
     })
     ```
   </TabItem>
@@ -270,63 +283,160 @@ and retries.
         if (!Webhooks.verify(signature, rawBody, System.getenv("BBSIGN_WEBHOOK_SECRET"))) {
             return ResponseEntity.status(401).build();
         }
-        WebhookEvent event = new ObjectMapper().readValue(rawBody, WebhookEvent.class);
-        if ("envelope.completed".equals(event.getType())) {
-            executor.submit(() -> downloadSigned(event.getData().getEnvelope().getId()));
+        WebhookEvent event = MAPPER.readValue(rawBody, WebhookEvent.class);
+        if (event.getType() == WebhookEvent.TypeEnum.ENVELOPE_COMPLETED) {
+            executor.submit(() -> {
+                downloadSigned(event.getData());
+                return null;
+            });
         }
         return ResponseEntity.ok().build();
     }
     ```
+
+    `getType()` returns an enum (`WebhookEvent.TypeEnum`), not a `String`: compare it with its
+    constants. `MAPPER` is the `ObjectMapper` from the [Java SDK](/en/sign/sdks/java/#verify-a-webhook)
+    page, with ISO-8601 dates and no failure on new fields; an unconfigured `new ObjectMapper()`
+    cannot read the event.
   </TabItem>
 </Tabs>
 
-## 7. List the documents and download the signed PDF
+## 7. Download the signed PDF and check its hash
 
-`GET /api/v1/envelopes/{id}/documents` returns each document with a `downloadUrl` (the original)
-and, once the envelope is `COMPLETED`, a `signedUrl` (the sealed copy). Both are presigned links
-valid for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />, and they are `null` if the
-credential does not hold `document:download` in the envelope's workspace. Treat them as secrets:
-they give access to the file without a token.
+`GET /api/v1/envelopes/{id}/documents` (the path in `data.documentsPath`) returns each document with
+a `downloadUrl` (the original) and a `signedUrl` (the sealed copy). Both are presigned links valid
+for <Fact of={ENVELOPE.downloadUrlSeconds} unit="s" />. Treat them as secrets: they grant access to
+the file without a token. `signedUrl` is `null` when:
+
+- the credential lacks `document:download` in the envelope's workspace;
+- the signed copy cannot be downloaded now: `signed.availability` is `ARCHIVED`,
+  `RESTORE_IN_PROGRESS` or `DELETED` (see [Retention and restores](/en/sign/developers/webhooks/#retention-and-restores)).
+  {!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && 'Today no file moves to archive storage, so in production this happens only when the retention period ends.'}
+
+Compute the SHA-256 of each downloaded PDF and compare it with `data.documents[].signedSha256`. If
+`data.signedDocumentsStatus` is `PREPARING`, that hash is not known yet: do not compare it, and
+download again later.
 
 <Tabs syncKey="lang">
   <TabItem label="curl">
     ```bash
-    SIGNED_URL=$(curl -s "$BBSIGN_BASE_URL/api/v1/envelopes/$ENVELOPE_ID/documents" \
-      -H "Authorization: Bearer $TOKEN" | jq -r '.[0].signedUrl')
+    DOCUMENTS=$(curl -s "$BBSIGN_BASE_URL/api/v1/envelopes/$ENVELOPE_ID/documents" \
+      -H "Authorization: Bearer $TOKEN")
 
-    curl -s -o contract-signed.pdf "$SIGNED_URL"
+    echo "$DOCUMENTS" | jq -r '.[0].signed.availability'   # AVAILABLE or RESTORED: downloadable
+    curl -s -o contract-signed.pdf "$(echo "$DOCUMENTS" | jq -r '.[0].signedUrl')"
+    shasum -a 256 contract-signed.pdf                      # must equal data.documents[0].signedSha256
     ```
   </TabItem>
   <TabItem label="JavaScript">
     ```js
+    import { createHash } from 'node:crypto'
     import { writeFile } from 'node:fs/promises'
 
-    async function downloadSigned(envelopeId) {
-      const documents = await client.envelopes.listEnvelopeDocuments({ id: envelopeId })
+    async function downloadSigned(data) {
+      const expected = new Map((data.documents ?? []).map((d) => [d.documentId, d.signedSha256]))
+      const documents = await client.envelopes.listEnvelopeDocuments({ id: data.envelope.id })
       for (const document of documents) {
-        const pdf = await fetch(document.signedUrl)
-        await writeFile(`${document.id}-signed.pdf`, Buffer.from(await pdf.arrayBuffer()))
+        if (!document.signedUrl) continue // not downloadable now: see document.signed.availability
+        const pdf = Buffer.from(await (await fetch(document.signedUrl)).arrayBuffer())
+        const sha256 = createHash('sha256').update(pdf).digest('hex')
+        const want = expected.get(document.id)
+        if (want && want !== sha256) throw new Error(`SHA-256 mismatch for document ${document.id}`)
+        await writeFile(`${document.id}-signed.pdf`, pdf)
       }
     }
     ```
   </TabItem>
   <TabItem label="Java">
     ```java
-    void downloadSigned(UUID envelopeId) throws Exception {
+    void downloadSigned(WebhookEventData data) throws Exception {
+        Map<UUID, String> expected = new HashMap<>();
+        if (data.getDocuments() != null) {
+            for (WebhookEventDocument d : data.getDocuments()) {
+                expected.put(d.getDocumentId(), d.getSignedSha256());
+            }
+        }
         List<DocumentWithUrlsResponse> documents =
-                client.execute(client.envelopes().listEnvelopeDocuments(envelopeId));
+                client.execute(client.envelopes().listEnvelopeDocuments(data.getEnvelope().getId()));
         HttpClient http = HttpClient.newHttpClient();
         for (DocumentWithUrlsResponse document : documents) {
+            if (document.getSignedUrl() == null) {
+                continue; // not downloadable now: see document.getSigned().getAvailability()
+            }
             HttpRequest download = HttpRequest.newBuilder(URI.create(document.getSignedUrl())).build();
-            http.send(download, HttpResponse.BodyHandlers.ofFile(Path.of(document.getId() + "-signed.pdf")));
+            byte[] pdf = http.send(download, HttpResponse.BodyHandlers.ofByteArray()).body();
+            String sha256 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(pdf));
+            String want = expected.get(document.getId());
+            if (want != null && !want.equals(sha256)) {
+                throw new IOException("SHA-256 mismatch for document " + document.getId());
+            }
+            Files.write(Path.of(document.getId() + "-signed.pdf"), pdf);
         }
     }
     ```
   </TabItem>
 </Tabs>
 
-Archive the documents you download: bb-sign keeps signed documents for a fixed period, and
-conservation after that is the organization's responsibility. See
+## 8. Keep the evidence certificate
+
+When `data.evidenceStatus` is `ISSUED`, the [evidence certificate](/en/sign/concepts/evidence-certificate/)
+is ready. `GET data.evidenceCertificate.downloadPath` answers JSON with `downloadUrl` (the PDF) and
+`auditTrailUrl` (the frozen audit trail), both valid for
+<Fact of={EVIDENCE.downloadLinkSeconds} unit="s" />, and their hashes. It requires
+<code>{EVIDENCE.downloadPermission.value}</code>, and every call is recorded in the envelope's
+audit trail. The SDKs do not include this route: call it over HTTP with the token from step 1. If
+the status is `PENDING`, wait for `envelope.evidence_issued`.
+
+<Tabs syncKey="lang">
+  <TabItem label="curl">
+    ```bash
+    EVIDENCE=$(curl -s "$BBSIGN_BASE_URL/api/v1/envelopes/$ENVELOPE_ID/evidence-certificate/download" \
+      -H "Authorization: Bearer $TOKEN")
+
+    curl -s -o evidence-certificate.pdf "$(echo "$EVIDENCE" | jq -r .downloadUrl)"
+    shasum -a 256 evidence-certificate.pdf                 # must equal .sha256 and data.evidenceCertificate.sha256
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    async function downloadEvidence(data) {
+      const response = await fetch(`${process.env.BBSIGN_BASE_URL}${data.evidenceCertificate.downloadPath}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const { downloadUrl, sha256 } = await response.json()
+      const pdf = Buffer.from(await (await fetch(downloadUrl)).arrayBuffer())
+      if (createHash('sha256').update(pdf).digest('hex') !== sha256) throw new Error('SHA-256 mismatch')
+      await writeFile(`${data.envelope.id}-evidence-certificate.pdf`, pdf)
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    void downloadEvidence(WebhookEventData data) throws Exception {
+        HttpClient http = HttpClient.newHttpClient();
+        HttpRequest links = HttpRequest.newBuilder(
+                        URI.create(System.getenv("BBSIGN_BASE_URL") + data.getEvidenceCertificate().getDownloadPath()))
+                .header("Authorization", "Bearer " + token)
+                .build();
+        EvidenceCertificateDownloadResponse evidence = MAPPER.readValue(
+                http.send(links, HttpResponse.BodyHandlers.ofString()).body(),
+                EvidenceCertificateDownloadResponse.class);
+        byte[] pdf = http.send(HttpRequest.newBuilder(URI.create(evidence.getDownloadUrl())).build(),
+                HttpResponse.BodyHandlers.ofByteArray()).body();
+        String sha256 = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(pdf));
+        if (!sha256.equals(evidence.getSha256())) {
+            throw new IOException("SHA-256 mismatch for the evidence certificate");
+        }
+        Files.write(Path.of(data.getEnvelope().getId() + "-evidence-certificate.pdf"), pdf);
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+Archive what you download: bb-sign keeps each file of the envelope for
+<Fact of={RETENTION_POLICY.retentionDays} unit="days" /> (the signed copy from the completion and
+the certificate from its issue), and `data.retention.deletesAt` says from which date they are no
+longer available. Keeping them after that is the organization's responsibility. See
 [Scope and retention](/en/sign/legal/retention/).
 
 ## Retry a POST that got no response
@@ -345,7 +455,7 @@ request.
 
 ## Envelope workspace
 
-The envelope in this walkthrough was filed in **General** because no `workspaceId` was sent. A
+The envelope in this walkthrough went to **General** because no `workspaceId` was sent. A
 credential accesses the workspaces an admin assigned to it; `GET /api/v1/workspaces` lists them,
 and each `EnvelopeResponse` includes `workspaceId` and `workspaceName`. Envelopes in workspaces the
 credential cannot read return `404` and do not appear in lists.

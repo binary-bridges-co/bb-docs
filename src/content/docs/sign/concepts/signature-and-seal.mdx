@@ -40,7 +40,7 @@ o, si no hay marcador, en la esquina inferior derecha de la última página (con
 | Nombre y correo | Los del firmante, tal como los registró el remitente. |
 | Fecha | El día en que firmó, en UTC. |
 | Firma | La imagen que dibujó o escribió. |
-| Hash | Un resumen SHA-256 calculado con el nombre, el correo, la fecha, el identificador del sobre y la huella del certificado. Parte de él aparece como texto alrededor del sello circular, y el patrón del sello se deriva de él. |
+| Hash | Un resumen SHA-256 calculado con el nombre, el correo, la fecha y hora de la firma, el identificador del sobre, la huella del certificado y la huella de los documentos firmados. Parte de él aparece como texto alrededor del sello circular, y el patrón del sello se deriva de él. Consulte [Evidencia y auditoría](/sign/concepts/evidence-and-audit/#el-código-qr-del-sello). |
 | Código QR | Enlaza con la página pública de verificación de bb-sign, con el identificador del sobre y el inicio del hash. Consulte [Verificar un documento firmado](/sign/signing/verify-a-document/). |
 
 ### La firma con certificado
@@ -59,8 +59,10 @@ organización, y hay una por documento.
   El sello garantiza que el documento firmado es el que bb-sign produjo al completarse el sobre y
   que **no ha cambiado desde entonces**: si alguien edita el PDF, la firma con certificado deja de
   validar. También deja constancia de quién lo selló y cuándo. La identidad del firmante la respalda
-  la evidencia del proceso (correo, código de verificación, dirección IP y registro de auditoría).
-  Consulte [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
+  la evidencia del proceso: el método de identificación (correo y, si se exigió, código de
+  verificación), la dirección IP y el registro de auditoría, reunidos en el
+  [certificado de evidencia](/sign/concepts/evidence-certificate/). Consulte
+  [Evidencia y auditoría](/sign/concepts/evidence-and-audit/).
 </Aside>
 
 ## El certificado de la organización
@@ -70,13 +72,34 @@ sello lleva el nombre de la organización y los lectores de PDF lo reconocen com
 elegirlo, dónde adquirirlo y cómo cargarlo se explica en
 [Certificado propio de la organización](/sign/admin/own-certificate/).
 
+Al subir el certificado, bb-sign revisa su cadena y muestra su estado: **Cadena completa**, **Sin
+raíz**, **Solo el certificado** o **Autofirmado**. Solo se admiten llaves RSA, y la cadena puede
+tener como máximo <Fact of={CERTIFICATE.maxChainLength} /> certificados. La subida se rechaza, sin
+cambiar el certificado activo, si un certificado de la cadena está vencido o aún no es válido, si la
+cadena está rota o desordenada, si un emisor no es una autoridad de certificación, si la llave no
+corresponde al certificado o si el archivo no trae una llave privada o trae más de una.
+
+bb-sign avisa por correo a los administradores de la organización cuando a su certificado propio le
+faltan {CERTIFICATE.expiryNoticeDays.value.join(' y ')} días para vencer. Consulte
+[Correos que envía bb-sign](/sign/reference/emails/).
+
+### El certificado de pruebas
+
 Mientras la organización no configure el suyo, bb-sign sella con el certificado de pruebas de Binary
 Bridges, cuyo sujeto es <Fact of={CERTIFICATE.defaultSubject} />, y el campo visible dice
 "Digitally signed by" <Fact of={CERTIFICATE.defaultDisplayName} />. Este certificado es
 autofirmado: el sello protege igualmente la integridad del documento y detecta cualquier cambio,
 pero los lectores de PDF lo muestran como no confiable.
 
-bb-sign incrusta en el PDF el certificado de la organización (<Fact of={CERTIFICATE.chainEmbedded} />),
-sin la cadena de la autoridad que lo emitió. Para que un lector muestre la firma como verificada,
-debe tener instalada la raíz de esa autoridad; por eso conviene elegir un certificado emitido por
-una autoridad reconocida por los lectores que usarán sus destinatarios.
+En **Configuración**, pestaña **Certificado**, la aplicación lo indica con el aviso **Certificado de
+pruebas predeterminado**: "No se bloquea el envío: mientras no configure uno propio, los documentos se
+sellan con el certificado de pruebas.". El certificado de evidencia de esos sobres también advierte
+que se selló con el certificado de pruebas.
+
+### La cadena dentro del PDF
+
+bb-sign incrusta en el PDF la cadena completa que contiene el archivo del certificado: el certificado
+de la organización y los certificados intermedios y la raíz que incluya. Por eso conviene exportar el
+archivo .p12 con su ruta de certificación completa. Aun así, para que un lector muestre la firma como
+verificada, debe confiar en la raíz de la autoridad emisora; elija un certificado emitido por una
+autoridad reconocida por los lectores que usarán sus destinatarios.

@@ -1,32 +1,82 @@
 ---
 title: Verificar un documento firmado
-description: Cómo confirmar una firma con el código QR del sello, qué indica cada resultado y cómo comprobar la integridad del PDF con el sello del certificado.
+description: Cómo comprobar un PDF firmado subiendo el archivo, cómo confirmar una firma con el código QR del sello y qué indica cada resultado.
 product: sign
 audience: all
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { CERTIFICATE } from '../../../facts/sign';
+import { CERTIFICATE, DOCUMENTS, ENVELOPE, URLS, VERIFY } from '../../../facts/sign';
 
-Cualquier persona que tenga el PDF firmado puede verificarlo sin cuenta. El código QR del sello
-confirma los datos de la firma, y el sello del certificado de la organización confirma que el
-archivo no ha cambiado.
+export const verifyUrl = `${URLS.app.value}${URLS.verifyPath.value}`;
+
+Cualquier persona que tenga el PDF firmado puede verificarlo sin cuenta, de tres formas:
+
+- **Comprobar un archivo** confirma que el PDF es exactamente un documento firmado que produjo
+  bb-sign. Para los documentos firmados desde la versión <Fact of={DOCUMENTS.signedSha256Since} />
+  de bb-sign, es la forma más sencilla de comprobar que el archivo no cambió.
+- **El código QR del sello** confirma que los datos de una firma coinciden con los que bb-sign
+  registró.
+- **El sello del certificado**, en un lector de PDF, muestra si el archivo cambió después de
+  sellarse y a nombre de quién está el certificado.
+
+## Comprobar un archivo
+
+Abra <a href={verifyUrl}>{verifyUrl}</a>. Sin datos de un código QR, la página **Verificación de
+firma** muestra **Comprobar un archivo**: "Elige un PDF que hayas recibido. Calculamos su huella y te
+decimos si es un documento firmado producido por Binary Bridges Sign. El archivo no se guarda."
+
+Pulse **Elegir un archivo** y seleccione el PDF. bb-sign calcula su huella SHA-256 y la busca entre
+los documentos firmados que produjo, también los de sobres archivados. El archivo no se guarda.
+
+| Resultado | Qué significa |
+|---|---|
+| **Firma válida** y "Este es un documento firmado producido por Binary Bridges Sign." | El archivo es, byte a byte, un PDF firmado por bb-sign. La página muestra cuándo se completó el sobre (**Completado**), su identificador (**Documento**), quiénes firmaron (**Firmado por**, con sus correos enmascarados y la fecha de cada firma), la "Huella del archivo (SHA-256)" y la "Huella del certificado" que lo selló. |
+| **Firma no válida** y "No tenemos ningún documento firmado con esta huella. Puede haberse modificado después de la firma, o no ser el archivo firmado (un original sin firmar no coincide)." | Ningún documento firmado por bb-sign tiene esa huella registrada. Solo coinciden los PDF firmados: un original sin firmar, o un PDF firmado al que se le cambió cualquier cosa, no coincide. Un documento firmado antes de la versión <Fact of={DOCUMENTS.signedSha256Since} /> de bb-sign puede no coincidir, porque su huella no siempre se registró: compruébelo con el código QR o con el sello del certificado. |
+
+Para una comprobación más detallada, compare la "Huella del archivo (SHA-256)" con la huella del
+documento firmado que figura en el certificado de evidencia del sobre.
+
+| Mensaje | Qué pasó | Qué hacer |
+|---|---|---|
+| "Este archivo supera los <Fact of={VERIFY.fileMaxMb} unit="MB" />, el máximo que esta página puede comprobar." | El archivo es más grande que el máximo admitido. | Verifique el documento con el código QR de su sello o con el sello del certificado. |
+| "Demasiadas verificaciones desde tu conexión. Espera un minuto e inténtalo de nuevo." | Desde su conexión se comprobaron más de <Fact of={VERIFY.fileRatePerMinute} /> archivos en un minuto. | Espere un minuto y vuelva a elegir el archivo. |
+| "La carga tardó demasiado en verificarse. Inténtalo de nuevo con una conexión más rápida." | La carga no terminó en <Fact of={VERIFY.fileMaxSeconds} unit="s" />. | Vuelva a intentarlo con una conexión más rápida. |
 
 ## Escanear el código QR
 
 Al escanear el código QR del sello se abre la página **Verificación de firma**, que muestra el
 resultado y cuatro datos: **Firmante**, **Correo**, **Firmado** y **Documento** (el identificador
-del sobre). Si el enlace está incompleto, la página muestra "A este enlace le faltan los datos de
-verificación. Vuelve a escanear el código QR del documento firmado, o abre el enlace tal y como
-aparece allí."
+del sobre). Si abre la página sin los datos del código QR, verá **Comprobar un archivo**.
+
+El código QR comprueba los datos que bb-sign registró para esa firma; no lee el archivo PDF. Para
+comprobar el archivo, use **Comprobar un archivo**.
+
+<Aside type="caution" title="Documentos de sobres archivados">
+  Hoy, el código QR del sello de un sobre que ya pasó a **Archivados**
+  (<Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación) muestra **Firma no
+  válida**, aunque el documento esté intacto. Si el documento se firmó desde la versión
+  <Fact of={DOCUMENTS.signedSha256Since} /> de bb-sign, **Comprobar un archivo** lo confirma aunque el
+  sobre esté archivado. Para documentos firmados antes, o si ninguna de las dos comprobaciones lo
+  confirma, abra el PDF
+  en un lector: su panel de firmas muestra la firma y el certificado. Si tiene dudas, consulte a quien
+  le envió el documento o al soporte de Binary Bridges.
+</Aside>
 
 ## Resultado "Firma válida"
 
 **Firma válida** indica que los datos del sello (firmante, correo, fecha y sobre) coinciden con los
-que bb-sign registró al momento de la firma. Para comprobarlo, bb-sign recalcula la huella del
-sello, <Fact of={CERTIFICATE.sealHashFormula} />, con los datos registrados y el certificado
-activo de la organización, y la compara con la huella impresa en el sello.
+que bb-sign registró al momento de la firma. Para comprobarlo, bb-sign recalcula la huella del sello
+y la compara con la impresa en él.
+
+Desde la versión <Fact of={VERIFY.qrUsesStoredFingerprintSince} /> de bb-sign, la huella se calcula
+como <Fact of={CERTIFICATE.sealHashFormulaV2} />, donde cada `<len>` es la longitud en bytes (UTF-8)
+del campo que le sigue, `signedAt` es la fecha y hora de la firma en ISO-8601 al segundo,
+`certFingerprint` es la huella del certificado que selló, guardada con la firma, y `documentSetSha256`
+es la huella del conjunto de documentos que el firmante vio. Así, un sello sigue verificándose aunque la organización cambie de certificado
+después. Las firmas anteriores usan <Fact of={CERTIFICATE.sealHashFormulaV1} /> con la huella guardada
+o, si no la hay, con el certificado activo de la organización.
 
 ## Resultado "Firma no válida"
 
@@ -34,20 +84,21 @@ activo de la organización, y la compara con la huella impresa en el sello.
 
 - un código QR o un enlace que no corresponde a una firma registrada, por ejemplo un enlace mal
   copiado;
-- un cambio de certificado en la organización después de la firma: la huella incluye el
-  certificado, de modo que los sellos anteriores dejan de coincidir aunque el documento esté
-  intacto;
-- la ausencia de un certificado activo para comparar ("Certificate not available for
-  verification").
+- un sobre que ya pasó a **Archivados**: hoy la comprobación por código QR falla para esos sobres.
+  Use **Comprobar un archivo** o el sello del certificado, como se indica más arriba;
+- documentos registrados que ya no coinciden con el conjunto al que quedó vinculada la firma;
+- en firmas anteriores a la versión <Fact of={VERIFY.qrUsesStoredFingerprintSince} />, un cambio de
+  certificado en la organización después de la firma, o la ausencia de un certificado activo para
+  comparar ("Certificate not available for verification").
 
 En cualquiera de estos casos, la organización que envió el documento puede confirmar la firma desde
 el historial del sobre.
 
-## Comprobar la integridad del PDF
+## Comprobar la integridad del PDF en un lector
 
-<Aside type="caution" title="Use el sello del certificado para comprobar el archivo">
+<Aside type="caution" title="El código QR no comprueba el archivo">
   El código QR verifica los datos registrados en bb-sign. Para confirmar que el archivo PDF no se
-  modificó después de firmarse, revise el sello del certificado.
+  modificó después de firmarse, use **Comprobar un archivo** o revise el sello del certificado.
 </Aside>
 
 Al completarse el sobre, bb-sign sella cada PDF con el certificado de la organización. Abra el
@@ -60,11 +111,11 @@ lateral). Allí puede ver:
   defecto, Acrobat lo marca como no confiable. Consulte
   [Certificado propio de la organización](/sign/admin/own-certificate/).
 
-El PDF incluye el certificado final sin la cadena completa, por lo que Acrobat puede solicitarle
-que confíe en él manualmente.
+El PDF incluye la cadena de certificados que la organización cargó. Acrobat reconoce el sello como
+confiable cuando la raíz de esa cadena está en su lista de confianza.
 
 ## Si el servicio no responde
 
 Si la página muestra "No pudimos contactar con el servicio de verificación. Esto no significa que
 la firma sea inválida — inténtalo de nuevo en un momento.", se trata de una interrupción temporal
-del servicio. Escanee de nuevo el código QR más tarde.
+del servicio. Vuelva a intentarlo más tarde.

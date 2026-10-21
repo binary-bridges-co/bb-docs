@@ -1,17 +1,17 @@
 ---
 title: Sobres archivados
-description: "La vista Sobres Archivados: qué sobres pasan al archivo y cuándo, qué información muestra y cómo encontrar un sobre cerrado."
+description: "La vista Sobres Archivados: qué sobres pasan a ella y cuándo, cómo abrir un sobre archivado y qué sigue disponible para descargar."
 product: sign
 audience: user
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE } from '../../../facts/sign';
+import { DOCUMENTS, ENVELOPE, RETENTION_POLICY } from '../../../facts/sign';
 
 bb-sign mantiene la lista de Sobres centrada en el trabajo en curso. Los sobres cerrados pasan,
-tras un tiempo, a la vista **Sobres Archivados**, donde siguen disponibles para consulta en modo de
-solo lectura.
+tras un tiempo, a la vista **Sobres Archivados**, donde siguen disponibles en modo de solo lectura,
+con sus documentos, su evidencia y su registro de auditoría.
 
 ## Qué sobres se archivan y cuándo
 
@@ -21,6 +21,9 @@ Cada noche, a las <Fact of={ENVELOPE.archiveCron} />, bb-sign archiva los sobres
 
 - El plazo cuenta desde la **creación** del sobre. Un sobre que tardó en completarse se archiva
   poco después de completarse.
+- Un sobre completado solo se archiva cuando sus PDF firmados ya se generaron. Si alguno sigue sin
+  generarse <Fact of={ENVELOPE.stampHoldDays} unit="días" /> después, el sobre permanece en
+  **Sobres** y el equipo de bb-sign recibe una alerta.
 - Los sobres en **Borrador**, **Enviado** o **En Progreso** permanecen en la lista activa. Si uno
   de ellos no se va a completar, [cancélelo](/sign/sending/cancel/).
 
@@ -39,18 +42,47 @@ fila muestra:
   Archivado ...");
 - el espacio de trabajo y el estado con el que se archivó.
 
-## Conservación de la información
+## Abrir un sobre archivado
+
+Pulse el título de una fila para abrir el sobre. La página es la misma que en **Sobres**, con el
+aviso "Archivado el \{fecha\}. Este sobre es de solo lectura; sus documentos siguen disponibles para
+descargar." Desde ella puede:
+
+- descargar el **PDF Original** y el **PDF Firmado** de cada documento, con el mismo permiso que en
+  **Sobres**. Consulte [Descargar documentos firmados](/sign/sending/download-signed-documents/);
+- si el sobre se completó, descargar su certificado de evidencia y el registro de auditoría en JSON.
+  Consulte
+  [Certificado de evidencia](/sign/concepts/evidence-certificate/);
+- consultar el registro de auditoría y la sección **Conservación**.
+
+Un sobre archivado no admite acciones: no se pueden cambiar sus etiquetas ni cancelarlo.
+
+## Archivados no es almacenamiento de archivo
+
+Pasar a **Archivados** es un cambio de lista, no de almacenamiento: los archivos del sobre se
+descargan igual que antes. El almacenamiento de archivo es otra cosa: los términos permiten trasladar
+allí un archivo con más de <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" />, y entonces
+hay que solicitar su restauración para descargarlo. Hoy bb-sign no traslada ningún archivo a ese
+almacenamiento. Consulte [Conservación y restauración](/sign/sending/retention-and-restore/).
 
 Archivar un sobre no elimina nada: el sobre, sus firmantes, sus documentos y su evidencia se
-conservan según [Alcance y conservación](/sign/legal/retention/). La vista de archivo muestra la
-fila de cada sobre; descargue los PDF firmados y consulte el registro de auditoría mientras el sobre
-está en **Sobres**. Consulte
-[Descargar documentos firmados](/sign/sending/download-signed-documents/).
+conservan hasta que se cumple el plazo de cada archivo, <Fact of={RETENTION_POLICY.retentionDays} unit="días" />.
+Consulte [Alcance y conservación](/sign/legal/retention/).
 
-<Aside type="caution" title="Entregue su copia a los firmantes antes del archivo">
-  Mientras el sobre está en **Sobres**, cada firmante puede volver a su enlace y descargar su copia
-  firmada. Al archivarse, ese enlace abre **Enlace no disponible**. Si un firmante necesita su
-  copia más adelante, envíele el PDF firmado que usted descargó.
+## Los firmantes conservan el acceso
+
+El enlace de cada firmante sigue dando acceso a su copia firmada y a su certificado de evidencia
+después de que el sobre pasa a **Archivados**, hasta que se cumple el plazo de conservación de su
+copia, contado desde que el sobre se completó. Si su copia llegara a estar en almacenamiento de
+archivo, el propio firmante puede solicitarla desde su enlace. Consulte
+[Firmar y descargar](/sign/signing/sign-and-download/).
+
+<Aside type="caution" title="Verificar un sobre archivado">
+  Hoy, al escanear el código QR del sello de un sobre que ya está en **Archivados**, la página de
+  verificación muestra **Firma no válida** aunque el documento esté intacto. Un documento firmado desde
+  la versión <Fact of={DOCUMENTS.signedSha256Since} /> de bb-sign se confirma con **Comprobar un
+  archivo**; uno anterior, con el panel de firmas de un lector de PDF. Consulte
+  [Verificar un documento firmado](/sign/signing/verify-a-document/).
 </Aside>
 
 ## Encontrar un sobre cerrado
@@ -59,4 +91,4 @@ Si un sobre completado, cancelado o expirado ya no aparece en **Sobres**, búsqu
 **Archivados**. Si tampoco aparece allí, es posible que pertenezca a un espacio de trabajo al que
 usted no tiene acceso: pida a un administrador que lo verifique.
 
-<LinkCard title="Enviar y seguir" href="/sign/sending/send-and-track/" description="Los estados y filtros de la lista de sobres activos." />
+<LinkCard title="Conservación y restauración" href="/sign/sending/retention-and-restore/" description="Cuánto tiempo se conserva cada archivo y cómo se solicita uno archivado." />

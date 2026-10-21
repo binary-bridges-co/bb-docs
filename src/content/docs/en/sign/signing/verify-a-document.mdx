@@ -1,49 +1,101 @@
 ---
 title: Verify a signed document
-description: How to confirm a signature with the QR code on the seal, what each result means and how to check the PDF's integrity with the certificate seal.
+description: How to check a signed PDF by uploading the file, how to confirm a signature with the QR code on the seal and what each result means.
 product: sign
 audience: all
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { CERTIFICATE } from '../../../../facts/sign';
+import { CERTIFICATE, DOCUMENTS, ENVELOPE, URLS, VERIFY } from '../../../../facts/sign';
 
-Anyone who has the signed PDF can verify it without an account. The QR code on the seal confirms
-the signature details, and the organization's certificate seal confirms that the file has not
-changed.
+export const verifyUrl = `${URLS.app.value}${URLS.verifyPath.value}`;
+
+Anyone who has the signed PDF can verify it without an account, in three ways:
+
+- **Check a file** confirms that the PDF is exactly a signed document produced by bb-sign. For
+  documents signed since bb-sign <Fact of={DOCUMENTS.signedSha256Since} />, it is the simplest way to
+  check that the file has not changed.
+- **The QR code on the seal** confirms that a signature's details match what bb-sign recorded.
+- **The certificate seal**, in a PDF reader, shows whether the file changed after it was sealed and
+  whose name the certificate is in.
+
+## Check a file
+
+Open <a href={verifyUrl}>{verifyUrl}</a>. Without the details of a QR code, the **Signature
+Verification** page shows **Check a file**: "Choose a PDF you received. We compute its fingerprint here
+and tell you whether it is a signed document produced by Binary Bridges Sign. The file is not stored."
+
+Press **Choose a file** and select the PDF. bb-sign computes its SHA-256 fingerprint and looks it up
+among the signed documents it produced, those of archived envelopes too. The file is not stored.
+
+| Result | What it means |
+|---|---|
+| **Valid Signature** and "This is a signed document produced by Binary Bridges Sign." | The file is, byte for byte, a PDF signed by bb-sign. The page shows when the envelope completed (**Completed**), its identifier (**Document**), who signed (**Signed by**, with their masked email addresses and the date of each signature), the "File fingerprint (SHA-256)" and the "Certificate fingerprint" that sealed it. |
+| **Invalid Signature** and "We have no signed document with this fingerprint. It may have been changed after signing, or it may not be the signed file (an unsigned original does not match)." | No document signed by bb-sign has that fingerprint recorded. Only signed PDFs match: an unsigned original, or a signed PDF in which anything was changed, does not match. A document signed before bb-sign <Fact of={DOCUMENTS.signedSha256Since} /> may not match, because its fingerprint was not always recorded: check it with the QR code or the certificate seal. |
+
+For a more detailed check, compare the "File fingerprint (SHA-256)" with the signed document's
+fingerprint in the envelope's evidence certificate.
+
+| Message | What happened | What to do |
+|---|---|---|
+| "This file is larger than <Fact of={VERIFY.fileMaxMb} unit="MB" />, the most this page can check." | The file is larger than the maximum accepted. | Verify the document with the QR code on its seal or with the certificate seal. |
+| "Too many verifications from your connection. Wait a minute and try again." | More than <Fact of={VERIFY.fileRatePerMinute} /> files were checked from your connection within a minute. | Wait a minute and choose the file again. |
+| "The upload took too long to be checked. Try again with a faster connection." | The upload did not finish within <Fact of={VERIFY.fileMaxSeconds} unit="s" />. | Try again with a faster connection. |
 
 ## Scan the QR code
 
 Scanning the QR code on the seal opens the **Signature Verification** page, which shows the result
-and four details: **Signer**, **Email**, **Signed** and **Document** (the envelope identifier). If
-the link is incomplete, the page shows "This link is missing its verification details. Scan the QR
-code on the signed document again, or open the link exactly as it appears there."
+and four details: **Signer**, **Email**, **Signed** and **Document** (the envelope identifier). If you
+open the page without the QR code's details, you see **Check a file**.
+
+The QR code checks the details bb-sign recorded for that signature; it does not read the PDF file. To
+check the file, use **Check a file**.
+
+<Aside type="caution" title="Documents from archived envelopes">
+  Today, the QR code on the seal of an envelope that has moved to **Archived**
+  (<Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after its creation) shows **Invalid
+  Signature**, even though the document is intact. If the document was signed since bb-sign
+  <Fact of={DOCUMENTS.signedSha256Since} />, **Check a file** confirms it even though the envelope is
+  archived. For documents signed earlier, or if neither check confirms it, open the PDF in a reader: its signature
+  panel shows the signature and the certificate. If in doubt, ask the person who sent you the document
+  or Binary Bridges support.
+</Aside>
 
 ## "Valid Signature" result
 
 **Valid Signature** means that the details on the seal (signer, email, date and envelope) match
 what bb-sign recorded at the time of signing. To check this, bb-sign recomputes the seal's
-fingerprint, <Fact of={CERTIFICATE.sealHashFormula} />, from the recorded details and the
-organization's active certificate, and compares it with the fingerprint printed on the seal.
+fingerprint and compares it with the one printed on the seal.
+
+Since bb-sign <Fact of={VERIFY.qrUsesStoredFingerprintSince} />, the fingerprint is computed as
+<Fact of={CERTIFICATE.sealHashFormulaV2} />, where each `<len>` is the length in bytes (UTF-8) of the
+field that follows it, `signedAt` is the signing time in ISO-8601 to the second, `certFingerprint` is
+the fingerprint of the certificate that sealed it, stored with the signature, and `documentSetSha256`
+is the fingerprint of the set of documents the signer saw. A seal therefore still verifies even if the organization changes
+its certificate later. Earlier signatures use <Fact of={CERTIFICATE.sealHashFormulaV1} /> with the
+stored fingerprint or, when there is none, with the organization's active certificate.
 
 ## "Invalid Signature" result
 
 **Invalid Signature** means the fingerprint does not match. Possible causes:
 
 - a QR code or link that does not correspond to a recorded signature, such as a badly copied link;
-- a certificate change in the organization after the signature: the fingerprint includes the
-  certificate, so earlier seals stop matching even though the document is intact;
-- no active certificate to compare against ("Certificate not available for verification").
+- an envelope that has moved to **Archived**: the QR check currently fails for those envelopes. Use
+  **Check a file** or the certificate seal, as described above;
+- recorded documents that no longer match the set the signature was bound to;
+- for signatures made before <Fact of={VERIFY.qrUsesStoredFingerprintSince} />, a certificate change
+  in the organization after the signature, or no active certificate to compare against
+  ("Certificate not available for verification").
 
 In any of these cases, the organization that sent the document can confirm the signature from the
 envelope's history.
 
-## Check the PDF's integrity
+## Check the PDF's integrity in a reader
 
-<Aside type="caution" title="Use the certificate seal to check the file">
+<Aside type="caution" title="The QR code does not check the file">
   The QR code verifies the details recorded in bb-sign. To confirm that the PDF file was not
-  modified after signing, check the certificate seal.
+  modified after signing, use **Check a file** or check the certificate seal.
 </Aside>
 
 When the envelope completes, bb-sign seals every PDF with the organization's certificate. Open the
@@ -55,11 +107,11 @@ you can see:
   name. If the organization uses the default Binary Bridges testing certificate, Acrobat marks it
   as untrusted. See [Your own certificate](/en/sign/admin/own-certificate/).
 
-The PDF embeds the end certificate without the full chain, so Acrobat may ask you to trust it
-manually.
+The PDF embeds the certificate chain the organization uploaded. Acrobat recognizes the seal as
+trusted when the root of that chain is in its trust list.
 
 ## If the service does not respond
 
 If the page shows "We could not reach the verification service. This does not mean the signature
-is invalid — please try again in a moment.", the service is temporarily unavailable. Scan the QR
-code again later.
+is invalid — please try again in a moment.", the service is temporarily unavailable. Try again
+later.
