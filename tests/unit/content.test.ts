@@ -39,6 +39,10 @@ const FACT_DENYLIST: readonly RegExp[] = [
   /\b20\s*(por minuto|per minute)\b/i,
   /\b2\s*(h|horas|hours)\b/i,
   /\b400\s*(d[ií]as|days)\b/i,
+  // Added with bb-sign#292: the largest signature image a signer may pick, and the size above which the page says
+  // it will be reduced (SIGNATURE_UPLOAD), quoted UI strings included.
+  /\b10\s*MB\b/,
+  /\b1\s*MB\b/,
 ];
 
 /**

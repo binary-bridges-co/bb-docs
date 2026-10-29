@@ -1,32 +1,60 @@
 ---
 title: Sign and download
-description: How to draw or type your signature, what is recorded, how to download the signed copy and your evidence certificate, and how long they remain available.
+description: How to draw, type or upload your signature, what is recorded, how to download the signed copy and your evidence certificate, and how long they remain available.
 product: sign
 audience: signer
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY } from '../../../../facts/sign';
+import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD } from '../../../../facts/sign';
 
 On the **Add Your Signature** screen you sign the document and, once everyone has signed, download
 your sealed copy.
 
-## Draw or type your signature
+## Draw, type or upload an image
 
 - **Draw**: trace your signature with a finger, a stylus or the mouse in the box "Draw your
   signature here". **Clear** empties the box.
 - **Type**: enter your name in "Type your full name". bb-sign turns it into a signature in a
   handwriting font.
+- **Upload image**: use a photo or scan of the signature you made by hand. The next section
+  explains how.
 
-Then press **Submit Signature**. If the box is empty, you see "Please draw your signature." or
-"Please type your name."
+Then press **Submit Signature**. If there is no signature yet, you see "Please draw your
+signature.", "Please type your name." or "Choose an image of your signature."
+
+### Upload an image of your signature
+
+The page tells you which image works: "A photo or scan of your signature on light paper. PNG or
+JPEG, up to <Fact of={SIGNATURE_UPLOAD.maxSourceMb} unit="MB" />."
+
+1. Sign on light paper and take a photo of it or scan it.
+2. Press **Choose an image** and pick the file. On a phone you can take the photo with the camera
+   or pick it from the gallery.
+3. Check the preview: it shows your signature exactly as it will be stamped on the document. To
+   use another image, press **Replace image**.
+
+**Remove light background** is on by default: the page makes the paper transparent so that only
+the stroke appears in the seal. If the preview does not look right, turn it off and check the
+preview again.
+
+If the file is larger than <Fact of={SIGNATURE_UPLOAD.resizeNoticeMb} unit="MB" />, the page
+shows: "This image is larger than <Fact of={SIGNATURE_UPLOAD.resizeNoticeMb} unit="MB" />, so it
+will be reduced in size. If you don't want that, reduce the file size yourself and upload it
+again." It is only a notice: you can submit the signature as it is, or reduce the file yourself and
+pick it again.
+
+The image is prepared on your device. Only the prepared signature image reaches bb-sign, without the
+location and device data that photos often carry. If the page shows a message when you pick the
+image, see [If something goes wrong](/en/sign/signing/troubleshooting/).
 
 ## Information that is recorded
 
 When you submit your signature, bb-sign records, next to your name and email:
 
 - the image of your signature;
+- the form of the signature that the signing page declared: drawn, typed or uploaded image;
 - the date and time;
 - the IP address you signed from;
 - the browser you used;
@@ -34,6 +62,11 @@ When you submit your signature, bb-sign records, next to your name and email:
   code, with the channel, the masked destination and the time the code was accepted;
 - the SHA-256 fingerprint of the set of documents you signed, which binds your signature to those
   exact documents.
+
+The evidence certificate shows the form of the signature as "Signature mark (as declared by the
+signing client)", with the value "drawn on screen", "name typed on screen" or "image uploaded from
+the device". It is what the signing page declared: bb-sign does not infer it from the image. If the
+signature was recorded without that declaration, the certificate shows "not recorded".
 
 This information is part of the envelope's evidence and appears in its evidence certificate. Your
 name, email and the date also appear on the document's seal. The copy of the certificate you download

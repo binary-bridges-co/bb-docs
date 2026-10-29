@@ -186,6 +186,13 @@
           "sequentialSigning": {
             "type": "boolean"
           },
+          "signaturePlacements": {
+            "description": "Optional. Omit to let bb-sign place signatures automatically.",
+            "items": {
+              "$ref": "#/components/schemas/SignaturePlacementSpec"
+            },
+            "type": "array"
+          },
           "signers": {
             "items": {
               "$ref": "#/components/schemas/CreateSignerSpec"
@@ -298,12 +305,20 @@
           },
           "sha256": {
             "type": "string"
+          },
+          "signaturePlacements": {
+            "description": "Your own signature placements on this document; empty when the signature is placed automatically. Returned before any OTP, like the documents themselves.",
+            "items": {
+              "$ref": "#/components/schemas/SignerSignaturePlacement"
+            },
+            "type": "array"
           }
         },
         "required": [
           "downloadUrl",
           "filename",
-          "id"
+          "id",
+          "signaturePlacements"
         ],
         "type": "object"
       },
@@ -512,6 +527,17 @@
             },
             "type": "array"
           },
+          "stampFailure": {
+            "$ref": "#/components/schemas/EnvelopeStampFailure"
+          },
+          "stampWarnings": {
+            "description": "Signers whose signature mark could not be rendered on the signed documents, so a placeholder was stamped instead; their signature and its evidence are recorded. Present on `getEnvelope` only (null in `listEnvelopes`), empty when there are none, and null for an archived envelope.",
+            "items": {
+              "$ref": "#/components/schemas/EnvelopeStampWarning"
+            },
+            "nullable": true,
+            "type": "array"
+          },
           "status": {
             "type": "string"
           },
@@ -559,6 +585,84 @@
         },
         "required": [
           "deletesAt"
+        ],
+        "type": "object"
+      },
+      "EnvelopeStampFailure": {
+        "description": "Why the worker could not produce an envelope's signed documents (#298). Contact support: the documents are produced once it is resolved, without new signatures.",
+        "nullable": true,
+        "properties": {
+          "attempts": {
+            "description": "How many stamping attempts failed for this reason.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "code": {
+            "description": "`SIGNATURE_IMAGE_UNSAFE`: a stored signature image is too large to process. Further values may be added.",
+            "enum": [
+              "SIGNATURE_IMAGE_UNSAFE"
+            ],
+            "type": "string"
+          },
+          "detail": {
+            "description": "A short reason label, for example `dimensions` or `bytes`. Never image data.",
+            "nullable": true,
+            "type": "string"
+          },
+          "failedAt": {
+            "description": "When stamping first failed for this reason.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "signerId": {
+            "description": "The signer whose signature image stopped the stamp.",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attempts",
+          "code",
+          "failedAt",
+          "signerId"
+        ],
+        "type": "object"
+      },
+      "EnvelopeStampWarning": {
+        "description": "A signer whose signature mark could not be rendered, so the signed documents show a placeholder instead (#298). The signature itself and its evidence are recorded.",
+        "nullable": true,
+        "properties": {
+          "at": {
+            "description": "When the placeholder was stamped.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "code": {
+            "description": "`SIGNATURE_IMAGE_PLACEHOLDER`: the stored signature image could not be decoded. Further values may be added.",
+            "enum": [
+              "SIGNATURE_IMAGE_PLACEHOLDER"
+            ],
+            "type": "string"
+          },
+          "detail": {
+            "description": "A short reason label, for example `format` or `decode`. Never image data.",
+            "nullable": true,
+            "type": "string"
+          },
+          "signerId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "signerName": {
+            "description": "The signer's name, while the signer is on the envelope.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "code",
+          "signerId"
         ],
         "type": "object"
       },
@@ -889,6 +993,17 @@
             "type": "string"
           },
           "signatureImage": {
+            "description": "The signature as a PNG data URL: exactly `data:image/png;base64,` followed by strict base64. The PNG must be at most 1 MiB (1,048,576 bytes), at most 8192 x 4096 pixels and 20,000,000 pixels in total, 8 bits per sample, colour type 0, 2, 3, 4 or 6, not interlaced and not animated (no `acTL`/`fcTL`/`fdAT`), with no compressed text chunks (`zTXt`, `iTXt`) and ancillary chunks of at most 16 KiB each and 64 KiB in total; its image data must inflate to exactly the size its header declares. A canvas `toDataURL('image/png')` export meets this. The whole request body is limited to 1.5 MiB (1,572,864 bytes). Refusals, each leaving the link unused: 400 `SIGNATURE_IMAGE_INVALID` (not such a PNG); 400 `SIGNATURE_IMAGE_TOO_LARGE` (over the byte or pixel limits); 413 `PAYLOAD_TOO_LARGE` (the body is over its limit); 408 `SIGNATURE_UPLOAD_TIMEOUT` (the body arrived too slowly; retry); 429 `RATE_LIMITED` (too many attempts from this client or on this link; retry after `Retry-After`); 503 `SIGNING_BUSY` (retry after `Retry-After`, about one second).",
+            "type": "string"
+          },
+          "signatureMethod": {
+            "description": "Optional. How the signature mark was made, as declared by the client: `DRAWN` (drawn on screen), `TYPED` (the signer's name typed on screen) or `UPLOADED_IMAGE` (an image of a handwritten signature from the device). The server does not check it against the image; the evidence certificate prints it as the client's declaration, and as not recorded when it is omitted. Any other value is refused with 400 `SIGNATURE_METHOD_INVALID` and leaves the link unused.",
+            "enum": [
+              "DRAWN",
+              "TYPED",
+              "UPLOADED_IMAGE"
+            ],
+            "nullable": true,
             "type": "string"
           }
         },
@@ -921,6 +1036,56 @@
           "envelopeId",
           "message",
           "signedDocumentUrls"
+        ],
+        "type": "object"
+      },
+      "SignaturePlacementSpec": {
+        "description": "Where one signer's signature is drawn on one document. For each document, give a placement for every signer or for none. A `{{signerN}}` text marker in the PDF, where N is the signer's `signOrder`, takes precedence over the placement when the document is stamped.",
+        "properties": {
+          "documentId": {
+            "description": "Must also appear in `documentIds`.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "height": {
+            "description": "Height as a fraction (0–1) of the displayed page height. Must stay within the page.",
+            "format": "double",
+            "type": "number"
+          },
+          "page": {
+            "description": "0-based page index. If the page does not exist, this placement is ignored when stamping and the signature is placed automatically.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "signerIndex": {
+            "description": "0-based index into this request's `signers` array, in the order sent: the first signer is 0. It is not the signer's `signOrder`, and not a signer id.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "width": {
+            "description": "Width as a fraction (0–1) of the displayed page width. Must stay within the page. A rectangle smaller than 48×18 in the page's own user-space units (the units of its MediaBox and CropBox; 1/72 inch when `/UserUnit` is absent) is ignored when stamping, and the signature is placed automatically. `/UserUnit` is ignored.",
+            "format": "double",
+            "type": "number"
+          },
+          "x": {
+            "description": "Left edge as a fraction (0–1) of the page width as displayed: the crop box clipped to the media box (or the media box when the two do not overlap, as pdf.js does), with the page's rotation applied, origin at its top-left corner.",
+            "format": "double",
+            "type": "number"
+          },
+          "y": {
+            "description": "Top edge as a fraction (0–1) of the displayed page height, measured downward from the top-left corner.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "documentId",
+          "height",
+          "page",
+          "signerIndex",
+          "width",
+          "x",
+          "y"
         ],
         "type": "object"
       },
@@ -1080,6 +1245,44 @@
           "name",
           "signOrder",
           "status"
+        ],
+        "type": "object"
+      },
+      "SignerSignaturePlacement": {
+        "description": "Where YOUR signature will be placed on this document: the signer this link belongs to, never anyone else. Fractions (0–1) of the page as displayed (crop box with the page's rotation applied), origin at its top-left corner; same frame as SignaturePlacementSpec. A `{{signerN}}` marker in the PDF, a page that does not exist, or a rectangle under 48×18 points means the signature is placed automatically instead.",
+        "properties": {
+          "height": {
+            "description": "Height, fraction of the displayed page height.",
+            "format": "double",
+            "type": "number"
+          },
+          "page": {
+            "description": "0-based page index.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "width": {
+            "description": "Width, fraction of the displayed page width.",
+            "format": "double",
+            "type": "number"
+          },
+          "x": {
+            "description": "Left edge, fraction of the displayed page width.",
+            "format": "double",
+            "type": "number"
+          },
+          "y": {
+            "description": "Top edge, fraction of the displayed page height, measured downward.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "height",
+          "page",
+          "width",
+          "x",
+          "y"
         ],
         "type": "object"
       },
@@ -2722,7 +2925,7 @@
     },
     "/api/v1/envelopes/{id}/signers": {
       "post": {
-        "description": "Only valid while the envelope is a draft.",
+        "description": "Only valid while the envelope is a draft. Returns 409 if the envelope was created with signature placements, because the new signer would have none.",
         "operationId": "addSigner",
         "parameters": [
           {

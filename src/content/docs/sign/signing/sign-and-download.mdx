@@ -1,32 +1,60 @@
 ---
 title: Firmar y descargar
-description: Cómo dibujar o escribir su firma, qué queda registrado, cómo descargar la copia firmada y su certificado de evidencia, y cuánto tiempo están disponibles.
+description: Cómo dibujar, escribir o subir su firma, qué queda registrado, cómo descargar la copia firmada y su certificado de evidencia, y cuánto tiempo están disponibles.
 product: sign
 audience: signer
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY } from '../../../facts/sign';
+import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD } from '../../../facts/sign';
 
 En la pantalla **Añade tu firma** usted firma el documento y, una vez que todas las personas han
 firmado, descarga su copia sellada.
 
-## Dibujar o escribir la firma
+## Dibujar, escribir o subir una imagen
 
 - **Dibujar**: trace su firma con el dedo, un lápiz digital o el mouse en el recuadro "Dibuja tu
   firma aquí". **Borrar** limpia el recuadro.
 - **Escribir**: escriba su nombre en "Escribe tu nombre completo". bb-sign lo convierte en una
   firma con letra manuscrita.
+- **Subir imagen**: use una foto o un escaneo de la firma que hizo a mano. Se explica en el
+  apartado siguiente.
 
-Luego pulse **Enviar firma**. Si el recuadro está vacío, verá "Por favor, dibuja tu firma." o
-"Por favor, escribe tu nombre."
+Luego pulse **Enviar firma**. Si aún no hay firma, verá "Por favor, dibuja tu firma.", "Por favor,
+escribe tu nombre." o "Elige una imagen de tu firma."
+
+### Subir una imagen de su firma
+
+La página le indica qué imagen sirve: "Una foto o un escaneo de tu firma sobre papel claro. PNG o
+JPEG, de hasta <Fact of={SIGNATURE_UPLOAD.maxSourceMb} unit="MB" />."
+
+1. Firme sobre papel claro y tómele una foto o escanéelo.
+2. Pulse **Elegir una imagen** y elija el archivo. En el teléfono puede tomar la foto con la cámara
+   o elegirla de la galería.
+3. Revise la vista previa: muestra su firma tal como se estampará en el documento. Para usar otra
+   imagen, pulse **Cambiar la imagen**.
+
+**Quitar el fondo claro** está activado de forma predeterminada: la página vuelve transparente el
+papel para que en el sello quede solo el trazo. Si la vista previa no se ve bien, desactívelo y
+revise de nuevo la vista previa.
+
+Si el archivo pesa más de <Fact of={SIGNATURE_UPLOAD.resizeNoticeMb} unit="MB" />, la página
+muestra: "Esta imagen pesa más de <Fact of={SIGNATURE_UPLOAD.resizeNoticeMb} unit="MB" />, así que
+se reducirá de tamaño. Si no quieres que se reduzca, reduce el tamaño del archivo por tu cuenta y
+vuelve a subirla." Es solo un aviso: puede enviar la firma así, o reducir el archivo usted mismo y
+elegirlo de nuevo.
+
+La imagen se prepara en su dispositivo. A bb-sign solo llega la imagen de la firma ya preparada, sin
+los datos de ubicación ni del dispositivo que suelen guardar las fotos. Si la página muestra un
+mensaje al elegir la imagen, consulte [Si algo falla](/sign/signing/troubleshooting/).
 
 ## Información que queda registrada
 
 Al enviar la firma, bb-sign registra junto a su nombre y su correo:
 
 - la imagen de su firma;
+- la forma de la firma que declaró la página de firma: dibujada, escrita o imagen subida;
 - la fecha y la hora;
 - la dirección IP desde la que firmó;
 - el navegador que utilizó;
@@ -34,6 +62,11 @@ Al enviar la firma, bb-sign registra junto a su nombre y su correo:
   con el canal, el destino enmascarado y la hora en que se aceptó el código;
 - la huella SHA-256 del conjunto de documentos que firmó, que vincula su firma a esos documentos
   exactos.
+
+El certificado de evidencia muestra la forma de la firma como "Forma de la firma (declarada por el
+cliente de firma)", con el valor "dibujada en pantalla", "nombre escrito en pantalla" o "imagen
+cargada desde el dispositivo". Es lo que declaró la página de firma: bb-sign no lo deduce de la
+imagen. Si la firma se registró sin esa declaración, el certificado muestra "no registrado".
 
 Esta información forma parte de la evidencia del sobre y aparece en su certificado de evidencia. Su
 nombre, su correo y la fecha también aparecen en el sello del documento. La copia del certificado que

@@ -8,6 +8,8 @@
  * bb-infrastructure `main` (5a8468f, production runs bb-sign v0.34.0). The live
  * S3 lifecycle of the documents bucket was read on 2026-10-21T00:02Z
  * (`aws s3api get-bucket-lifecycle-configuration --bucket production-bbsign-documents`).
+ * SIGNATURE_UPLOAD, SIGNER.signatureMethods and OTP.verifiedValidityMinutes were read on 2026-10-28 at the
+ * bb-sign release tag v0.37.0 (1ef08008: bb-sign#298 and #292).
  * When a value moves in the product, change it here and the whole site follows.
  * `tests/unit/facts.test.ts` checks the relationships between values (an OTP
  * outlives its resend cooldown, the retention outlives the archive threshold,
@@ -276,8 +278,14 @@ export const OTP = {
   validityMinutes: fact(15, 'bb-sign/auth-challenge-service/src/main/resources/application.yml:52 (900 s)'),
   maxAttempts: fact(3, 'bb-sign/auth-challenge-service/src/main/resources/db/migration/V002__create_otp_schema.sql:10'),
   resendCooldownSeconds: fact(60, 'bb-sign/edge-api/src/main/resources/application.yml:229'),
-  /** Minutes a verified code stays valid for signing. */
-  verifiedValidityMinutes: fact(15, 'EA/application/usecase/RecordSignatureUseCase.kt:55'),
+  /**
+   * Minutes a verified code stays valid for signing. Past it the sign is refused with 409 OTP_VERIFICATION_EXPIRED and
+   * the signing page goes back to the code step by itself and requests a new code (bb-sign#292 D7).
+   */
+  verifiedValidityMinutes: fact(
+    15,
+    'EA/domain/signature/SigningEligibility.kt:72,103 (OTP_VALIDITY); EA/domain/signature/SigningErrors.kt:13-17; bb-sign/frontend/src/pages/SigningCeremony.tsx:481-482,435-448 (returnToOtpStep)',
+  ),
   /** The schema allows 'SMS', but no SMS sender exists: email is the only channel. */
   channel: fact('email', 'NS/infrastructure/delivery/EmailOtpCodeDeliveryChannel.kt:25; V003__lv209_otp_code_hmac.sql:7,14'),
   /** Plan decision D10: a code works only for the signer it was issued to. */
@@ -301,6 +309,33 @@ export const SIGNER = {
   ),
   /** The review screen shows each document's SHA-256 shortened to its first and last this many characters; the full hash is in the tooltip. */
   fingerprintShownChars: fact(8, 'bb-sign/frontend/src/components/signing/DocumentFingerprint.tsx:4-9 (slice(0, 8) and slice(-8)), :19 (title = full hash); SigningCeremony.tsx'),
+  /**
+   * The three ways to make the signature mark on the signing page, in button order (bb-sign#292). The page declares
+   * the one used; the certificate prints it as the signing client's declaration ("no registrado" when none was sent).
+   */
+  signatureMethods: fact(
+    ['DRAWN', 'TYPED', 'UPLOADED_IMAGE'] as const,
+    'bb-sign/platform/contracts/src/main/kotlin/co/binarybridges/sign/platform/events/signer/SignatureMethod.kt:3-17; bb-sign/frontend/src/components/signing/signMode.ts:4,12-16; W/infrastructure/evidence/render/PdfBoxEvidenceRenderer.kt:129-130; bb-sign/document-processing-worker/src/main/resources/evidence/messages_es.properties:40-43',
+  ),
+} as const;
+
+/**
+ * "Subir imagen" on the signing page (bb-sign#292, owner decisions D1 and D3 of 2026-10-28). Read at the bb-sign
+ * release tag v0.37.0 (1ef08008, bb-sign#308 with #298 and #292). `FE` here = bb-sign/frontend/src/components/signing.
+ */
+export const SIGNATURE_UPLOAD = {
+  /** Largest file the signer may pick. */
+  maxSourceMb: fact(10, 'FE/signatureUpload.ts:12-13 (MAX_SOURCE_BYTES = 10 * 1024 * 1024), :170 (refusal "size"); bb-sign/frontend/src/i18n/locales/es/signing.json:26,86'),
+  /** Above this size the page shows an informational notice that the image will be reduced. Never a refusal. */
+  resizeNoticeMb: fact(1, 'FE/signatureUpload.ts:14-15 (RESIZE_NOTICE_BYTES = 1024 * 1024), :180-183; FE/SignatureUpload.tsx:129-131; bb-sign/frontend/src/i18n/locales/es/signing.json:92'),
+  /** Accepted formats, judged from the file's first bytes, not its name or type. */
+  formats: fact('PNG, JPEG', 'FE/signatureUpload.ts:5-6,100-104 (sniffImageType); FE/SignatureUpload.tsx:71 (accept="image/png,image/jpeg")'),
+  /** "Quitar el fondo claro" starts switched on. */
+  removeBackgroundDefault: fact(true, 'FE/signatureUpload.ts:401-404 (INITIAL_UPLOAD_STATE.removeBackground = true); FE/SignatureUpload.tsx:104-113'),
+  /** The image is prepared in the browser; only a re-encoded PNG is sent, so location and device data (EXIF, GPS) are not kept. */
+  processedOnDevice: fact(true, 'FE/signatureUpload.ts:7-9; FE/signatureCanvas.ts:35-49 (normalizeToBox, toDataURL("image/png")); FE/SignatureUpload.tsx:24-27'),
+  /** No `capture` attribute on the file input, so a phone offers the camera, the photo library and files. */
+  cameraOrGallery: fact(true, 'FE/SignatureUpload.tsx:29,68-77'),
 } as const;
 
 export const DOCUMENTS = {
@@ -674,7 +709,6 @@ export const NOT_SHIPPED: readonly string[] = [
   'templates',
   'bulk send',
   'field placement UI (initials, dates, checkboxes)',
-  'uploading a signature image',
   'declining to sign',
   'resending a signing link',
   'SMS OTP',
