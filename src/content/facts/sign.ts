@@ -8,6 +8,8 @@
  * bb-infrastructure `main` (5a8468f, production runs bb-sign v0.34.0). The live
  * S3 lifecycle of the documents bucket was read on 2026-10-21T00:02Z
  * (`aws s3api get-bucket-lifecycle-configuration --bucket production-bbsign-documents`).
+ * SIGNATURE_UPLOAD, SIGNER.signatureMethods and OTP.verifiedValidityMinutes were read on 2026-10-28 at the
+ * bb-sign release tag v0.37.0 (1ef08008: bb-sign#298 and #292).
  * When a value moves in the product, change it here and the whole site follows.
  * `tests/unit/facts.test.ts` checks the relationships between values (an OTP
  * outlives its resend cooldown, the retention outlives the archive threshold,
@@ -318,9 +320,8 @@ export const SIGNER = {
 } as const;
 
 /**
- * "Subir imagen" on the signing page (bb-sign#292, owner decisions D1 and D3 of 2026-10-28). Read on the bb-sign
- * branch `feat/signer-signature-upload` at 8b4affb5 (stacked on #298's `fix/signature-image-validation`); re-verify
- * against the release tag before this ships. `FE` here = bb-sign/frontend/src/components/signing.
+ * "Subir imagen" on the signing page (bb-sign#292, owner decisions D1 and D3 of 2026-10-28). Read at the bb-sign
+ * release tag v0.37.0 (1ef08008, bb-sign#308 with #298 and #292). `FE` here = bb-sign/frontend/src/components/signing.
  */
 export const SIGNATURE_UPLOAD = {
   /** Largest file the signer may pick. */
