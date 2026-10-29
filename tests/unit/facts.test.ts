@@ -28,6 +28,7 @@ import {
   RETENTION_IMPLEMENTED,
   RETENTION_POLICY,
   SDK,
+  SIGNATURE_UPLOAD,
   SIGNER,
   URLS,
   VERIFY,
@@ -170,6 +171,18 @@ describe('bb-sign fact sheet', () => {
     expect(NOT_SHIPPED).toContain('general API rate limits');
     expect(EVIDENCE.statuses.value).toContain('ISSUED');
     expect(new Set(NOT_SHIPPED).size).toBe(NOT_SHIPPED.length);
+  });
+
+  test('uploading a signature image is shipped, with the limits the signing page states (bb-sign#292)', () => {
+    expect(NOT_SHIPPED).not.toContain('uploading a signature image');
+    expect(SIGNER.signatureMethods.value).toEqual(['DRAWN', 'TYPED', 'UPLOADED_IMAGE']);
+    // The resize notice is informational: it must start below the largest file the page accepts.
+    expect(SIGNATURE_UPLOAD.resizeNoticeMb.value).toBeLessThan(SIGNATURE_UPLOAD.maxSourceMb.value);
+    expect(SIGNATURE_UPLOAD.maxSourceMb.value).toBeLessThan(DOCUMENTS.maxUploadMb.value);
+    expect(SIGNATURE_UPLOAD.formats.value).toBe('PNG, JPEG');
+    expect(SIGNATURE_UPLOAD.removeBackgroundDefault.value).toBe(true);
+    expect(SIGNATURE_UPLOAD.processedOnDevice.value).toBe(true);
+    for (const f of Object.values(SIGNATURE_UPLOAD)) expect(f.source).toMatch(/\.(ts|tsx|json):\d/);
   });
 
   test('values given in two units agree', () => {
