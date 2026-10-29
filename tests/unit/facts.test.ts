@@ -28,6 +28,7 @@ import {
   RETENTION_IMPLEMENTED,
   RETENTION_POLICY,
   SDK,
+  SIGN_REQUEST,
   SIGNATURE_UPLOAD,
   SIGNER,
   URLS,
@@ -56,7 +57,7 @@ describe('bb-sign fact sheet', () => {
     };
     const groups = {
       URLS, AUTH, ADMIN_MFA, PERMISSION_SCOPE, AGREEMENTS, ENVELOPE, ARCHIVED_ENVELOPES, OTP, SIGNER, DOCUMENTS, LABELS,
-      REMINDERS, QUOTA, WEBHOOKS, RATE_LIMITS, VERIFY, SDK, CERTIFICATE, EVIDENCE, AUDIT, RETENTION_POLICY,
+      REMINDERS, QUOTA, WEBHOOKS, RATE_LIMITS, SIGN_REQUEST, VERIFY, SDK, CERTIFICATE, EVIDENCE, AUDIT, RETENTION_POLICY,
       RETENTION_IMPLEMENTED, RESTORE,
     };
     expect(walk(groups, 'facts')).toEqual([]);
@@ -205,12 +206,34 @@ describe('bb-sign fact sheet', () => {
   test('error codes are unique and carry a real status; 429 is not quota-only', () => {
     const codes = ERROR_CODES.map((e) => e.code);
     expect(new Set(codes).size).toBe(codes.length);
-    for (const e of ERROR_CODES) expect([408, 409, 410, 413, 429, 503]).toContain(e.status);
+    for (const e of ERROR_CODES) expect([400, 408, 409, 410, 413, 429, 503]).toContain(e.status);
     const tooMany = ERROR_CODES.filter((e) => e.status === 429).map((e) => e.code);
     expect(tooMany).toEqual(expect.arrayContaining(['QUOTA_EXCEEDED', 'RATE_LIMITED', 'RESTORE_LIMIT_REACHED']));
     expect(QUOTA.httpStatusWhenExhausted.value).toBe(429);
     for (const status of [408, 410, 413, 503]) expect(ERROR_CODES.some((e) => e.status === status), String(status)).toBe(true);
     expect(SDK.honoursRetryAfter.value).toBe(false);
+  });
+
+  test('the sign call names every refusal with its own code (bb-sign#298, #292)', () => {
+    const status = (code: string) => ERROR_CODES.find((e) => e.code === code)?.status;
+    expect(status('SIGNATURE_IMAGE_INVALID')).toBe(400);
+    expect(status('SIGNATURE_IMAGE_TOO_LARGE')).toBe(400);
+    expect(status('SIGNATURE_METHOD_INVALID')).toBe(400);
+    expect(status('SIGNATURE_UPLOAD_TIMEOUT')).toBe(408);
+    expect(status('OTP_VERIFICATION_EXPIRED')).toBe(409);
+    expect(status('SIGNING_BUSY')).toBe(503);
+    // The body cap must hold the largest accepted PNG as a data URL plus 64 KiB of JSON (yml:248-249).
+    const mib = 1024 * 1024;
+    const dataUrlPrefix = 'data:image/png;base64,'.length;
+    const minBody = dataUrlPrefix + Math.ceil((SIGN_REQUEST.maxPngMib.value * mib) / 3) * 4 + 64 * 1024;
+    expect(minBody).toBe(SIGN_REQUEST.minBodyBytesForPng.value);
+    expect(SIGN_REQUEST.maxBodyMib.value * mib).toBeGreaterThanOrEqual(minBody);
+    // The server accepts less than the page lets a signer pick: the page reduces the image first.
+    expect(SIGN_REQUEST.maxPngMib.value).toBeLessThan(SIGNATURE_UPLOAD.maxSourceMb.value);
+    // Per-task limits hold as one number only while production runs one replica: their sources say so.
+    for (const key of ['signPerMinutePerClient', 'signInFlightPerClient', 'signImageAttemptsPerLink'] as const) {
+      expect(RATE_LIMITS[key].source, key).toContain('prod:18 (replicas: 1)');
+    }
   });
 
   test('emails: the new notices are bilingual and reach the right people', () => {

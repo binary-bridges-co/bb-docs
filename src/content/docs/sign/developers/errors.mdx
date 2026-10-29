@@ -7,14 +7,14 @@ audience: developer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK } from '../../../facts/sign';
+import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK, OTP, SIGN_REQUEST } from '../../../facts/sign';
 
 export const codeHelp = {
   QUOTA_EXCEEDED: ['Crear o enviar un sobre con una cuota de la organización agotada; el cuerpo trae `quota`', 'Pida al administrador de la plataforma que amplíe o renueve la cuota. Reintentar no sirve'],
-  RATE_LIMITED: ['Demasiadas llamadas seguidas a la verificación por archivo, o a la verificación o exportación del registro de auditoría', 'Espere los segundos que indica `Retry-After` y vuelva a llamar'],
+  RATE_LIMITED: ['Demasiadas llamadas seguidas a la verificación por archivo, a la verificación o exportación del registro de auditoría, o a la firma (`POST /api/v1/sign/{token}/sign`)', 'Espere los segundos que indica `Retry-After` y vuelva a llamar'],
   RESTORE_LIMIT_REACHED: ['Pedir una restauración cuando la organización ya tiene el máximo de restauraciones en curso', 'Espere a que terminen las que están en curso (evento `document.restored`) y vuelva a pedirla'],
   VERIFY_TIMEOUT: ['La subida a `POST /api/v1/verify/file` superó el tiempo máximo', 'Vuelva a intentarlo con una conexión más rápida'],
-  PAYLOAD_TOO_LARGE: ['El archivo enviado a `POST /api/v1/verify/file` supera el tamaño máximo', 'Compruebe que envía el PDF firmado y no otro archivo'],
+  PAYLOAD_TOO_LARGE: ['El archivo enviado a `POST /api/v1/verify/file`, o el cuerpo de la firma, supera el tamaño máximo', 'En la verificación, compruebe que envía el PDF firmado y no otro archivo. En la firma, reduzca la imagen; el enlace sigue sin usar'],
   AUDIT_EXPORT_TOO_LARGE: ['La exportación del registro de auditoría supera el máximo de filas', 'Pídala por páginas con `fromSeq` y `limit`'],
   DOCUMENT_DELETED: ['Restaurar un archivo que ya superó su plazo de conservación', 'Ninguna: bb-sign ya no tiene el archivo. Use la copia que archivó su sistema'],
   DOCUMENT_NOT_SIGNED: ['Restaurar la copia firmada de un documento que no tiene copia firmada', 'Pida el original (`"kind": "ORIGINAL"`) o espere a que el sobre se complete'],
@@ -24,6 +24,12 @@ export const codeHelp = {
   EVIDENCE_NOT_AVAILABLE: ['Descargar un certificado de evidencia que no está `ISSUED`; el mensaje indica su estado', 'Consulte el estado con `GET /api/v1/envelopes/{id}/evidence-certificate`; si es `PENDING`, espere `envelope.evidence_issued`'],
   DOCUMENT_HASH_MISMATCH: ['Firmar con `documentHashes` que ya no coinciden con los documentos del sobre', 'El firmante debe volver a abrir el enlace y revisar los documentos actuales'],
   DOCUMENT_HASH_MISSING: ['Enviar (o firmar) mientras un documento no tiene SHA-256 registrado; ocurre solo con borradores antiguos', 'Vuelva a intentarlo más tarde, porque los documentos antiguos se completan de forma periódica, o suba el documento de nuevo'],
+  SIGNATURE_IMAGE_INVALID: ['Firmar con un `signatureImage` que no es un data URL PNG que el servidor acepte', 'Envíe la imagen como `data:image/png;base64,`, exportada de un canvas con `toDataURL(\'image/png\')`; el enlace sigue sin usar'],
+  SIGNATURE_IMAGE_TOO_LARGE: ['Firmar con un PNG que supera el máximo de bytes o de píxeles', 'Reduzca la imagen y vuelva a firmar; el enlace sigue sin usar'],
+  SIGNATURE_METHOD_INVALID: ['Firmar con un `signatureMethod` distinto de `DRAWN`, `TYPED` o `UPLOADED_IMAGE`', 'Envíe uno de esos tres valores, u omita el campo; el enlace sigue sin usar'],
+  SIGNATURE_UPLOAD_TIMEOUT: ['El cuerpo de la firma llegó demasiado despacio', 'Vuelva a enviar la firma completa; el enlace sigue sin usar'],
+  OTP_VERIFICATION_EXPIRED: ['Firmar después de que venció la verificación del código', 'El firmante pide un código nuevo, lo verifica y vuelve a firmar'],
+  SIGNING_BUSY: ['bb-sign está al límite de su capacidad de firma en este momento', 'Espere los segundos que indica `Retry-After` y vuelva a enviar la firma'],
 };
 
 {/* Renders `code` spans inside the short help texts above. */}
@@ -37,17 +43,17 @@ el cuerpo que lo acompaña y por qué un sobre al que la credencial no tiene acc
 
 | Estado | Significado | Acción |
 |---|---|---|
-| `400` | Solicitud mal formada o con errores de validación | Compare el cuerpo con el esquema de la [referencia de la API](/sign/api/); las fechas deben estar en ISO-8601 |
+| `400` | Solicitud mal formada o con errores de validación. En la firma, también una imagen o un `signatureMethod` que el servidor no acepta (`code` indica cuál) | Compare el cuerpo con el esquema de la [referencia de la API](/sign/api/); las fechas deben estar en ISO-8601 |
 | `401` | Credenciales rechazadas: sin token, token expirado (un token es válido durante <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />), token de otro emisor o token que el realm no valida | Solicite un token nuevo y revise el prefijo `Bearer `. Ambos SDKs renuevan el token y reintentan una vez antes de reportar este estado |
 | `403` | Autenticado, pero la credencial no tiene el permiso de organización | La operación es de administración y solo existe en la interfaz, o el token no incluye `bb_sign_org_id`. Consulte [Autenticación de máquinas](/sign/developers/authentication/) |
 | `404` | El recurso no existe, o pertenece a otra organización o a un espacio de trabajo que la credencial no puede ver. No se distinguen, de forma intencional | Revise el id; si se trata del espacio de trabajo, pida a un administrador que asigne un rol a la credencial en ese espacio |
-| `408` | La subida a la verificación por archivo superó el tiempo máximo (<Fact of={VERIFY.fileMaxSeconds} unit="s" />) | Vuelva a intentarlo |
-| `409` | El recurso no está en un estado que permita la operación, por ejemplo enviar un sobre ya enviado, pedir el certificado de un sobre no completado o firmar documentos que cambiaron | Consulte primero el recurso y actúe según su estado; `code` indica el caso (tabla siguiente) |
+| `408` | La subida a la verificación por archivo superó el tiempo máximo (<Fact of={VERIFY.fileMaxSeconds} unit="s" />), o el cuerpo de la firma llegó demasiado despacio (máximo <Fact of={SIGN_REQUEST.maxSeconds} unit="s" />). Un cliente que deja de enviar por completo puede recibir un `408` sin cuerpo, o un `401` vacío | Vuelva a intentarlo |
+| `409` | El recurso no está en un estado que permita la operación, por ejemplo enviar un sobre ya enviado, pedir el certificado de un sobre no completado, firmar documentos que cambiaron o firmar cuando la verificación del código tiene más de <Fact of={OTP.verifiedValidityMinutes} unit="min" /> | Consulte primero el recurso y actúe según su estado; `code` indica el caso (tabla siguiente) |
 | `410` | El archivo que se pide restaurar ya superó su plazo de conservación | Ninguna: use la copia que archivó su sistema |
-| `413` | El cuerpo es demasiado grande: un archivo de más de <Fact of={VERIFY.fileMaxMb} unit="MB" /> en la verificación por archivo, o una exportación de auditoría de más de <Fact of={AUDIT.exportMaxRows} /> filas | Envíe el archivo correcto, o pida la exportación por páginas |
+| `413` | El cuerpo es demasiado grande: un archivo de más de <Fact of={VERIFY.fileMaxMb} unit="MB" /> en la verificación por archivo, una exportación de auditoría de más de <Fact of={AUDIT.exportMaxRows} /> filas o una firma de más de <Fact of={SIGN_REQUEST.maxBodyMib} unit="MiB" /> | Envíe el archivo correcto, pida la exportación por páginas o reduzca la imagen de la firma |
 | `422` | Una regla de negocio rechazó la solicitud, por ejemplo enviar un sobre sin documento o sin firmante | Corrija el sobre y vuelva a intentarlo |
 | <code>{QUOTA.httpStatusWhenExhausted.value}</code> | El servidor no procesó la solicitud. `code` indica por qué: una cuota agotada (`QUOTA_EXCEEDED`), un límite de tasa (`RATE_LIMITED`) o demasiadas restauraciones en curso (`RESTORE_LIMIT_REACHED`) | Depende de `code`: amplíe la cuota, espere `Retry-After` o espere a que terminen las restauraciones |
-| `503` | Un servicio del que depende la operación no respondió | Vuelva a intentarlo más tarde |
+| `503` | Un servicio del que depende la operación no respondió. En la firma, `SIGNING_BUSY`: bb-sign está al límite de su capacidad de firma en este momento | Vuelva a intentarlo más tarde; ante `SIGNING_BUSY`, tras los segundos de `Retry-After` |
 | `0` (solo SDKs) | La solicitud no obtuvo respuesta: no llegó a bb-sign o la respuesta se perdió | En un `POST`, **liste antes de reintentar** (ver más abajo) |
 
 `401` y `403` los genera la cadena de filtros de seguridad y **no llevan cuerpo**. Los demás
@@ -64,9 +70,20 @@ decidir:
   segundos que debe esperar. Hay límites en la verificación por archivo
   (<Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> por minuto por cliente) y en la verificación
   y exportación del registro de auditoría (<Fact of={RATE_LIMITS.auditReadPerMinutePerCaller} /> por
-  minuto por credencial). La API no aplica un límite de tasa general.
+  minuto por credencial). En la firma (`POST /api/v1/sign/{token}/sign`) hay tres:
+  <Fact of={RATE_LIMITS.signPerMinutePerClient} /> solicitudes de firma por minuto por cliente,
+  <Fact of={RATE_LIMITS.signInFlightPerClient} /> subidas a la vez por cliente y
+  <Fact of={RATE_LIMITS.signImageAttemptsPerLink} /> intentos de imagen rechazados o en revisión por
+  enlace cada <Fact of={RATE_LIMITS.signImageAttemptsWindowMinutes} unit="min" />. Fuera de las
+  llamadas que se nombran aquí, la API no aplica límites de tasa.
 - **`RESTORE_LIMIT_REACHED`**: la organización tiene <Fact of={RESTORE.maxActivePerOrg} />
   restauraciones en curso. Espere a que alguna termine.
+
+Un `503 SIGNING_BUSY` en la firma no es un límite de tasa: bb-sign está al límite de su capacidad de
+firma en ese momento y `Retry-After` indica <Fact of={SIGN_REQUEST.busyRetryAfterSeconds} unit="s" />.
+En un `429 RATE_LIMITED` de la firma, `Retry-After` depende del límite alcanzado: es corto si había
+demasiadas subidas a la vez y llega hasta el final de la ventana si se agotaron las solicitudes del minuto o
+los intentos de imagen del enlace. Espere siempre lo que indica.
 
 El contrato OpenAPI, y con él la [referencia de la API](/sign/api/), describe todo
 <code>{QUOTA.httpStatusWhenExhausted.value}</code> como una cuota agotada, también en las rutas con
