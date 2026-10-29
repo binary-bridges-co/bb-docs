@@ -7,14 +7,14 @@ audience: developer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK } from '../../../../facts/sign';
+import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK, OTP, SIGN_REQUEST } from '../../../../facts/sign';
 
 export const codeHelp = {
   QUOTA_EXCEEDED: ['Creating or sending an envelope while an organization quota is exhausted; the body carries `quota`', 'Ask the platform administrator to raise or renew the quota. Retrying does not help'],
-  RATE_LIMITED: ['Too many calls in a row to verify by file, or to the audit trail verification or export', 'Wait the seconds given in `Retry-After`, then call again'],
+  RATE_LIMITED: ['Too many calls in a row to verify by file, to the audit trail verification or export, or to signing (`POST /api/v1/sign/{token}/sign`)', 'Wait the seconds given in `Retry-After`, then call again'],
   RESTORE_LIMIT_REACHED: ['Requesting a restore while the organization already has the maximum number of restores in progress', 'Wait for the running ones to end (the `document.restored` event), then request it again'],
   VERIFY_TIMEOUT: ['The upload to `POST /api/v1/verify/file` took longer than the deadline', 'Try again over a faster connection'],
-  PAYLOAD_TOO_LARGE: ['The file sent to `POST /api/v1/verify/file` is above the size limit', 'Check that you are sending the signed PDF and not another file'],
+  PAYLOAD_TOO_LARGE: ['The file sent to `POST /api/v1/verify/file`, or the signing body, is above the size limit', 'On verify, check that you are sending the signed PDF and not another file. On signing, make the image smaller; the link stays unused'],
   AUDIT_EXPORT_TOO_LARGE: ['The audit trail export is above the row limit', 'Request it in pages with `fromSeq` and `limit`'],
   DOCUMENT_DELETED: ['Restoring a file that is past its retention period', 'None: bb-sign no longer has the file. Use the copy your system archived'],
   DOCUMENT_NOT_SIGNED: ['Restoring the signed copy of a document that has none', 'Request the original (`"kind": "ORIGINAL"`) or wait for the envelope to complete'],
@@ -24,6 +24,12 @@ export const codeHelp = {
   EVIDENCE_NOT_AVAILABLE: ['Downloading an evidence certificate that is not `ISSUED`; the message names its status', 'Read the status with `GET /api/v1/envelopes/{id}/evidence-certificate`; if it is `PENDING`, wait for `envelope.evidence_issued`'],
   DOCUMENT_HASH_MISMATCH: ['Signing with `documentHashes` that no longer match the envelope documents', 'The signer has to open the link again and review the current documents'],
   DOCUMENT_HASH_MISSING: ['Sending (or signing) while a document has no recorded SHA-256; only older drafts can hit it', 'Try again later, because older documents are filled in periodically, or upload the document again'],
+  SIGNATURE_IMAGE_INVALID: ['Signing with a `signatureImage` that is not a PNG data URL the server accepts', 'Send the image as `data:image/png;base64,`, exported from a canvas with `toDataURL(\'image/png\')`; the link stays unused'],
+  SIGNATURE_IMAGE_TOO_LARGE: ['Signing with a PNG above the byte or pixel limits', 'Make the image smaller and sign again; the link stays unused'],
+  SIGNATURE_METHOD_INVALID: ['Signing with a `signatureMethod` other than `DRAWN`, `TYPED` or `UPLOADED_IMAGE`', 'Send one of those three values, or leave the field out; the link stays unused'],
+  SIGNATURE_UPLOAD_TIMEOUT: ['The signing body arrived too slowly', 'Send the whole signature again; the link stays unused'],
+  OTP_VERIFICATION_EXPIRED: ['Signing after the code verification expired', 'The signer requests a new code, verifies it and signs again'],
+  SIGNING_BUSY: ['bb-sign is at its signing capacity right now', 'Wait the seconds given in `Retry-After`, then send the signature again'],
 };
 
 {/* Renders `code` spans inside the short help texts above. */}
@@ -37,17 +43,17 @@ it and why an envelope the credential cannot access returns `404`.
 
 | Status | Meaning | Action |
 |---|---|---|
-| `400` | Malformed request or failed validation | Compare the body with the schema in the [API reference](/sign/api/); dates must be ISO-8601 |
+| `400` | Malformed request or failed validation. On signing, also an image or a `signatureMethod` the server does not accept (`code` says which) | Compare the body with the schema in the [API reference](/sign/api/); dates must be ISO-8601 |
 | `401` | Credentials rejected: no token, an expired token (a token is valid for <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />), a token from another issuer or a token the realm will not validate | Request a new token and check the `Bearer ` prefix. Both SDKs refresh the token and retry once before reporting this status |
 | `403` | Authenticated, but the credential lacks the organization permission | The operation is a management operation that exists only in the UI, or the token has no `bb_sign_org_id`. See [Machine authentication](/en/sign/developers/authentication/) |
 | `404` | The resource does not exist, or belongs to another organization or a workspace the credential cannot see. Deliberately indistinguishable | Check the id; if the workspace is the issue, ask an admin to grant the credential a role there |
-| `408` | The upload to verify by file took longer than the deadline (<Fact of={VERIFY.fileMaxSeconds} unit="s" />) | Try again |
-| `409` | The resource is not in a state that allows the operation, for example sending an already-sent envelope, requesting the certificate of an envelope that is not completed, or signing documents that changed | Read the resource first and act on its state; `code` names the case (next table) |
+| `408` | The upload to verify by file took longer than the deadline (<Fact of={VERIFY.fileMaxSeconds} unit="s" />), or the signing body arrived too slowly (at most <Fact of={SIGN_REQUEST.maxSeconds} unit="s" />). A client that stops sending entirely may get a `408` with no body, or an empty `401` | Try again |
+| `409` | The resource is not in a state that allows the operation, for example sending an already-sent envelope, requesting the certificate of an envelope that is not completed, signing documents that changed, or signing when the code was verified more than <Fact of={OTP.verifiedValidityMinutes} unit="min" /> ago | Read the resource first and act on its state; `code` names the case (next table) |
 | `410` | The file you asked to restore is past its retention period | None: use the copy your system archived |
-| `413` | The body is too large: a file above <Fact of={VERIFY.fileMaxMb} unit="MB" /> on verify by file, or an audit export above <Fact of={AUDIT.exportMaxRows} /> rows | Send the right file, or request the export in pages |
+| `413` | The body is too large: a file above <Fact of={VERIFY.fileMaxMb} unit="MB" /> on verify by file, an audit export above <Fact of={AUDIT.exportMaxRows} /> rows, or a signature above <Fact of={SIGN_REQUEST.maxBodyMib} unit="MiB" /> | Send the right file, request the export in pages, or make the signature image smaller |
 | `422` | A business rule rejected the request, for example sending an envelope with no document or no signer | Fix the envelope and try again |
 | <code>{QUOTA.httpStatusWhenExhausted.value}</code> | The server did not process the request. `code` says why: an exhausted quota (`QUOTA_EXCEEDED`), a rate limit (`RATE_LIMITED`) or too many restores in progress (`RESTORE_LIMIT_REACHED`) | Depends on `code`: raise the quota, wait for `Retry-After`, or wait for the restores to end |
-| `503` | A service the operation depends on did not answer | Try again later |
+| `503` | A service the operation depends on did not answer. On signing, `SIGNING_BUSY`: bb-sign is at its signing capacity right now | Try again later; for `SIGNING_BUSY`, after the seconds in `Retry-After` |
 | `0` (SDKs only) | The request got no answer: it never reached bb-sign or the reply was lost | For a `POST`, **list before you retry** (see below) |
 
 `401` and `403` are produced by the security filter chain and carry **no body**. Every other error
@@ -64,9 +70,20 @@ decide:
   seconds to wait. There are limits on verify by file
   (<Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> a minute per client) and on the audit
   trail verification and export (<Fact of={RATE_LIMITS.auditReadPerMinutePerCaller} /> a minute per
-  credential). The API applies no general rate limit.
+  credential). Signing (`POST /api/v1/sign/{token}/sign`) has three:
+  <Fact of={RATE_LIMITS.signPerMinutePerClient} /> signing requests a minute per client,
+  <Fact of={RATE_LIMITS.signInFlightPerClient} /> uploads at once per client and
+  <Fact of={RATE_LIMITS.signImageAttemptsPerLink} /> refused or in-review image attempts per link every
+  <Fact of={RATE_LIMITS.signImageAttemptsWindowMinutes} unit="min" />. Outside the calls named here,
+  the API applies no rate limit.
 - **`RESTORE_LIMIT_REACHED`**: the organization has <Fact of={RESTORE.maxActivePerOrg} /> restores in
   progress. Wait for one to end.
+
+A `503 SIGNING_BUSY` on signing is not a rate limit: bb-sign is at its signing capacity at that moment,
+and `Retry-After` says <Fact of={SIGN_REQUEST.busyRetryAfterSeconds} unit="s" />. On a `429 RATE_LIMITED`
+from signing, `Retry-After` depends on the limit reached: it is short when too many uploads were in
+progress at once, and runs to the end of the window when the requests for the minute or the image
+attempts for the link are used up. Always wait what it says.
 
 The OpenAPI contract, and so the [API reference](/sign/api/), describes every
 <code>{QUOTA.httpStatusWhenExhausted.value}</code> as an exhausted quota, including on the

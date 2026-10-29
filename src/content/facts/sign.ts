@@ -9,7 +9,9 @@
  * S3 lifecycle of the documents bucket was read on 2026-10-21T00:02Z
  * (`aws s3api get-bucket-lifecycle-configuration --bucket production-bbsign-documents`).
  * SIGNATURE_UPLOAD, SIGNER.signatureMethods and OTP.verifiedValidityMinutes were read on 2026-10-28 at the
- * bb-sign release tag v0.37.0 (1ef08008: bb-sign#298 and #292).
+ * bb-sign release tag v0.37.0 (1ef08008: bb-sign#298 and #292). On 2026-10-29 every `application.yml` line
+ * after 238 was moved by the 26 lines v0.37.0 inserted there (bb-sign 4ec7d3f0), and the sign-call limits and
+ * error codes were added to `sign-integrations.ts`.
  * When a value moves in the product, change it here and the whole site follows.
  * `tests/unit/facts.test.ts` checks the relationships between values (an OTP
  * outlives its resend cooldown, the retention outlives the archive threshold,
@@ -53,8 +55,8 @@ export const URLS = {
     'https://auth.binarybridges.co/realms/bbsign/protocol/openid-connect/token',
     'bb-infrastructure/apps/bb-sign/ingress.yaml; bb-sign/docs/api/machine-authentication.md §2',
   ),
-  /** springdoc default path; the published paths are filtered at yml:403. */
-  openapiPath: fact('/v3/api-docs', 'bb-sign/edge-api/src/main/resources/application.yml:381-409 (springdoc default /v3/api-docs; paths-to-match :403)'),
+  /** springdoc default path; the published paths are filtered at yml:429. */
+  openapiPath: fact('/v3/api-docs', 'bb-sign/edge-api/src/main/resources/application.yml:407-435 (springdoc default /v3/api-docs; paths-to-match :429)'),
   senderAddress: fact('sign@binarybridges.co', 'bb-infrastructure/aws/bb-sign-aws.yml:37'),
   identitySenderAddress: fact('no-reply@binarybridges.co', 'bb-infrastructure/aws/bb-sign-aws.yml:42'),
   /** Public verification page of the app (QR target and "Comprobar un archivo"). */
@@ -187,7 +189,7 @@ export const ORG_API_NEVER: readonly string[] = [
 export const PERMISSION_SCOPE = {
   downloadCoversEvidenceAndRestore: fact(
     true,
-    'EA/presentation/admin/EnvelopeController.kt:294,577-591; EA/presentation/admin/EvidenceCertificateController.kt:37-45; bb-sign/frontend/src/i18n/locales/es/envelopes.json:94',
+    'EA/presentation/admin/EnvelopeController.kt:369,673-687; EA/presentation/admin/EvidenceCertificateController.kt:37-45; bb-sign/frontend/src/i18n/locales/es/envelopes.json:96',
   ),
   auditReadCoversAuditApi: fact(
     true,
@@ -223,7 +225,7 @@ export type SignerStatus = 'PENDING' | 'NOTIFIED' | 'VIEWED' | 'SIGNED';
 export const ENVELOPE_STATUSES: readonly EnvelopeStatus[] = ['DRAFT', 'SENT', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'EXPIRED'];
 export const SIGNER_STATUSES: readonly SignerStatus[] = ['PENDING', 'NOTIFIED', 'VIEWED', 'SIGNED'];
 
-/** Allowed transitions. Source: EA/application/usecase/SendEnvelopeUseCase.kt:40,77; RecordSignatureUseCase.kt:154,169-172,240-243; CancelEnvelopeUseCase.kt:31,39; ExpireEnvelopesUseCase.kt:38-43. */
+/** Allowed transitions. Source: EA/application/usecase/SendEnvelopeUseCase.kt:40,77; RecordSignatureUseCase.kt:150,164-167,236-239; CancelEnvelopeUseCase.kt:31,39; ExpireEnvelopesUseCase.kt:38-43. */
 export const ENVELOPE_TRANSITIONS: readonly { readonly from: EnvelopeStatus; readonly to: EnvelopeStatus; readonly by: string }[] = [
   { from: 'DRAFT', to: 'SENT', by: 'send' },
   { from: 'SENT', to: 'IN_PROGRESS', by: 'first signature' },
@@ -238,11 +240,11 @@ export const ENVELOPE_TRANSITIONS: readonly { readonly from: EnvelopeStatus; rea
 
 export const ENVELOPE = {
   /** Signing-link validity in hours (`linkTtlHours`). Bounds signing only, never the signer's later access to the copy. */
-  linkTtlHoursDefault: fact(72, 'EA/infrastructure/persistence/entity/EnvelopeEntity.kt:31; EA/presentation/admin/EnvelopeController.kt:124'),
+  linkTtlHoursDefault: fact(72, 'EA/infrastructure/persistence/entity/EnvelopeEntity.kt:31; EA/presentation/admin/EnvelopeController.kt:134'),
   /** How often the expiry sweep runs, in minutes. */
   expirySweepMinutes: fact(5, 'bb-sign/edge-api/src/main/resources/application.yml:215-218 (cron 0 */5 * * * *)'),
   /** Presigned download URL validity in seconds (documents, envelope page and signer link). */
-  downloadUrlSeconds: fact(3600, 'EA/application/service/DocumentDownloads.kt:206; RecordSignatureUseCase.kt:265; GetSignerAccessUseCase.kt:68'),
+  downloadUrlSeconds: fact(3600, 'EA/application/service/DocumentDownloads.kt:206; RecordSignatureUseCase.kt:261; GetSignerAccessUseCase.kt:75'),
   /** Days after creation at which COMPLETED, CANCELLED and EXPIRED envelopes move to the "Archivados" view (a database move, not file archiving). */
   archiveAfterDays: fact(30, 'bb-sign/edge-api/src/main/resources/application.yml:205; EA/application/archive/ArchiveEligibility.kt:63-68'),
   /** Archive job time (UTC). */
@@ -260,7 +262,7 @@ export const ARCHIVED_ENVELOPES = {
   /** The detail page opens read-only with every download, the evidence certificate and the audit trail. */
   readOnlyWithDownloads: fact(
     true,
-    'bb-sign/frontend/src/pages/ArchivedEnvelopes.tsx:156-164; EnvelopeDetail.tsx:165,170-174; bb-sign/frontend/src/i18n/locales/es/envelopes.json:66; EA/infrastructure/persistence/JpaSignedDocumentRegistry.kt:15,30',
+    'bb-sign/frontend/src/pages/ArchivedEnvelopes.tsx:156-164; EnvelopeDetail.tsx:171,176-180; bb-sign/frontend/src/i18n/locales/es/envelopes.json:66; EA/infrastructure/persistence/JpaSignedDocumentRegistry.kt:15,30',
   ),
   /** The signer's link keeps serving the signed copy and the signer evidence certificate after archiving, with no expiry check. */
   signerLinkKeepsCopy: fact(
@@ -268,7 +270,7 @@ export const ARCHIVED_ENVELOPES = {
     'EA/application/usecase/GetSignedCopyUseCase.kt:27-53; EA/application/usecase/SignedCopyGate.kt:5-11',
   ),
   /** No labels, no cancel: an archived envelope has no actions. */
-  noActions: fact(true, 'bb-sign/frontend/src/pages/EnvelopeDetail.tsx:71-74'),
+  noActions: fact(true, 'bb-sign/frontend/src/pages/EnvelopeDetail.tsx:77-80'),
 } as const;
 
 export const OTP = {
@@ -304,8 +306,8 @@ export const SIGNER = {
   ),
   /** What each signature records besides image, time, IP and browser. */
   recordedWithSignature: fact(
-    'identification method, OTP channel and masked destination, acceptance time, SHA-256 of the document set signed',
-    'bb-sign/audit-service/.../listener/SignerSignedListener.kt:38-43; bb-sign/document-processing-worker/src/main/resources/evidence/messages_es.properties:37-53',
+    'identification method, OTP channel and masked destination, acceptance time, how the mark was made (as declared by the signing client, since v0.37.0), SHA-256 of the document set signed',
+    'bb-sign/audit-service/.../listener/SignerSignedListener.kt:38-45; bb-sign/document-processing-worker/src/main/resources/evidence/messages_es.properties:37-57',
   ),
   /** The review screen shows each document's SHA-256 shortened to its first and last this many characters; the full hash is in the tooltip. */
   fingerprintShownChars: fact(8, 'bb-sign/frontend/src/components/signing/DocumentFingerprint.tsx:4-9 (slice(0, 8) and slice(-8)), :19 (title = full hash); SigningCeremony.tsx'),
@@ -341,8 +343,8 @@ export const SIGNATURE_UPLOAD = {
 export const DOCUMENTS = {
   contentType: fact('application/pdf', 'EA/application/usecase/UploadUnassignedDocumentUseCase.kt:59'),
   maxUploadMb: fact(50, 'bb-sign/edge-api/src/main/resources/application.yml:64-65'),
-  maxUnassignedPerOrgMb: fact(500, 'bb-sign/edge-api/src/main/resources/application.yml:244'),
-  unassignedRetentionHours: fact(24, 'bb-sign/edge-api/src/main/resources/application.yml:245'),
+  maxUnassignedPerOrgMb: fact(500, 'bb-sign/edge-api/src/main/resources/application.yml:270'),
+  unassignedRetentionHours: fact(24, 'bb-sign/edge-api/src/main/resources/application.yml:271'),
   /** Text marker that positions a signer's seal; N is the signer's order. */
   placementMarker: fact('{{signerN}}', 'W/application/service/PdfPlaceholderLocator.kt:76'),
   /** The SHA-256 of every upload is computed while it streams and the storage version is pinned. */
@@ -353,9 +355,9 @@ export const DOCUMENTS = {
   /** Send is refused with 409 DOCUMENT_HASH_MISSING while a document has no recorded SHA-256; older drafts are backfilled hourly. */
   hashBackfill: fact('hourly', 'EA/infrastructure/scheduling/DocumentHashBackfillScheduler.kt:10,18 (PT1H); SendEnvelopeUseCase.kt:50-51'),
   /** The signer is refused with DOCUMENT_HASH_MISMATCH when the documents changed while they reviewed them. */
-  changedWhileReviewingRefused: fact(true, 'EA/application/usecase/RecordSignatureUseCase.kt:134-147; bb-sign/frontend/src/i18n/locales/es/signing.json:13'),
+  changedWhileReviewingRefused: fact(true, 'EA/application/usecase/RecordSignatureUseCase.kt:100-118; EA/domain/signature/SigningEligibility.kt:93-94,121-127; bb-sign/frontend/src/i18n/locales/es/signing.json:13'),
   /** The SHA-256 of each signed PDF is recorded (audit trail, webhooks, evidence certificate). */
-  signedSha256Recorded: fact(true, 'bb-sign/edge-api/src/main/resources/db/migration/V036__lv211_seal_v2_signed_sha256.sql:9-27; W/application/usecase/StampSignedPdfUseCase.kt:239; EA/domain/webhook/WebhookEvent.kt:178-181'),
+  signedSha256Recorded: fact(true, 'bb-sign/edge-api/src/main/resources/db/migration/V036__lv211_seal_v2_signed_sha256.sql:9-27; W/application/usecase/StampSignedPdfUseCase.kt:313; EA/domain/webhook/WebhookEvent.kt:178-181'),
   /**
    * The release from which the signed SHA-256 is recorded (and seal v2 is made, VERIFY.qrUsesStoredFingerprintSince).
    * Documents signed before it have none, unless the worker later re-read them. It is v0.29.0, not v0.34.0: the
@@ -363,7 +365,7 @@ export const DOCUMENTS = {
    */
   signedSha256Since: fact(
     'v0.29.0',
-    'bb-sign/edge-api/src/main/resources/db/migration/V036__lv211_seal_v2_signed_sha256.sql:3-5 (rows before the release stay NULL); W/application/usecase/StampSignedPdfUseCase.kt:101-104,155-156 (redelivery fills older documents); first tag containing cf1af3a: v0.29.0 (GitHub release 2026-10-12); bb-infrastructure 375a475 (worker v0.29.0 in production, 2026-10-16)',
+    'bb-sign/edge-api/src/main/resources/db/migration/V036__lv211_seal_v2_signed_sha256.sql:3-5 (rows before the release stay NULL); W/application/usecase/StampSignedPdfUseCase.kt:168-171,222-223 (redelivery fills older documents); first tag containing cf1af3a: v0.29.0 (GitHub release 2026-10-12); bb-infrastructure 375a475 (worker v0.29.0 in production, 2026-10-16)',
   ),
   /**
    * The worker refuses to seal when a document's stored bytes differ from its recorded SHA-256, or when the documents
@@ -371,10 +373,10 @@ export const DOCUMENTS = {
    */
   sealRefusedOnHashMismatch: fact(
     true,
-    'W/application/usecase/StampSignedPdfUseCase.kt:232-235 (stored bytes vs recorded hash), :168-176 (document set vs each signer), :143-147 (bbsign_stamp_integrity_mismatch_total, logged)',
+    'W/application/usecase/StampSignedPdfUseCase.kt:306-309 (stored bytes vs recorded hash), :235-243 (document set vs each signer), :210-214 (bbsign_stamp_integrity_mismatch_total, logged)',
   ),
   /** The envelope page never shows the signed SHA-256 line (a bb-sign bug, plan D7): do not promise it. */
-  signedSha256OnEnvelopePage: fact(false, 'EA/presentation/admin/EnvelopeController.kt:216-229 (signedSha256 omitted from the response)'),
+  signedSha256OnEnvelopePage: fact(false, 'EA/presentation/admin/EnvelopeController.kt:291-304 (signedSha256 omitted from the response)'),
 } as const;
 
 export const LABELS = {
@@ -394,7 +396,7 @@ export const REMINDERS = {
 export const QUOTA = {
   warningThresholdPct: fact(80, 'bb-sign/edge-api/src/main/resources/db/migration/V019__create_org_quotas.sql:11 (warning_threshold_pct 80)'),
   /** A quota answers 429 QUOTA_EXCEEDED. 429 is not quota-only any more: see ERROR_CODES (RATE_LIMITED, RESTORE_LIMIT_REACHED). */
-  httpStatusWhenExhausted: fact(429, 'EA/application/usecase/CreateEnvelopeUseCase.kt:58-62; bb-sign/platform/starters/starter-web-errors/.../GlobalExceptionHandler.kt:64-69'),
+  httpStatusWhenExhausted: fact(429, 'EA/application/usecase/CreateEnvelopeUseCase.kt:62-67; bb-sign/platform/starters/starter-web-errors/.../GlobalExceptionHandler.kt:64-69'),
   periodTypes: fact(['MONTHLY', 'YEARLY', 'CUSTOM'] as const, 'bb-sign/edge-api/src/main/resources/db/migration/V019__create_org_quotas.sql:6'),
 } as const;
 
@@ -417,7 +419,7 @@ export const VERIFY = {
    */
   qrUsesStoredFingerprintSince: fact(
     'v0.29.0',
-    'EA/application/usecase/VerifySignatureSealUseCase.kt:49-72; bb-sign/edge-api/src/main/resources/db/migration/V036__lv211_seal_v2_signed_sha256.sql:18-23; W/application/usecase/StampSignedPdfUseCase.kt:61,194-208 (v2 by default, app.seal.v2-enabled not set in production); first tag containing cf1af3a: v0.29.0',
+    'EA/application/usecase/VerifySignatureSealUseCase.kt:49-72; bb-sign/edge-api/src/main/resources/db/migration/V036__lv211_seal_v2_signed_sha256.sql:18-23; W/application/usecase/StampSignedPdfUseCase.kt:84,266-280 (v2 by default, app.seal.v2-enabled not set in production); first tag containing cf1af3a: v0.29.0',
   ),
   /**
    * Plan decision D9 (a product defect, documented until the fix ships): the QR check reads live signers only, so the
@@ -465,7 +467,7 @@ export const CERTIFICATE = {
    */
   sealHashFormulaV2: fact(
     'SHA-256("bbsign-seal-v2\\n<len>:<name>\\n<len>:<email>\\n<len>:<signedAt>\\n<len>:<envelopeId>\\n<len>:<certFingerprint>\\n<len>:<documentSetSha256>")',
-    'bb-sign/platform/contracts/.../crypto/SealHashUtil.kt:95-120; W/application/usecase/StampSignedPdfUseCase.kt:61,194-208',
+    'bb-sign/platform/contracts/.../crypto/SealHashUtil.kt:95-120; W/application/usecase/StampSignedPdfUseCase.kt:84,266-280',
   ),
   /**
    * The hash of the documents a signature is bound to. A formula only: the entries are ordered by `documentId` as a
@@ -513,7 +515,7 @@ export const EVIDENCE = {
     'bb-sign/docs/api/evidence-certificate.md:90; bb-sign/document-processing-worker/src/main/resources/evidence/messages_es.properties:133, messages_en.properties:133 (evidence.verify.signerNote)',
   ),
   /** The certificate is normally issued within minutes of completion (PENDING meanwhile). No time is guaranteed. */
-  usuallyIssuedWithinMinutes: fact(true, 'bb-sign/docs/api/evidence-certificate.md:30 (PENDING: "normally within minutes of completion"); bb-sign/frontend/src/i18n/locales/es/signing.json:85'),
+  usuallyIssuedWithinMinutes: fact(true, 'bb-sign/docs/api/evidence-certificate.md:30 (PENDING: "normally within minutes of completion"); bb-sign/frontend/src/i18n/locales/es/signing.json:110'),
   languages: fact(['es', 'en'] as const, 'bb-sign/platform/contracts/.../i18n/OrgLanguage.kt:16-22'),
   defaultLanguage: fact('es', 'bb-sign/platform/contracts/.../i18n/OrgLanguage.kt:22 (DEFAULT = ES)'),
   /** Set per organization by a platform admin; fixed when the certificate is issued. */
@@ -530,7 +532,7 @@ export const EVIDENCE = {
   retentionDays: fact(365, 'W/application/evidence/IssueEvidenceCertificateUseCase.kt:155 (Retention.DAYS)'),
   archived: fact(false, 'bb-sign/platform/contracts/.../retention/Retention.kt:68,79 (RetainedFile.EVIDENCE -> null); bb-infrastructure/aws/bb-sign-aws.yml:439-441'),
   /** Same permission as the documents. */
-  downloadPermission: fact('document:download', 'EA/presentation/admin/EvidenceCertificateController.kt:37-45; bb-sign/frontend/src/i18n/locales/es/envelopes.json:94'),
+  downloadPermission: fact('document:download', 'EA/presentation/admin/EvidenceCertificateController.kt:37-45; bb-sign/frontend/src/i18n/locales/es/envelopes.json:96'),
   /** Every download is recorded as EVIDENCE_CERTIFICATE_ACCESSED; reading the status records nothing. */
   downloadAudited: fact(true, 'EA/application/usecase/GetEvidenceCertificateUseCase.kt:29; bb-sign/audit-service/.../domain/AuditEventType.kt:75'),
   /** Platform staff only; at most this many re-issues per certificate. */
@@ -541,7 +543,7 @@ export const EVIDENCE = {
     'EA/domain/evidence/EvidenceReissue.kt:13-14,41 (REISSUE_WINDOW from failedAt); EA/application/usecase/ReissueEvidenceCertificateUseCase.kt:49-51 (archived: refused); bb-sign/docs/api/evidence-certificate.md:122,129-130',
   ),
   /** Envelopes completed before the rollout show "Completado antes de habilitar los certificados de evidencia". */
-  beforeRolloutUnavailable: fact(true, 'bb-sign/frontend/src/i18n/locales/es/envelopes.json:93; bb-infrastructure/docs/runbooks/lv-legal-validity-release.md:80-81'),
+  beforeRolloutUnavailable: fact(true, 'bb-sign/frontend/src/i18n/locales/es/envelopes.json:94; bb-infrastructure/docs/runbooks/lv-legal-validity-release.md:80-81'),
   /** In production no agreement is attached: the certificate prints "Sin acuerdos adjuntos". */
   agreementsAttachedInProduction: fact(false, 'bb-infrastructure/apps/bb-sign/edge-api.yaml:64; bb-sign/document-processing-worker/src/main/resources/evidence/messages_es.properties:58 (evidence.agreements.none)'),
 } as const;
@@ -562,17 +564,17 @@ export const AUDIT = {
   exportPageMaxRows: fact(1000, 'EA/presentation/admin/AuditReadController.kt:114 (limit at most 1000)'),
   exportFormat: fact('bbsign.audit-export.v1', 'bb-sign/audit-service/.../application/export/AuditTrailExporterV1.kt:13,21'),
   /** API only, and not in the published OpenAPI contract. */
-  exportPath: fact('GET /api/v1/audit/envelopes/{id}/export', 'EA/presentation/admin/AuditReadController.kt:105-144; yml:398 (/audit unpublished)'),
+  exportPath: fact('GET /api/v1/audit/envelopes/{id}/export', 'EA/presentation/admin/AuditReadController.kt:105-144; yml:424 (/audit unpublished)'),
   /**
    * `GET /api/v1/audit/org-events` exists (org_admin and platform_admin, `audit:read-org`) but is not in the published
    * OpenAPI contract: pages do not document it as an integration endpoint.
    */
-  orgEventsPublished: fact(false, 'EA/presentation/admin/AuditReadController.kt:63-71; yml:398,403 (paths-to-match leaves /audit out); bb-sign/docs/api/openapi.json (no /api/v1/audit path)'),
+  orgEventsPublished: fact(false, 'EA/presentation/admin/AuditReadController.kt:63-71; yml:424,429 (paths-to-match leaves /audit out); bb-sign/docs/api/openapi.json (no /api/v1/audit path)'),
   verificationStatuses: fact(['VALID', 'BROKEN', 'EMPTY'] as const, 'EA/presentation/admin/AuditReadController.kt:73-103'),
   /** An envelope trail is readable by auditors, contributors and managers (`audit:read`). */
   envelopeTrailReaders: fact(['auditor', 'contributor', 'manager'] as const, 'EA/domain/security/WorkspaceRoleBundles.kt:29-33'),
   /** Recorded actors: a user, an API credential (label, client id, API badge), a signer, "Sistema", or "Actor no registrado". */
-  actorKinds: fact(['user', 'api_credential', 'signer', 'system', 'unattributed'] as const, 'bb-sign/frontend/src/api/auditActor.ts:14-25; bb-sign/frontend/src/i18n/locales/es/envelopes.json:131-138'),
+  actorKinds: fact(['user', 'api_credential', 'signer', 'system', 'unattributed'] as const, 'bb-sign/frontend/src/api/auditActor.ts:14-25; bb-sign/frontend/src/i18n/locales/es/envelopes.json:133-140'),
 } as const;
 
 /** Every audit event type. Source: bb-sign/audit-service/.../domain/AuditEventType.kt:12-97. SIGNER_AGREEMENT_ACCEPTED has no producer in production (D4). */
@@ -601,7 +603,7 @@ export const RETENTION_POLICY = {
   /** From this age a file tagged archivable (signed PDFs, originals of COMPLETED envelopes; evidence never) MAY move to archive storage. */
   archiveAfterDays: fact(90, 'bb-sign/platform/contracts/.../retention/Retention.kt:36-37 (ARCHIVE_AFTER_DAYS); :70-80'),
   /** How long a restored copy stays readable (allowed range 1-30, production 7). */
-  restoredCopyDays: fact(7, 'bb-sign/edge-api/src/main/resources/application.yml:265; EA/application/service/RestoreSettings.kt:15,33; bb-infrastructure/apps/bb-sign/edge-api.yaml:72'),
+  restoredCopyDays: fact(7, 'bb-sign/edge-api/src/main/resources/application.yml:291; EA/application/service/RestoreSettings.kt:15,33; bb-infrastructure/apps/bb-sign/edge-api.yaml:72'),
   /** Fixed: `Retention` is a code object with no property behind it. */
   configurable: fact(false, 'bb-sign/platform/contracts/.../retention/Retention.kt:31-37 (const val, no property)'),
 } as const;
@@ -617,7 +619,7 @@ export const RETENTION_IMPLEMENTED = {
   documentsStandardIaDaysDeclared: fact(30, 'bb-infrastructure/aws/bb-sign-aws.yml:284-290 (declared, not applied: :275); EA/presentation/admin/LifecycleController.kt:10-15,94-103'),
   documentsGlacierDaysDeclared: fact(90, 'bb-infrastructure/aws/bb-sign-aws.yml:291-295 (declared, not applied: :275, :439-443)'),
   /** Archive dates ("Se archiva a partir del") are hidden in production; "Deja de estar disponible el" is always shown. */
-  archiveDatesVisible: fact(false, 'bb-sign/edge-api/src/main/resources/application.yml:261; EA/application/service/RetentionDates.kt:11-29; not set in bb-infrastructure/apps/bb-sign/edge-api.yaml'),
+  archiveDatesVisible: fact(false, 'bb-sign/edge-api/src/main/resources/application.yml:287; EA/application/service/RetentionDates.kt:11-29; not set in bb-infrastructure/apps/bb-sign/edge-api.yaml'),
   /**
    * Storage page: platform admins (only) see an expiration field and **Aplicar**. In production that still writes:
    * it replaces the lifecycle of the documents and evidence buckets with one expiration rule (bb-sign#227 removes
@@ -636,7 +638,7 @@ export const RETENTION_IMPLEMENTED = {
   /** Restore on request is deployed (v0.34.0) and idle: nothing is archived in production. */
   restoreOnRequest: fact(
     'deployed, idle until archiving is enabled (bb-sign#214 P5)',
-    'EA/presentation/admin/EnvelopeController.kt:577-591; EA/presentation/signer/SigningController.kt:261-274; bb-infrastructure/apps/bb-sign/edge-api.yaml:72-75; lv-retention-restore-iam.md:184-185',
+    'EA/presentation/admin/EnvelopeController.kt:673-687; EA/presentation/signer/SigningController.kt:300-313; bb-infrastructure/apps/bb-sign/edge-api.yaml:72-75; lv-retention-restore-iam.md:184-185',
   ),
 } as const;
 
@@ -647,12 +649,12 @@ export type FileAvailability = 'AVAILABLE' | 'ARCHIVED' | 'RESTORE_IN_PROGRESS' 
 export const RESTORE = {
   days: RETENTION_POLICY.restoredCopyDays,
   /** A Standard-tier Glacier restore: the UI says "usually within a few hours". */
-  typicalHours: fact('3-5', 'bb-sign/edge-api/src/main/resources/application.yml:263-264; bb-infrastructure/apps/bb-sign/edge-api.yaml:70-71; bb-sign/frontend/src/i18n/locales/en/envelopes.json:113'),
-  firstPollHours: fact(3, 'bb-sign/edge-api/src/main/resources/application.yml:266; bb-infrastructure/apps/bb-sign/edge-api.yaml:73'),
+  typicalHours: fact('3-5', 'bb-sign/edge-api/src/main/resources/application.yml:289-290; bb-infrastructure/apps/bb-sign/edge-api.yaml:70-71; bb-sign/frontend/src/i18n/locales/en/envelopes.json:115'),
+  firstPollHours: fact(3, 'bb-sign/edge-api/src/main/resources/application.yml:292; bb-infrastructure/apps/bb-sign/edge-api.yaml:73'),
   /** After this, the restore ends FAILED with reason TIMEOUT. */
   timeoutHours: fact(48, 'EA/application/service/RestoreSettings.kt:25-26 (PT48H)'),
   /** Restores in progress per organization (users and API keys; signers are not counted). */
-  maxActivePerOrg: fact(50, 'bb-sign/edge-api/src/main/resources/application.yml:269; RestoreSettings.kt:19; bb-infrastructure/apps/bb-sign/edge-api.yaml:75'),
+  maxActivePerOrg: fact(50, 'bb-sign/edge-api/src/main/resources/application.yml:295; RestoreSettings.kt:19; bb-infrastructure/apps/bb-sign/edge-api.yaml:75'),
   statuses: fact(['REQUESTED', 'IN_PROGRESS', 'RESTORED', 'AVAILABLE', 'EXPIRED', 'FAILED'] as const, 'EA/application/port/DocumentRestores.kt:70-73'),
   failureReasons: fact(['DELETED', 'TIMEOUT', 'STORAGE_ERROR'] as const, 'EA/application/port/DocumentRestores.kt:76'),
   /** Several requesters of the same file share one restore and are all notified. */
@@ -671,7 +673,7 @@ export const RESTORE = {
   /** Restore rows and requester emails are purged after this. */
   purgeAfterDays: fact(400, 'EA/application/service/RestoreSettings.kt:29-30 (P400D)'),
   /** File availability on GET .../documents (`original.availability`, `signed.availability`). */
-  fileAvailability: fact(['AVAILABLE', 'ARCHIVED', 'RESTORE_IN_PROGRESS', 'RESTORED', 'DELETED'] as const, 'EA/application/service/DocumentDownloads.kt:56; bb-sign/frontend/src/i18n/locales/es/envelopes.json:112-116'),
+  fileAvailability: fact(['AVAILABLE', 'ARCHIVED', 'RESTORE_IN_PROGRESS', 'RESTORED', 'DELETED'] as const, 'EA/application/service/DocumentDownloads.kt:56; bb-sign/frontend/src/i18n/locales/es/envelopes.json:114-118'),
   /** Dates are shown at 00:00 UTC, the earliest across the envelope's files. */
   datesAtUtcMidnight: fact(true, 'bb-sign/platform/contracts/.../retention/Retention.kt:50-53 (ceilToUtcMidnight)'),
 } as const;

@@ -4,7 +4,8 @@
  * from `facts/sign`. Same rules and source shorthands as `sign.ts` (see its header).
  *
  * Source shorthands: `EA` = bb-sign/edge-api/src/main/kotlin/co/binarybridges/sign/edge,
- * `yml` = bb-sign/edge-api/src/main/resources/application.yml.
+ * `yml` = bb-sign/edge-api/src/main/resources/application.yml (lines read at v0.37.0, 4ec7d3f0),
+ * `prod` = bb-infrastructure/apps/bb-sign/edge-api.yaml (origin/main; production runs edge-api v0.37.0, `prod:29`).
  */
 
 import { fact } from './fact';
@@ -47,8 +48,8 @@ export const WEBHOOKS = {
   disableAfterLadders: fact(3, 'EA/infrastructure/webhook/WebhookDispatchProperties.kt:32'),
   /** Hours between automatic probes of a disabled endpoint. */
   probeIntervalHours: fact(6, 'EA/infrastructure/webhook/WebhookDispatchProperties.kt:33'),
-  maxPerOrg: fact(20, 'bb-sign/edge-api/src/main/resources/application.yml:357'),
-  secretRotationGraceHours: fact(24, 'bb-sign/edge-api/src/main/resources/application.yml:358'),
+  maxPerOrg: fact(20, 'bb-sign/edge-api/src/main/resources/application.yml:383'),
+  secretRotationGraceHours: fact(24, 'bb-sign/edge-api/src/main/resources/application.yml:384'),
   deliveryLogRetentionDays: fact(90, 'EA/infrastructure/webhook/WebhookDispatchProperties.kt:34'),
   testVectorCount: fact(16, 'bb-sign/docs/api/webhook-signature-vectors.json (cases: 16)'),
   /** `envelope.completed` is sent once per envelope and subscription, on the first of: certificate issued, the degraded wait, FAILED, UNAVAILABLE. */
@@ -77,10 +78,10 @@ export interface ErrorCodeFact {
  */
 export const ERROR_CODES: readonly ErrorCodeFact[] = [
   { code: 'QUOTA_EXCEEDED', status: 429, where: 'envelope creation and send, when an organization quota is exhausted', source: 'bb-sign/platform/starters/starter-web-errors/.../GlobalExceptionHandler.kt:64-69' },
-  { code: 'RATE_LIMITED', status: 429, where: 'verify by file, signer restore, audit chain verification and audit export (with Retry-After)', source: 'EA/presentation/VerifyFileExceptionHandler.kt:33-36,61; EA/domain/restore/RestoreRefusals.kt:23; EA/presentation/AuditReadExceptionHandler.kt:53-70; EA/presentation/admin/AuditReadController.kt:95,131,146-151' },
+  { code: 'RATE_LIMITED', status: 429, where: 'verify by file, signer restore, audit chain verification and audit export, and the sign call (with Retry-After)', source: 'EA/presentation/VerifyFileExceptionHandler.kt:33-36,61; EA/domain/restore/RestoreRefusals.kt:23; EA/presentation/AuditReadExceptionHandler.kt:53-70; EA/presentation/admin/AuditReadController.kt:95,131,146-151; EA/presentation/SigningImageExceptionHandler.kt:33,60-65; EA/infrastructure/ratelimit/InMemorySignRequestThrottle.kt:94-97,137; EA/infrastructure/ratelimit/InMemorySignatureImageThrottle.kt:81-93' },
   { code: 'RESTORE_LIMIT_REACHED', status: 429, where: 'envelope document restore, when the organization has too many restores in progress', source: 'EA/domain/restore/RestoreRefusals.kt:19; EA/presentation/RestoreExceptionHandler.kt:34' },
   { code: 'VERIFY_TIMEOUT', status: 408, where: 'verify by file, when the upload takes longer than the deadline', source: 'EA/presentation/VerifyFileExceptionHandler.kt:40-44,62' },
-  { code: 'PAYLOAD_TOO_LARGE', status: 413, where: 'verify by file, above the size limit', source: 'EA/presentation/VerifyFileExceptionHandler.kt:48' },
+  { code: 'PAYLOAD_TOO_LARGE', status: 413, where: 'verify by file and the sign call, above the body size limit', source: 'EA/presentation/VerifyFileExceptionHandler.kt:48; EA/presentation/SigningImageExceptionHandler.kt:31,50-53' },
   { code: 'AUDIT_EXPORT_TOO_LARGE', status: 413, where: 'audit export above the row limit (page with fromSeq and limit)', source: 'EA/presentation/admin/AuditReadController.kt:114' },
   { code: 'DOCUMENT_DELETED', status: 410, where: 'restores, once the file has passed its retention', source: 'EA/domain/restore/RestoreRefusals.kt:15; EA/presentation/RestoreExceptionHandler.kt:33' },
   { code: 'DOCUMENT_NOT_SIGNED', status: 409, where: 'restore of a signed file that does not exist', source: 'EA/domain/restore/RestoreRefusals.kt:12; EA/presentation/RestoreExceptionHandler.kt:32' },
@@ -90,7 +91,33 @@ export const ERROR_CODES: readonly ErrorCodeFact[] = [
   { code: 'EVIDENCE_NOT_AVAILABLE', status: 409, where: 'evidence certificate download when it is not ISSUED', source: 'EA/presentation/EvidenceExceptionHandler.kt:30,62' },
   { code: 'DOCUMENT_HASH_MISMATCH', status: 409, where: 'signing with documentHashes that no longer match the documents', source: 'EA/presentation/DocumentExceptionHandler.kt:47-51,68' },
   { code: 'DOCUMENT_HASH_MISSING', status: 409, where: 'send (or sign) while a document has no recorded SHA-256', source: 'EA/presentation/DocumentExceptionHandler.kt:41-45,67; EA/application/usecase/SendEnvelopeUseCase.kt:50-51' },
+  // POST /api/v1/sign/{token}/sign, since bb-sign v0.37.0 (#298, #292).
+  { code: 'SIGNATURE_IMAGE_INVALID', status: 400, where: 'the sign call, when signatureImage is not a PNG data URL the server accepts', source: 'EA/presentation/SigningImageExceptionHandler.kt:29,44-47,84; EA/presentation/signer/SigningController.kt:584-594' },
+  { code: 'SIGNATURE_IMAGE_TOO_LARGE', status: 400, where: 'the sign call, when the PNG is over the byte or pixel limits', source: 'EA/presentation/SigningImageExceptionHandler.kt:30,44-47,85; EA/presentation/signer/SigningController.kt:584-594' },
+  { code: 'SIGNATURE_METHOD_INVALID', status: 400, where: 'the sign call, when signatureMethod is not DRAWN, TYPED or UPLOADED_IMAGE', source: 'EA/presentation/SigningExceptionHandler.kt:23,30-32,49; EA/domain/signature/SigningErrors.kt:9-10; EA/application/usecase/SubmitSignatureUseCase.kt:29,79-81; EA/presentation/signer/SigningController.kt:596-602' },
+  { code: 'SIGNATURE_UPLOAD_TIMEOUT', status: 408, where: 'the sign call, when the body arrives too slowly; a client that stops sending entirely gets a bare 408 or an empty 401 instead', source: 'EA/presentation/SigningImageExceptionHandler.kt:32,55-58,86; EA/infrastructure/web/SignRequestBodyLimitFilter.kt:53-57' },
+  { code: 'OTP_VERIFICATION_EXPIRED', status: 409, where: 'the sign call, when the signer verified the code more than OTP.verifiedValidityMinutes ago', source: 'EA/presentation/SigningExceptionHandler.kt:24,34-36,50; EA/domain/signature/SigningErrors.kt:12-17; EA/domain/signature/SigningEligibility.kt:72,103' },
+  { code: 'SIGNING_BUSY', status: 503, where: 'the sign call, when bb-sign is at capacity for signatures (Retry-After: 1)', source: 'EA/presentation/SigningImageExceptionHandler.kt:34,67-71,88; EA/infrastructure/ratelimit/InMemorySignatureImageThrottle.kt:107-114; EA/infrastructure/web/SignRequestBodyLimitFilter.kt:124,130,136; EA/infrastructure/ratelimit/InMemorySignRequestThrottle.kt:86' },
 ];
+
+// -------------------------------------------------------- sign request ---
+
+/**
+ * Server limits of `POST /api/v1/sign/{token}/sign` (bb-sign#298). Production sets no `APP_SIGN_*` or
+ * `SIGNATURE_IMAGE_*` variable (prod), so the yml defaults apply. The client-side upload limits are
+ * `SIGNATURE_UPLOAD` in `sign.ts`.
+ */
+export const SIGN_REQUEST = {
+  /** 1,048,576 bytes. */
+  maxPngMib: fact(1, 'yml:259 (max-png-bytes 1048576); EA/presentation/signer/SigningController.kt:586'),
+  /** 1,572,864 bytes: the longest accepted image as base64 plus 64 KiB of JSON. */
+  maxBodyMib: fact(1.5, 'yml:248-250 (max-body-bytes 1572864); EA/presentation/signer/SigningController.kt:590'),
+  /** The minimum body cap the server's own rule allows for maxPngMib (yml:248-249). */
+  minBodyBytesForPng: fact(1_463_662, 'yml:248-249 (">= 1,463,662 for the 1 MiB default")'),
+  /** The `Retry-After` of a 503 SIGNING_BUSY. */
+  busyRetryAfterSeconds: fact(1, 'EA/domain/signature/SignatureImageErrors.kt:46-51 (RETRY_AFTER_SECONDS); EA/presentation/SigningImageExceptionHandler.kt:67-71'),
+  maxSeconds: fact(30, 'yml:251 (max-body-seconds, checked after every read); EA/infrastructure/web/SignRequestBodyLimitFilter.kt:53-57'),
+} as const;
 
 // ---------------------------------------------------------- rate limits ---
 
@@ -110,11 +137,20 @@ export const RATE_LIMITS = {
     ['verification', 'export'] as const,
     'EA/presentation/admin/AuditReadController.kt:88-95,120-131,146-151; EA/presentation/AuditProxyController.kt:47-51,129-145 (TYPED_AUDIT_SEGMENTS; the proxy calls no throttle)',
   ),
-  signerRestorePerLink: fact(5, 'bb-sign/edge-api/src/main/resources/application.yml:273 (5/PT10M); InMemorySignerRestoreThrottle.kt:25'),
-  signerRestorePerIp: fact(20, 'bb-sign/edge-api/src/main/resources/application.yml:274 (20/PT10M); InMemorySignerRestoreThrottle.kt:26'),
+  signerRestorePerLink: fact(5, 'bb-sign/edge-api/src/main/resources/application.yml:299 (5/PT10M); InMemorySignerRestoreThrottle.kt:25'),
+  signerRestorePerIp: fact(20, 'bb-sign/edge-api/src/main/resources/application.yml:300 (20/PT10M); InMemorySignerRestoreThrottle.kt:26'),
   /** The window of both signer restore limits. */
-  signerRestoreWindowMinutes: fact(10, 'bb-sign/edge-api/src/main/resources/application.yml:273-274 (PT10M)'),
+  signerRestoreWindowMinutes: fact(10, 'bb-sign/edge-api/src/main/resources/application.yml:299-300 (PT10M)'),
   agreementPublishesPerDayPerType: fact(10, 'bb-sign/edge-api/src/main/resources/application.yml:124'),
+  /**
+   * The sign call (`POST /api/v1/sign/{token}/sign`). In memory, per task (yml:240): one number holds because
+   * production runs one replica (prod:18). Re-read when the replica count changes.
+   */
+  signPerMinutePerClient: fact(30, 'yml:242 (per client key: IPv4, or IPv6 /64); EA/infrastructure/ratelimit/InMemorySignRequestThrottle.kt:94-95; no APP_SIGN_* in prod; prod:18 (replicas: 1)'),
+  signInFlightPerClient: fact(2, 'yml:243; EA/infrastructure/ratelimit/InMemorySignRequestThrottle.kt:97,137 (Retry-After 1 s); no APP_SIGN_* in prod; prod:18 (replicas: 1)'),
+  /** Image attempts on one link that were refused, or are still being checked (a slot is reserved before the check). */
+  signImageAttemptsPerLink: fact(5, 'yml:245 (5/PT10M); EA/infrastructure/ratelimit/InMemorySignatureImageThrottle.kt:21-24,81-105; no APP_SIGN_* in prod; prod:18 (replicas: 1)'),
+  signImageAttemptsWindowMinutes: fact(10, 'yml:245 (PT10M); EA/infrastructure/ratelimit/InMemorySignatureImageThrottle.kt:86-89'),
 } as const;
 
 // ----------------------------------------------------------------- sdk ---
