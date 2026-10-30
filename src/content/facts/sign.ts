@@ -12,6 +12,9 @@
  * bb-sign release tag v0.37.0 (1ef08008: bb-sign#298 and #292). On 2026-10-29 every `application.yml` line
  * after 238 was moved by the 26 lines v0.37.0 inserted there (bb-sign 4ec7d3f0), and the sign-call limits and
  * error codes were added to `sign-integrations.ts`.
+ * On 2026-10-29 every citation into a file bb-sign v0.37.1 changed (tag daa783ec: bb-sign#310 removed the signer's
+ * evidence certificate, #311 redesigned the signature capture step) was re-read on bb-sign `main` e1519854, and the
+ * signer-copy facts were replaced by EVIDENCE.signersReceiveCertificate and EVIDENCE.signerDownloadsUntil.
  * When a value moves in the product, change it here and the whole site follows.
  * `tests/unit/facts.test.ts` checks the relationships between values (an OTP
  * outlives its resend cooldown, the retention outlives the archive threshold,
@@ -264,7 +267,7 @@ export const ARCHIVED_ENVELOPES = {
     true,
     'bb-sign/frontend/src/pages/ArchivedEnvelopes.tsx:156-164; EnvelopeDetail.tsx:171,176-180; bb-sign/frontend/src/i18n/locales/es/envelopes.json:66; EA/infrastructure/persistence/JpaSignedDocumentRegistry.kt:15,30',
   ),
-  /** The signer's link keeps serving the signed copy and the signer evidence certificate after archiving, with no expiry check. */
+  /** The signer's link keeps serving the signed copy after archiving, with no expiry check (never the evidence certificate, bb-sign#310). */
   signerLinkKeepsCopy: fact(
     true,
     'EA/application/usecase/GetSignedCopyUseCase.kt:27-53; EA/application/usecase/SignedCopyGate.kt:5-11',
@@ -286,7 +289,7 @@ export const OTP = {
    */
   verifiedValidityMinutes: fact(
     15,
-    'EA/domain/signature/SigningEligibility.kt:72,103 (OTP_VALIDITY); EA/domain/signature/SigningErrors.kt:13-17; bb-sign/frontend/src/pages/SigningCeremony.tsx:481-482,435-448 (returnToOtpStep)',
+    'EA/domain/signature/SigningEligibility.kt:72,103 (OTP_VALIDITY); EA/domain/signature/SigningErrors.kt:13-17; bb-sign/frontend/src/pages/SigningCeremony.tsx:465-466,419-432 (returnToOtpStep)',
   ),
   /** The schema allows 'SMS', but no SMS sender exists: email is the only channel. */
   channel: fact('email', 'NS/infrastructure/delivery/EmailOtpCodeDeliveryChannel.kt:25; V003__lv209_otp_code_hmac.sql:7,14'),
@@ -327,17 +330,17 @@ export const SIGNER = {
  */
 export const SIGNATURE_UPLOAD = {
   /** Largest file the signer may pick. */
-  maxSourceMb: fact(10, 'FE/signatureUpload.ts:12-13 (MAX_SOURCE_BYTES = 10 * 1024 * 1024), :170 (refusal "size"); bb-sign/frontend/src/i18n/locales/es/signing.json:26,86'),
+  maxSourceMb: fact(10, 'FE/signatureUpload.ts:12-13 (MAX_SOURCE_BYTES = 10 * 1024 * 1024), :170 (refusal "size"); bb-sign/frontend/src/i18n/locales/es/signing.json:26,94'),
   /** Above this size the page shows an informational notice that the image will be reduced. Never a refusal. */
-  resizeNoticeMb: fact(1, 'FE/signatureUpload.ts:14-15 (RESIZE_NOTICE_BYTES = 1024 * 1024), :180-183; FE/SignatureUpload.tsx:129-131; bb-sign/frontend/src/i18n/locales/es/signing.json:92'),
+  resizeNoticeMb: fact(1, 'FE/signatureUpload.ts:14-15 (RESIZE_NOTICE_BYTES = 1024 * 1024), :180-183; FE/SignatureUpload.tsx:209-211; bb-sign/frontend/src/i18n/locales/es/signing.json:106'),
   /** Accepted formats, judged from the file's first bytes, not its name or type. */
-  formats: fact('PNG, JPEG', 'FE/signatureUpload.ts:5-6,100-104 (sniffImageType); FE/SignatureUpload.tsx:71 (accept="image/png,image/jpeg")'),
-  /** "Quitar el fondo claro" starts switched on. */
-  removeBackgroundDefault: fact(true, 'FE/signatureUpload.ts:401-404 (INITIAL_UPLOAD_STATE.removeBackground = true); FE/SignatureUpload.tsx:104-113'),
+  formats: fact('PNG, JPEG', 'FE/signatureUpload.ts:5-6,100-104 (sniffImageType); FE/SignatureUpload.tsx:104 (accept="image/png,image/jpeg")'),
+  /** "Quitar el fondo claro" starts switched on; it shows once an image is chosen (or after a pick refused for no ink). */
+  removeBackgroundDefault: fact(true, 'FE/signatureUpload.ts:401-404 (INITIAL_UPLOAD_STATE.removeBackground = true), :453-461 (showsBackgroundSwitch); FE/SignatureUpload.tsx:165-181'),
   /** The image is prepared in the browser; only a re-encoded PNG is sent, so location and device data (EXIF, GPS) are not kept. */
-  processedOnDevice: fact(true, 'FE/signatureUpload.ts:7-9; FE/signatureCanvas.ts:35-49 (normalizeToBox, toDataURL("image/png")); FE/SignatureUpload.tsx:24-27'),
+  processedOnDevice: fact(true, 'FE/signatureUpload.ts:7-9; FE/signatureCanvas.ts:35-49 (normalizeToBox, toDataURL("image/png")); FE/SignatureUpload.tsx:31-33'),
   /** No `capture` attribute on the file input, so a phone offers the camera, the photo library and files. */
-  cameraOrGallery: fact(true, 'FE/SignatureUpload.tsx:29,68-77'),
+  cameraOrGallery: fact(true, 'FE/SignatureUpload.tsx:39,101-110'),
 } as const;
 
 export const DOCUMENTS = {
@@ -431,7 +434,7 @@ export const VERIFY = {
     'EA/application/usecase/VerifySignatureSealUseCase.kt:40-44 (signerRepo.findByEnvelopeIdAndSealHashStartingWith, live table only); EA/infrastructure/persistence/JpaSignedDocumentRegistry.kt:15,30 (file check reads archived rows); archive threshold ENVELOPE.archiveAfterDays',
   ),
   /** `GET /verify` checks the seal record; it does not read the PDF or validate its CMS signature. */
-  qrReadsPdf: fact(false, 'bb-sign/docs/api/reference.md:712'),
+  qrReadsPdf: fact(false, 'bb-sign/docs/api/reference.md:662'),
 } as const;
 
 /** The bb-sign issue that tracks the QR defect (D9). The lead fills the number before deploy (plan R2-5). */
@@ -504,18 +507,26 @@ export const CERTIFICATE = {
 export type EvidenceStatus = 'ISSUED' | 'PENDING' | 'FAILED' | 'UNAVAILABLE' | 'EXPIRED';
 
 export const EVIDENCE = {
-  /** A sealed PDF issued after completion: an organization copy and a signer copy, stored with a frozen audit-trail.json. */
+  /** A sealed PDF issued after completion, stored with a frozen audit-trail.json, for the organization only. */
   statuses: fact(['ISSUED', 'PENDING', 'FAILED', 'UNAVAILABLE', 'EXPIRED'] as const, 'EA/domain/evidence/EvidenceCertificate.kt:12'),
-  variants: fact(['ORGANIZATION', 'SIGNER'] as const, 'EA/domain/evidence/EvidenceCertificate.kt:15; bb-sign/docs/api/evidence-certificate.md:3-33'),
-  /** The signer copy masks emails and leaves out IP, browser and OTP destination. */
-  signerCopyMasked: fact(true, 'bb-sign/frontend/src/components/signing/SignerEvidenceDownload.tsx:12-16; bb-sign/docs/api/evidence-certificate.md:3-33'),
-  /** A signer never receives the audit trail; the certificate tells them the organization can provide it. */
-  signerCopyIncludesAuditTrail: fact(
+  /**
+   * Signers never receive the certificate: no signer route, no download on the signing page, no line in the
+   * completion email (bb-sign#310, v0.37.1). They download their signed copy only.
+   */
+  signersReceiveCertificate: fact(
     false,
-    'bb-sign/docs/api/evidence-certificate.md:90; bb-sign/document-processing-worker/src/main/resources/evidence/messages_es.properties:133, messages_en.properties:133 (evidence.verify.signerNote)',
+    'bb-sign/docs/api/evidence-certificate.md:8-15; EA/application/usecase/GetEvidenceCertificateUseCase.kt:30-35; EA/domain/evidence/EvidenceCertificate.kt:14-18 (EvidenceVariant { ORGANIZATION }); EA/application/usecase/SignedCopyGate.kt:5-11; bb-sign/notification-service/src/main/resources/templates/email/envelope-completed.html:43-58',
+  ),
+  /**
+   * The last release in which a signer could download a copy of the certificate from their link, recorded in the
+   * trail as EVIDENCE_CERTIFICATE_ACCESSED by the signer. Live in production from v0.34.0 until v0.37.1 (2026-10-29).
+   */
+  signerDownloadsUntil: fact(
+    'v0.37.0',
+    'bb-sign/docs/api/evidence-certificate.md:14-15 ("until v0.37.0"); bb-sign v0.37.0:edge-api/.../presentation/signer/SigningController.kt:333-362; v0.37.0:EA/application/usecase/GetEvidenceCertificateUseCase.kt:39-40,78-85; bb-infrastructure 4a5333e (edge-api and FrontendVersion v0.37.1)',
   ),
   /** The certificate is normally issued within minutes of completion (PENDING meanwhile). No time is guaranteed. */
-  usuallyIssuedWithinMinutes: fact(true, 'bb-sign/docs/api/evidence-certificate.md:30 (PENDING: "normally within minutes of completion"); bb-sign/frontend/src/i18n/locales/es/signing.json:110'),
+  usuallyIssuedWithinMinutes: fact(true, 'bb-sign/docs/api/evidence-certificate.md:32 (PENDING: "normally within minutes of completion")'),
   languages: fact(['es', 'en'] as const, 'bb-sign/platform/contracts/.../i18n/OrgLanguage.kt:16-22'),
   defaultLanguage: fact('es', 'bb-sign/platform/contracts/.../i18n/OrgLanguage.kt:22 (DEFAULT = ES)'),
   /** Set per organization by a platform admin; fixed when the certificate is issued. */
@@ -525,22 +536,22 @@ export const EVIDENCE = {
   /** The wait is clamped to this, whatever the configuration. */
   degradedClampHours: fact(24, 'bb-sign/edge-api/src/main/resources/application.yml:192 (clamped to 24 h)'),
   /** Download links last this long. */
-  downloadLinkSeconds: fact(300, 'EA/presentation/admin/EvidenceCertificateController.kt:124; EA/application/usecase/GetEvidenceCertificateUseCase.kt:29'),
+  downloadLinkSeconds: fact(300, 'EA/presentation/admin/EvidenceCertificateController.kt:124; EA/application/usecase/GetEvidenceCertificateUseCase.kt:26-27'),
   /** The same 5 minutes, for non-technical pages. `facts.test.ts` keeps the two equal. */
-  downloadLinkMinutes: fact(5, 'EA/application/usecase/GetEvidenceCertificateUseCase.kt:29 (300 s)'),
+  downloadLinkMinutes: fact(5, 'EA/application/usecase/GetEvidenceCertificateUseCase.kt:26-27 (300 s)'),
   /** Kept from issue under a GOVERNANCE Object Lock; never moved to archive storage. */
   retentionDays: fact(365, 'W/application/evidence/IssueEvidenceCertificateUseCase.kt:155 (Retention.DAYS)'),
   archived: fact(false, 'bb-sign/platform/contracts/.../retention/Retention.kt:68,79 (RetainedFile.EVIDENCE -> null); bb-infrastructure/aws/bb-sign-aws.yml:439-441'),
   /** Same permission as the documents. */
   downloadPermission: fact('document:download', 'EA/presentation/admin/EvidenceCertificateController.kt:37-45; bb-sign/frontend/src/i18n/locales/es/envelopes.json:96'),
   /** Every download is recorded as EVIDENCE_CERTIFICATE_ACCESSED; reading the status records nothing. */
-  downloadAudited: fact(true, 'EA/application/usecase/GetEvidenceCertificateUseCase.kt:29; bb-sign/audit-service/.../domain/AuditEventType.kt:75'),
+  downloadAudited: fact(true, 'EA/application/usecase/GetEvidenceCertificateUseCase.kt:26-28,57-62; bb-sign/audit-service/.../domain/AuditEventType.kt:75'),
   /** Platform staff only; at most this many re-issues per certificate. */
   reissueMax: fact(3, 'EA/domain/evidence/EvidenceReissue.kt:15 (MAX_REISSUES); EA/presentation/admin/EvidenceCertificateController.kt:150-155 (@Hidden platform operation)'),
   /** A failed certificate can be re-issued only within this many days of the failure, and only while the envelope is not archived. */
   reissueWindowDays: fact(
     30,
-    'EA/domain/evidence/EvidenceReissue.kt:13-14,41 (REISSUE_WINDOW from failedAt); EA/application/usecase/ReissueEvidenceCertificateUseCase.kt:49-51 (archived: refused); bb-sign/docs/api/evidence-certificate.md:122,129-130',
+    'EA/domain/evidence/EvidenceReissue.kt:13-14,41 (REISSUE_WINDOW from failedAt); EA/application/usecase/ReissueEvidenceCertificateUseCase.kt:49-51 (archived: refused); bb-sign/docs/api/evidence-certificate.md:117-119',
   ),
   /** Envelopes completed before the rollout show "Completado antes de habilitar los certificados de evidencia". */
   beforeRolloutUnavailable: fact(true, 'bb-sign/frontend/src/i18n/locales/es/envelopes.json:94; bb-infrastructure/docs/runbooks/lv-legal-validity-release.md:80-81'),
@@ -638,7 +649,7 @@ export const RETENTION_IMPLEMENTED = {
   /** Restore on request is deployed (v0.34.0) and idle: nothing is archived in production. */
   restoreOnRequest: fact(
     'deployed, idle until archiving is enabled (bb-sign#214 P5)',
-    'EA/presentation/admin/EnvelopeController.kt:673-687; EA/presentation/signer/SigningController.kt:300-313; bb-infrastructure/apps/bb-sign/edge-api.yaml:72-75; lv-retention-restore-iam.md:184-185',
+    'EA/presentation/admin/EnvelopeController.kt:673-687; EA/presentation/signer/SigningController.kt:277-290; bb-infrastructure/apps/bb-sign/edge-api.yaml:72-75; lv-retention-restore-iam.md:184-185',
   ),
 } as const;
 
@@ -696,7 +707,7 @@ export const EMAILS: readonly EmailFact[] = [
   { template: 'signing-invitation', subject: "It's your turn to sign: {title}", recipient: 'signer', trigger: 'signer.eligible (sequential signing)', language: 'en', source: 'NS/infrastructure/messaging/listener/SignerEligibleListener.kt:37' },
   { template: 'otp-delivery', subject: 'Your verification code for BB-Sign', recipient: 'signer', trigger: 'otp.ready_for_delivery', language: 'en', source: 'NS/infrastructure/delivery/EmailOtpCodeDeliveryChannel.kt:25' },
   { template: 'reminder', subject: 'Reminder: please sign {title}', recipient: 'signer', trigger: 'daily; invitation older than the threshold', language: 'en', source: 'NS/application/service/ReminderSchedulerService.kt:79' },
-  { template: 'envelope-completed', subject: 'Signing complete: {title}', recipient: 'signer', trigger: 'evidence certificate issued, or the degraded wait (without it)', language: 'en', source: 'NS/application/service/CompletionEmails.kt:34-37,64; NS/infrastructure/messaging/listener/EnvelopeCompletionNoticeListener.kt:14-21; yml:193' },
+  { template: 'envelope-completed', subject: 'Signing complete: {title}', recipient: 'signer', trigger: 'evidence certificate issued, or the degraded wait (without it)', language: 'en', source: 'NS/application/service/CompletionEmails.kt:33-37,64; NS/infrastructure/messaging/listener/EnvelopeCompletionNoticeListener.kt:13-21; bb-sign/notification-service/src/main/resources/templates/email/envelope-completed.html:43-58 (no certificate line since v0.37.1); yml:193' },
   { template: 'envelope-expired', subject: 'Signing request expired: {title}', recipient: 'signer', trigger: 'envelope.expired', language: 'en', source: 'NS/infrastructure/messaging/listener/EnvelopeExpiredListener.kt:28' },
   { template: 'webhook-disabled', subject: 'Action required: bb-sign disabled a webhook endpoint', recipient: 'org_admin', trigger: 'webhook circuit breaker', language: 'en', source: 'NS/infrastructure/messaging/listener/WebhookSubscriptionDisabledListener.kt:56' },
   { template: 'certificate-expiring', subject: "bb-sign: el certificado de sello de su organización vence en N días · Your organization's sealing certificate expires in N days", recipient: 'org_admin', trigger: 'daily certificate expiry check (own certificate, at each notice threshold)', language: 'es+en', source: 'NS/application/service/CertificateExpiryEmails.kt:90,95-100; bb-sign/notification-service/src/main/resources/templates/email/certificate-expiring.html' },

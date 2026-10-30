@@ -269,10 +269,11 @@ describe('bb-sign fact sheet', () => {
     expect(DOCUMENTS.sealRefusedOnHashMismatch.value).toBe(true);
   });
 
-  test('evidence: re-issue window, signer copy and timing', () => {
+  test('evidence: re-issue window, signers and timing', () => {
     expect(EVIDENCE.reissueWindowDays.value).toBeGreaterThan(0);
     expect(EVIDENCE.reissueMax.value).toBeGreaterThan(0);
-    expect(EVIDENCE.signerCopyIncludesAuditTrail.value).toBe(false);
+    expect(EVIDENCE.signersReceiveCertificate.value).toBe(false);
+    expect(EVIDENCE.signerDownloadsUntil.value).toMatch(/^v\d+\.\d+\.\d+$/);
     expect(EVIDENCE.usuallyIssuedWithinMinutes.value).toBe(true);
   });
 
