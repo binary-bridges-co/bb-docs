@@ -27,7 +27,7 @@ API.
 | **Webhook** with echo verification | **Webhook** with HMAC signature | See [Webhooks](#webhooks-from-echo-verification-to-hmac-signature); this is the main change |
 | **Megasign / bulk send** | One envelope per recipient | Create the envelopes in a loop with `POST /api/v1/envelopes` |
 | **Custom workflow** | Sequential or parallel signing | Set with the envelope's `sequentialSigning` boolean and each signer's `signOrder` |
-| **Audit report** | **Evidence certificate** | A sealed PDF per completed envelope, with one copy for the organization and one for each signer. See [Evidence certificate](/en/sign/concepts/evidence-certificate/) |
+| **Audit report** | **Evidence certificate** | A sealed PDF per completed envelope, for the organization; signers do not receive it. See [Evidence certificate](/en/sign/concepts/evidence-certificate/) |
 | **Form fields / anchors** | A text marker in the PDF | The seal is placed where the PDF contains <code>{DOCUMENTS.placementMarker.value}</code> (N is the signer's order); without a marker, seals are placed on the last page. See [Documents](/en/sign/concepts/documents/) |
 
 ## Authentication: from integration key to client credentials

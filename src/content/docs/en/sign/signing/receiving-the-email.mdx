@@ -25,7 +25,7 @@ available in English and Spanish; you can switch the language in the top right c
 | `It's your turn to sign: {title}` | When the envelope has a signing order and the people before you have signed. It contains your signing link. |
 | `Your verification code for BB-Sign` | When you request the verification code on the signing page. |
 | `Reminder: please sign {title}` | When your signature is still pending. It contains the same link as the invitation. |
-| `Signing complete: {title}` | When everyone has signed, usually together with your evidence certificate. It contains the link to your signed copy and your certificate. |
+| `Signing complete: {title}` | When everyone has signed. It contains the link to your signed copy. |
 | `Signing request expired: {title}` | When the envelope expired without your signature. |
 | `Tu solicitud de restauración de documentos / Your document restore request` | When you asked for your copy with **Request my copy** and the restore has finished. It arrives in Spanish and English and says whether your copy is available and until when.{RESTORE.emailLinksToEnvelopeOrSigningPage.value && ' Its link leads to your signing page, where you download the copy; the email does not carry the file.'} |
 
@@ -33,12 +33,11 @@ available in English and Spanish; you can switch the language in the top right c
 
 ## The completion email
 
-`Signing complete: {title}` is sent once your evidence certificate is
-issued{EVIDENCE.usuallyIssuedWithinMinutes.value && ', usually a few minutes after the last signature'}. If the certificate takes longer, the email goes out without waiting more than
-<Fact of={EVIDENCE.degradedAfterHours} unit="hours" /> after the envelope completed. The email says
-which case applies: "Your evidence certificate is ready, at the same link.", "Your evidence certificate
-is being prepared; it will appear at the same link." or "Your signed documents are being prepared;
-they will appear at the same link."
+`Signing complete: {title}` is sent when bb-sign finishes processing the
+envelope{EVIDENCE.usuallyIssuedWithinMinutes.value && ', usually a few minutes after the last signature'}. If that takes longer, the email goes out without waiting more than
+<Fact of={EVIDENCE.degradedAfterHours} unit="hours" /> after the envelope completed. If your copy is
+still being prepared, the email says so: "Your signed documents are being prepared; they will appear
+at the same link."
 
 ## Reminders
 
@@ -63,6 +62,6 @@ invitation, bb-sign sends you a reminder. After that it sends at most one every
 
 The link is valid for <Fact of={ENVELOPE.linkTtlHoursDefault} unit="hours" /> by default, or for
 the period set by the person who sent the document. That period only limits signing. Once you have
-signed, the same link takes you to your signed copy and your evidence certificate for
+signed, the same link takes you to your signed copy for
 <Fact of={RETENTION_POLICY.retentionDays} unit="days" /> from the envelope's completion, even after the
 signing period has ended and even once the envelope is archived.

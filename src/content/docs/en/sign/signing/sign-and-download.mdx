@@ -1,6 +1,6 @@
 ---
 title: Sign and download
-description: How to draw, type or upload your signature, what is recorded, how to download the signed copy and your evidence certificate, and how long they remain available.
+description: How to draw, type or upload your signature, what is recorded, how to download your signed document and how long it remains available.
 product: sign
 audience: signer
 ---
@@ -9,35 +9,41 @@ import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
 import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD } from '../../../../facts/sign';
 
-On the **Add Your Signature** screen you sign the document and, once everyone has signed, download
+On the **Add your signature** screen you sign the document and, once everyone has signed, download
 your sealed copy.
 
 ## Draw, type or upload an image
 
-- **Draw**: trace your signature with a finger, a stylus or the mouse in the box "Draw your
-  signature here". **Clear** empties the box.
-- **Type**: enter your name in "Type your full name". bb-sign turns it into a signature in a
-  handwriting font.
+Choose how to sign with the **Draw**, **Type** or **Upload image** tabs. The signature appears on a
+white box, exactly as it will look on the document.
+
+- **Draw**: under **Draw your signature**, sign above the line in the box with your finger, a stylus
+  or the mouse. **Clear**, above the box, empties it.
+- **Type**: enter your name in **Type your full name**. Below it, "How it will be stamped" shows your
+  name in a handwriting font.
 - **Upload image**: use a photo or scan of the signature you made by hand. The next section
   explains how.
 
-Then press **Submit Signature**. If there is no signature yet, you see "Please draw your
+Then press **Submit signature**. If there is no signature yet, you see "Please draw your
 signature.", "Please type your name." or "Choose an image of your signature."
 
 ### Upload an image of your signature
 
-The page tells you which image works: "A photo or scan of your signature on light paper. PNG or
-JPEG, up to <Fact of={SIGNATURE_UPLOAD.maxSourceMb} unit="MB" />."
+The **Upload a photo of your signature** box tells you which image works: "PNG or JPEG, up to
+<Fact of={SIGNATURE_UPLOAD.maxSourceMb} unit="MB" />." Below it, the page gives three tips: sign on
+plain white paper with a dark pen, take the photo in even light without shadows, and your photo stays
+on your device.
 
-1. Sign on light paper and take a photo of it or scan it.
+1. Sign on white paper and take a photo of it or scan it.
 2. Press **Choose an image** and pick the file. On a phone you can take the photo with the camera
    or pick it from the gallery.
-3. Check the preview: it shows your signature exactly as it will be stamped on the document. To
-   use another image, press **Replace image**.
+3. Check "How it will be stamped": it shows your signature exactly as it will be stamped on the
+   document, with the file's name and size. To use another image, press **Replace image**. To start
+   over, press **Remove**.
 
-**Remove light background** is on by default: the page makes the paper transparent so that only
-the stroke appears in the seal. If the preview does not look right, turn it off and check the
-preview again.
+Once you choose the image, **Remove light background** appears, on by default: "Makes the paper
+behind your signature transparent.", so that only the stroke appears in the seal. If the preview
+does not look right, turn it off and check the preview again.
 
 If the file is larger than <Fact of={SIGNATURE_UPLOAD.resizeNoticeMb} unit="MB" />, the page
 shows: "This image is larger than <Fact of={SIGNATURE_UPLOAD.resizeNoticeMb} unit="MB" />, so it
@@ -68,9 +74,8 @@ signing client)", with the value "drawn on screen", "name typed on screen" or "i
 the device". It is what the signing page declared: bb-sign does not infer it from the image. If the
 signature was recorded without that declaration, the certificate shows "not recorded".
 
-This information is part of the envelope's evidence and appears in its evidence certificate. Your
-name, email and the date also appear on the document's seal. The copy of the certificate you download
-masks email addresses and leaves out your IP address, your browser and the code's destination.{!EVIDENCE.signerCopyIncludesAuditTrail.value && ' It does not include the envelope\'s audit trail either; if you need it, ask the person who sent you the document.'}
+This information is part of the envelope's evidence, which the organization that sent you the
+document keeps. Your name, email and the date also appear on the document's seal.
 
 <Aside type="caution" title="A submitted signature is final">
   Once the signature is recorded, the envelope moves to the next step. If you signed by mistake or
@@ -90,28 +95,19 @@ states of your signed copy:
 | "Your signed copy is still being prepared. We have emailed you a link — you can download it from there once it is ready." | Sealing is taking longer. You can close the page and download the copy from the completion email. |
 | No download button | Other people still need to sign. The copy will be available once everyone has signed. |
 
-Once the copy is ready, the page also offers your evidence certificate:
-
-| What you see | What it means |
-|---|---|
-| "Preparing your evidence certificate — this can take a few minutes." | bb-sign is issuing the certificate. The page refreshes automatically. |
-| **Download Your Evidence Certificate** | The certificate is ready. |
-| "Could not download the evidence certificate. Please try again." | The download did not start. Press the button again. |
-
-If the envelope completed before evidence certificates existed, the page offers no certificate.
-
 ## Completion email
 
 When everyone has signed, you receive the email `Signing complete: {title}` with the link to your
-copy. It is usually sent once your evidence certificate is ready and, if that takes longer, without
-waiting more than <Fact of={EVIDENCE.degradedAfterHours} unit="hours" />; the email says whether the
-certificate is ready or being prepared. The link opens the confirmation screen with the message "This
+copy. It is sent when bb-sign finishes processing the envelope{EVIDENCE.usuallyIssuedWithinMinutes.value && ', usually a few minutes after the last signature'},
+and it never waits more than <Fact of={EVIDENCE.degradedAfterHours} unit="hours" />. If your copy is
+still being prepared, the email says so: "Your signed documents are being prepared; they will appear
+at the same link." The link opens the confirmation screen with the message "This
 envelope is complete. You can download your signed copy below." You can use it as often as you need
 while the copy is available.
 
 ## Copy availability
 
-Your signed copy and your evidence certificate can be downloaded from your link for
+Your signed copy can be downloaded from your link for
 <Fact of={RETENTION_POLICY.retentionDays} unit="days" /> from the envelope's completion, even after the
 signing period has ended and even once the envelope is archived. We recommend saving your copy as soon
 as you download it.
@@ -126,8 +122,6 @@ does not move any copy to that storage, but if it happens, you see:
 | "We will email you your copy when it is available, usually within a few hours." | Your request was recorded. | Wait for the email `Tu solicitud de restauración de documentos / Your document restore request` and open its link. The restored copy can be downloaded for <Fact of={RESTORE.days} unit="days" />{RESTORE.requestableAgainAfterWindow.value && <>; after that you can press <strong>Request my copy</strong> again</>}. |
 | "We received many requests from this link or your connection. If you already asked, the email will arrive; if not, try again in a few minutes." | The limit of <Fact of={RATE_LIMITS.signerRestorePerLink} /> requests per link, or <Fact of={RATE_LIMITS.signerRestorePerIp} /> per connection, within <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutes" /> was reached. | If you already asked, wait for the email. If not, try again in a few minutes. |
 | "We could not request your copy. Try again in a few minutes." | The request did not complete. | Try again in a few minutes. |
-
-Your evidence certificate is never archived: it still downloads directly while you wait for your copy.
 
 Once the retention period has ended, the page shows "Your signed copy is no longer available: its
 <Fact of={RETENTION_POLICY.retentionDays} />-day retention period has ended." In that case, request

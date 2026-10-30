@@ -81,8 +81,8 @@ number of days left. The subjects of account emails are set by the identity serv
 they appear in parentheses.
 
 The envelope completed email waits for the evidence certificate for at most
-<Fact of={EVIDENCE.degradedAfterHours} unit="hours" /> and, when it applies, says whether it is ready or
-being prepared, at the same link. See [Evidence certificate](/en/sign/concepts/evidence-certificate/).
+<Fact of={EVIDENCE.degradedAfterHours} unit="hours" />, but does not mention it: it only links to the
+signer's signed copy and says when the signed documents are still being prepared. See [Evidence certificate](/en/sign/concepts/evidence-certificate/).
 
 The restore notice is only sent when the restore of an archived file ends, and today no file is moved
 to archive storage. API credentials do not receive this email: their integrations learn of it through the

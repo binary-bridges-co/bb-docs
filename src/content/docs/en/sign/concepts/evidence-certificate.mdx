@@ -30,7 +30,7 @@ summarizes, see [Evidence and audit](/en/sign/concepts/evidence-and-audit/).
 
 | Block | What it shows |
 | --- | --- |
-| Header | The certificate identifier, the envelope and its title, the organization, the sender, the date it completed and which copy this is. |
+| Header | The certificate identifier, the envelope and its title, the organization, the sender, the date it completed and the label "Organization copy". |
 | Documents | For each document: its name, the pages of the original, the original's SHA-256 fingerprint and how it was computed, the signed document's SHA-256 fingerprint and the upload date. |
 | Signers | For each signer: name, email, order, identification method, the one-time code if one was required (channel, masked destination and the time it was accepted), IP address, browser, when they were invited, opened the envelope and signed, the fingerprint of the document set they signed, and their seal's hash and version. |
 | Agreements | Today it always reads "No agreements attached". |
@@ -44,14 +44,10 @@ If the envelope was sealed with bb-sign's testing certificate, the **Seal** bloc
 part of the audit trail was recorded under an older scheme, the **Integrity** block says so and
 explains what the chain proves for those events.
 
-## Organization copy and signer copy
+## Who downloads it
 
-Every certificate has two copies:
-
-| Copy | Who downloads it | What it shows |
-| --- | --- | --- |
-| Organization | The users and API credentials that can download the envelope's documents (Auditor role or higher in its workspace). | Everything the certificate records, together with the audit trail as JSON. |
-| Signer | Each signer, from their signing link. | The same envelope, with every email masked and no IP addresses, browsers or one-time code destinations.{!EVIDENCE.signerCopyIncludesAuditTrail.value && ' It does not include the audit trail; if a signer needs it, the organization can provide it.'} |
+The users and API credentials that can download the envelope's documents (Auditor role or higher in
+its workspace) download it, together with the audit trail as JSON. They all receive the same file.{!EVIDENCE.signersReceiveCertificate.value && ' Signers do not receive the certificate. From their link they download their signed document.'}
 
 ## Language
 
@@ -61,12 +57,11 @@ it was issued in; if you need to change it for future certificates, ask Binary B
 
 ## When it is issued
 
-bb-sign issues the certificate after the envelope completes and its documents are sealed{EVIDENCE.usuallyIssuedWithinMinutes.value && ', usually within a few minutes'}. Meanwhile, the envelope detail shows "Evidence certificate processing...", and
-the signing page shows the signer "Preparing your evidence certificate".
+bb-sign issues the certificate after the envelope completes and its documents are sealed{EVIDENCE.usuallyIssuedWithinMinutes.value && ', usually within a few minutes'}. Meanwhile, the envelope detail shows "Evidence certificate processing...".
 
 The "Signing complete" email signers receive waits for the certificate for at most
-<Fact of={EVIDENCE.degradedAfterHours} unit="hours" />. If the certificate is not ready by then, the
-email goes out anyway and says it is being prepared, at the same link. Integrations receive the
+<Fact of={EVIDENCE.degradedAfterHours} unit="hours" /> and then goes out anyway. The email does not
+mention the certificate: it only takes the signer to their signed document. Integrations receive the
 `envelope.completed` webhook with the certificate's status and, if it arrives later,
 `envelope.evidence_issued`. See [Webhooks](/en/sign/developers/webhooks/).
 
@@ -107,10 +102,6 @@ Each download creates links valid for <Fact of={EVIDENCE.downloadLinkMinutes} un
 recorded in the audit trail as `EVIDENCE_CERTIFICATE_ACCESSED`. If a link expires, press the download
 again. Envelopes that have moved to **Archived** keep both downloads.
 
-**From the signer's link.** When the envelope completes, the signing page offers the signer
-**Download Your Evidence Certificate**, with their copy. The link keeps serving the copy after the
-envelope moves to Archived. See [Sign and download](/en/sign/signing/sign-and-download/).
-
 **Through the API.** Integrations read the certificate's status and get the download links with the
 [getEvidenceCertificate](/sign/api/operations/getevidencecertificate/) and
 [downloadEvidenceCertificate](/sign/api/operations/downloadevidencecertificate/) operations, with the
@@ -118,7 +109,7 @@ same permission as the documents.
 
 ## How long it is kept
 
-bb-sign keeps the certificate, the signer copy and the audit trail for
+bb-sign keeps the certificate and the audit trail for
 <Fact of={EVIDENCE.retentionDays} unit="days" /> from issue, protected against deletion and modification for that period. They are never
 moved to archive storage, so they download directly for the whole period. At the end, the detail
 shows "The retention period has ended and the certificate was deleted.".

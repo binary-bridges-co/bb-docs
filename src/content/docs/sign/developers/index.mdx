@@ -42,7 +42,7 @@ operaciones) organizadas en estas áreas:
 |---|---|---|
 | Documentos | Subir un PDF antes de crear el sobre | Sí |
 | Sobres | Crear, listar, consultar, adjuntar documentos, agregar firmantes, enviar, cancelar, contar por estado; consultar y descargar el [certificado de evidencia](/sign/api/operations/getevidencecertificate/); [pedir la restauración](/sign/api/operations/restoreenvelopedocument/) de un archivo archivado | Sí |
-| Ceremonia de firma | Abrir un enlace, solicitar y verificar un código de un solo uso, firmar, descargar la copia firmada y el certificado del firmante, pedir la copia archivada, registrar apertura y cierre | No: el token del enlace es la credencial |
+| Ceremonia de firma | Abrir un enlace, solicitar y verificar un código de un solo uso, firmar, descargar la copia firmada, pedir la copia archivada, registrar apertura y cierre | No: el token del enlace es la credencial |
 | Verificación | Comprobar un sello a partir del código QR de un documento firmado, o [subir el archivo](/sign/api/operations/verifydocumentfile/) para comprobar su SHA-256 (con un límite de <Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> solicitudes por minuto por cliente) | No |
 | Espacios de trabajo | Listar los espacios de trabajo a los que tiene acceso la credencial | Sí |
 | Copias de acuerdos | [Leer una copia](/sign/api/operations/getagreementcopy/) inmutable de un texto de acuerdo, con su versión, idioma y SHA-256 | Sí |

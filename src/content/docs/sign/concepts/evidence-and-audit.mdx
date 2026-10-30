@@ -30,7 +30,7 @@ export const ENVELOPE_EVENTS = {
   DOCUMENTS_SEALED: { label: 'Documentos firmados sellados', when: 'Los PDF firmados quedan listos, con la huella SHA-256 de cada uno.' },
   EVIDENCE_CERTIFICATE_ISSUED: { label: 'Certificado de evidencia emitido', when: 'Se emite el certificado de evidencia del sobre.' },
   EVIDENCE_CERTIFICATE_FAILED: { label: 'No se pudo generar el certificado de evidencia', when: 'La emisión automática del certificado falla.' },
-  EVIDENCE_CERTIFICATE_ACCESSED: { label: 'Certificado de evidencia descargado', when: 'Un usuario o una credencial de API descarga el certificado, o un firmante descarga su copia.' },
+  EVIDENCE_CERTIFICATE_ACCESSED: { label: 'Certificado de evidencia descargado', when: `Un usuario o una credencial de API descarga el certificado. Hasta la versión ${EVIDENCE.signerDownloadsUntil.value} de bb-sign, un firmante también podía descargar una copia, así que esa descarga puede aparecer en registros anteriores.` },
   EVIDENCE_CERTIFICATE_REISSUE_REQUESTED: { label: 'Certificado de evidencia reemitido por el equipo de la plataforma', when: 'El equipo de la plataforma vuelve a emitir un certificado que falló.' },
   SIGNED_COPY_ACCESSED: { when: 'Un firmante descarga su copia firmada.' },
   AUDIT_TRAIL_EXPORTED: { when: 'Se exporta el registro de auditoría del sobre.' },
@@ -226,7 +226,7 @@ de <Fact of={VERIFY.fileMaxSeconds} unit="segundos" />. Desde cada conexión se 
 La evidencia de cada sobre se consulta en su **Registro de auditoría**, dentro de la aplicación. Al
 completarse el sobre, bb-sign la entrega además en el **certificado de evidencia**, un PDF sellado,
 junto con el registro de auditoría congelado en JSON. Los descargan quienes pueden descargar los
-documentos del sobre, y cada firmante descarga su propia copia desde su enlace. bb-sign los conserva
+documentos del sobre; los firmantes no los reciben. bb-sign los conserva
 <Fact of={EVIDENCE.retentionDays} unit="días" /> desde su emisión. Consulte
 [Certificado de evidencia](/sign/concepts/evidence-certificate/).
 
