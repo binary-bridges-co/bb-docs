@@ -31,7 +31,7 @@ o quite el documento y súbalo de nuevo.
 
 ## Documentos subidos antes de enviar
 
-El asistente sube los documentos en su segundo paso, antes de crear el sobre. Hasta que usted pulsa
+El asistente sube los documentos en su tercer paso, antes de crear el sobre. Hasta que usted pulsa
 **Enviar sobre**, esos archivos quedan **sin asignar**: pertenecen a su organización, pero todavía no
 a un sobre.
 
@@ -58,8 +58,9 @@ correo, fecha, firma, hash y código QR (consulte
 ### Con marcador
 
 Escriba en el PDF, donde quiera el sello, el texto <Fact of={DOCUMENTS.placementMarker} />,
-reemplazando `N` por el número de orden del firmante: `{{signer1}}` para el primero, `{{signer2}}`
-para el segundo, y así sucesivamente. Puede usar cualquier fuente, siempre que el PDF contenga el
+reemplazando `N` por el lugar del firmante en la lista del paso **Firmantes**, contando desde arriba:
+`{{signer1}}` para la primera tarjeta, `{{signer2}}` para la segunda, y así sucesivamente. En la
+firma a la vez las tarjetas no muestran número, pero el orden cuenta igual. Puede usar cualquier fuente, siempre que el PDF contenga el
 marcador como texto y no como imagen. Al sellar, bb-sign retira el marcador y coloca el sello con su
 esquina superior izquierda donde empezaba el marcador.
 

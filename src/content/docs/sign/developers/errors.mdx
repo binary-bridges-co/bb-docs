@@ -10,6 +10,7 @@ import Fact from '../../../../components/facts/Fact.astro';
 import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK, OTP, SIGN_REQUEST } from '../../../facts/sign';
 
 export const codeHelp = {
+  VALIDATION_FAILED: ['La solicitud no cumple una regla de validación: un valor que falta o no es válido, un cuerpo mal formado o un parámetro de ruta o consulta con un tipo incorrecto. `message` indica qué se rechazó, por ejemplo `signers[1].signOrder must be 1 or greater`', 'Corrija el valor que indica `message` y vuelva a enviar la solicitud. Base la lógica en `code`, no en el texto de `message`'],
   QUOTA_EXCEEDED: ['Crear o enviar un sobre con una cuota de la organización agotada; el cuerpo trae `quota`', 'Pida al administrador de la plataforma que amplíe o renueve la cuota. Reintentar no sirve'],
   RATE_LIMITED: ['Demasiadas llamadas seguidas a la verificación por archivo, a la verificación o exportación del registro de auditoría, o a la firma (`POST /api/v1/sign/{token}/sign`)', 'Espere los segundos que indica `Retry-After` y vuelva a llamar'],
   RESTORE_LIMIT_REACHED: ['Pedir una restauración cuando la organización ya tiene el máximo de restauraciones en curso', 'Espere a que terminen las que están en curso (evento `document.restored`) y vuelva a pedirla'],
@@ -43,7 +44,7 @@ el cuerpo que lo acompaña y por qué un sobre al que la credencial no tiene acc
 
 | Estado | Significado | Acción |
 |---|---|---|
-| `400` | Solicitud mal formada o con errores de validación. En la firma, también una imagen o un `signatureMethod` que el servidor no acepta (`code` indica cuál) | Compare el cuerpo con el esquema de la [referencia de la API](/sign/api/); las fechas deben estar en ISO-8601 |
+| `400` | Solicitud mal formada o con errores de validación (`code` `VALIDATION_FAILED`). En la firma, también una imagen o un `signatureMethod` que el servidor no acepta (`code` indica cuál) | Compare el cuerpo con el esquema de la [referencia de la API](/sign/api/); las fechas deben estar en ISO-8601 |
 | `401` | Credenciales rechazadas: sin token, token expirado (un token es válido durante <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />), token de otro emisor o token que el realm no valida | Solicite un token nuevo y revise el prefijo `Bearer `. Ambos SDKs renuevan el token y reintentan una vez antes de reportar este estado |
 | `403` | Autenticado, pero la credencial no tiene el permiso de organización | La operación es de administración y solo existe en la interfaz, o el token no incluye `bb_sign_org_id`. Consulte [Autenticación de máquinas](/sign/developers/authentication/) |
 | `404` | El recurso no existe, o pertenece a otra organización o a un espacio de trabajo que la credencial no puede ver. No se distinguen, de forma intencional | Revise el id; si se trata del espacio de trabajo, pida a un administrador que asigne un rol a la credencial en ese espacio |

@@ -7,7 +7,7 @@ audience: developer
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED } from '../../../facts/sign';
+import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED, SDK, SIGNING_ORDER } from '../../../facts/sign';
 
 Esta guía recorre el flujo completo de una integración: subir un PDF, crear el sobre, agregar un
 segundo firmante, enviarlo, recibir por webhook la confirmación de que todos firmaron, descargar
@@ -170,6 +170,23 @@ sobre se requieren al menos un firmante y un documento.
 Puede agregar firmantes mientras el sobre está en `DRAFT`. `signOrder` aplica cuando
 `sequentialSigning` es true; en caso contrario, todos los firmantes reciben su enlace al mismo
 tiempo.
+
+`signOrder` es la posición del firmante, empezando en <Fact of={SIGNING_ORDER.minSignOrder} />; si
+lo omite, vale <Fact of={SIGNING_ORDER.defaultSignOrder} />. Los firmantes con el mismo valor forman
+un grupo: reciben el correo a la vez y el grupo siguiente empieza cuando todos han firmado. Un valor
+menor que <Fact of={SIGNING_ORDER.minSignOrder} /> se rechaza con
+<code>{SIGNING_ORDER.refusedStatus.value}</code> y `code` `VALIDATION_FAILED`, tanto en la firma
+secuencial como en la paralela, al crear el sobre y al agregar un firmante. Hoy el mensaje es, por
+ejemplo, `signers[1].signOrder must be 1 or greater` al crear el sobre y
+`signOrder must be 1 or greater` al agregar un firmante; base la lógica en `code`, no en el texto.
+La aplicación siempre envía las posiciones 1, 2, 3 y así sucesivamente, sin grupos.
+{SDK.errorCarriesStatusOnly.value && (
+  <p>
+    Los SDKs informan solo el estado <code>{SIGNING_ORDER.refusedStatus.value}</code>: el cuerpo, con{' '}
+    <code>code</code> y el mensaje, solo se lee por HTTP. Consulte{' '}
+    <a href="/sign/developers/errors/#errores-en-los-sdks">Errores en los SDKs</a>.
+  </p>
+)}
 
 <Tabs syncKey="lang">
   <TabItem label="curl">

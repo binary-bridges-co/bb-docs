@@ -31,11 +31,13 @@ import {
   SIGN_REQUEST,
   SIGNATURE_UPLOAD,
   SIGNER,
+  SIGNING_ORDER,
   URLS,
   VERIFY,
   VERIFY_QR_ARCHIVED_ISSUE,
   WEBHOOKS,
   WEBHOOK_EVENTS,
+  WIZARD,
   WORKSPACE_PERMISSIONS,
 } from '../../src/content/facts/sign';
 
@@ -58,7 +60,7 @@ describe('bb-sign fact sheet', () => {
     const groups = {
       URLS, AUTH, ADMIN_MFA, PERMISSION_SCOPE, AGREEMENTS, ENVELOPE, ARCHIVED_ENVELOPES, OTP, SIGNER, DOCUMENTS, LABELS,
       REMINDERS, QUOTA, WEBHOOKS, RATE_LIMITS, SIGN_REQUEST, VERIFY, SDK, CERTIFICATE, EVIDENCE, AUDIT, RETENTION_POLICY,
-      RETENTION_IMPLEMENTED, RESTORE,
+      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER,
     };
     expect(walk(groups, 'facts')).toEqual([]);
     for (const email of EMAILS) expect(email.source.length).toBeGreaterThan(10);
@@ -309,6 +311,29 @@ describe('bb-sign fact sheet', () => {
     expect(SDK.javaVerifyFileSendsPath.value).toBe(true);
     expect(SDK.javaVerifyFileSendsPath.source).toContain('bb-sign#281');
     expect(SDK.java.jsr310Dependency.value).toMatch(/^com\.fasterxml\.jackson\.datatype:jackson-datatype-jsr310$/);
+  });
+
+  test('signing order: 1-based, refused below 1 with VALIDATION_FAILED, groups are API-only (bb-sign#293, #128)', () => {
+    expect(SIGNING_ORDER.minSignOrder.value).toBe(1);
+    expect(SIGNING_ORDER.defaultSignOrder.value).toBe(SIGNING_ORDER.minSignOrder.value);
+    expect(ERROR_CODES.find((e) => e.code === 'VALIDATION_FAILED')?.status).toBe(SIGNING_ORDER.refusedStatus.value);
+    expect(SIGNING_ORDER.refusedInBothModes.value).toBe(true);
+    // The API accepts equal values as one turn; the app never sends them.
+    expect(SIGNING_ORDER.tiesSignAsGroup.value).toBe(true);
+    expect(SIGNING_ORDER.wizardCreatesTies.value).toBe(false);
+    expect(SIGNING_ORDER.wizardSendsListPosition.value).toBe(true);
+    expect(SIGNING_ORDER.reorderControlsFromCards.value).toBe(2);
+    expect(SIGNING_ORDER.removeFromCards.value).toBe(SIGNING_ORDER.reorderControlsFromCards.value);
+    expect(SIGNING_ORDER.dragByPointerAndKeyboard.value).toEqual(['mouse', 'touch', 'keyboard']);
+    for (const f of Object.values(SIGNING_ORDER)) expect(f.source).toMatch(/\.(ts|tsx|json|kt):\d/);
+  });
+
+  test('the wizard asks for the signers before the documents (bb-sign v0.35.0)', () => {
+    const steps: readonly string[] = WIZARD.steps.value;
+    expect(steps[0]).toBe('details');
+    expect(steps.indexOf('signers')).toBeLessThan(steps.indexOf('documents'));
+    expect(steps.indexOf('documents')).toBeLessThan(steps.indexOf('review'));
+    expect(WIZARD.envelopeCreatedAtSend.value).toBe(true);
   });
 
   test('every fact module stays under 800 lines', () => {

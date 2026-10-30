@@ -6,7 +6,7 @@ audience: all
 ---
 
 import Fact from '../../../../components/facts/Fact.astro';
-import { RESTORE, WEBHOOK_EVENTS } from '../../../facts/sign';
+import { RESTORE, SIGNING_ORDER, WEBHOOK_EVENTS } from '../../../facts/sign';
 
 Cada término aparece con su nombre en español, el nombre en inglés que usa la API y, cuando aplica, la
 etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo explica en detalle.
@@ -30,7 +30,9 @@ etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo expl
 - **Firmante (signer).** La persona que debe firmar un sobre. Se identifica por su correo y no
   necesita una cuenta en bb-sign.
 - **Orden de firma (sign order).** El turno de cada firmante cuando el sobre usa firma secuencial.
-  Los firmantes de un mismo turno firman en paralelo.
+  En la aplicación es el orden de las tarjetas del paso Firmantes. En la API es el `signOrder` de
+  cada firmante, desde <Fact of={SIGNING_ORDER.minSignOrder} />; los firmantes con el mismo valor
+  forman un turno y firman en paralelo.
 - **Etiqueta (label).** Un par de clave y valor que la organización define y asigna a sus sobres para
   filtrarlos. Ver [Etiquetas](/sign/concepts/labels/).
 - **Archivados (archived).** La vista a la que pasan los sobres completados, cancelados o vencidos

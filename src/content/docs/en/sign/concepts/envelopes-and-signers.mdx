@@ -37,7 +37,8 @@ The application shows these statuses as **DRAFT**, **SENT**, **IN_PROGRESS**, **
 <StatusFlow locale="en" of="signer" />
 
 Each signer moves forward independently. In the envelope detail, the **Signers** list shows each
-one's status (**Pending**, **Notified**, **Viewed**, **Signed**) and their **Order #**. If a signer
+one's status (**Pending**, **Notified**, **Viewed**, **Signed**) and, with sequential signing, their
+position. If a signer
 is not going to sign, cancel the envelope or let it reach its expiry date.
 
 ## Sequential or parallel signing
@@ -47,11 +48,12 @@ When creating the envelope you choose one of two modes, which the envelope detai
 
 | Mode | What happens on send | Order |
 | --- | --- | --- |
-| Parallel | Every signer is emailed at once and signs in any order. | The order number is informational. |
-| Sequential | Signers are emailed one at a time, in the order set on the signers step. | Each signer gets their link once everyone before them has signed. |
+| Parallel | Every signer is emailed at once and signs in any order. | No positions are shown. |
+| Sequential | Signers are emailed one at a time, in the order of the cards on the signers step. | Each signer gets their link once everyone before them has signed. |
 
-In sequential mode, several signers can share the same order number: they form a group and are
-emailed at the same time. When the group finishes, the next one receives the email
+From the application, each turn in sequential mode has one signer. Through the API, several signers
+can share the same `signOrder`: they form a group, are emailed at the same time and share the
+position in the envelope detail. When the group finishes, the next one receives the email
 "It's your turn to sign". See [Signers and order](/en/sign/sending/signers-and-order/).
 
 ## Signing link validity

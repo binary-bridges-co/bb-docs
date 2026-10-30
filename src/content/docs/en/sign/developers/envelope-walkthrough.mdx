@@ -7,7 +7,7 @@ audience: developer
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED } from '../../../../facts/sign';
+import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED, SDK, SIGNING_ORDER } from '../../../../facts/sign';
 
 This guide walks through the complete integration flow: upload a PDF, create the envelope, add a
 second signer, send it, receive webhook confirmation that everyone signed, download the sealed PDF
@@ -167,6 +167,23 @@ requires at least one signer and one document.
 
 You can add signers while the envelope is in `DRAFT`. `signOrder` applies when
 `sequentialSigning` is true; otherwise every signer receives a link at the same time.
+
+`signOrder` is the signer's position, starting at <Fact of={SIGNING_ORDER.minSignOrder} />; if you
+omit it, it is <Fact of={SIGNING_ORDER.defaultSignOrder} />. Signers with the same value form a
+group: they are emailed at the same time and the next group starts when all of them have signed. A
+value below <Fact of={SIGNING_ORDER.minSignOrder} /> is refused with
+<code>{SIGNING_ORDER.refusedStatus.value}</code> and `code` `VALIDATION_FAILED`, with sequential and
+with parallel signing, when creating the envelope and when adding a signer. Today the message is,
+for example, `signers[1].signOrder must be 1 or greater` on create and
+`signOrder must be 1 or greater` on add signer; base your logic on `code`, not on the text. The
+application always sends the positions 1, 2, 3 and so on, with no groups.
+{SDK.errorCarriesStatusOnly.value && (
+  <p>
+    The SDKs report the <code>{SIGNING_ORDER.refusedStatus.value}</code> status only: the body, with{' '}
+    <code>code</code> and the message, can only be read over HTTP. See{' '}
+    <a href="/en/sign/developers/errors/#errors-in-the-sdks">Errors in the SDKs</a>.
+  </p>
+)}
 
 <Tabs syncKey="lang">
   <TabItem label="curl">

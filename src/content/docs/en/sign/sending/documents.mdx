@@ -80,8 +80,9 @@ the application says: "Your uploaded documents expired and were removed. Everyth
 ## Place the seal with the signer marker
 
 To have each signer's seal appear in a specific place in the PDF, write the text `{{signerN}}` in
-the document, where N is the signer's order number: `{{signer1}}` for the first, `{{signer2}}` for
-the second. When the envelope completes, the seal is placed over that text. Without a marker, the
+the document, where N is the signer's place in the list on the **Signers** step, counting from the
+top: `{{signer1}}` for the first card, `{{signer2}}` for the second. With signing at once the cards
+show no number, but the order still counts. When the envelope completes, the seal is placed over that text. Without a marker, the
 seals are placed in the bottom right corner of the last page.
 
 The seal's appearance and contents are described in [Documents](/en/sign/concepts/documents/) and

@@ -31,7 +31,7 @@ remove the document and upload it again.
 
 ## Documents uploaded before sending
 
-The wizard uploads documents in its second step, before the envelope is created. Until you press
+The wizard uploads documents in its third step, before the envelope is created. Until you press
 **Send Envelope**, those files are **unassigned**: they belong to your organization, but not yet to
 an envelope.
 
@@ -58,8 +58,9 @@ goes.
 ### With a marker
 
 Write in the PDF, where you want the seal, the text <Fact of={DOCUMENTS.placementMarker} />,
-replacing `N` with the signer's order number: `{{signer1}}` for the first, `{{signer2}}` for the
-second, and so on. You can use any font, as long as the PDF contains the marker as text and not as
+replacing `N` with the signer's place in the list on the **Signers** step, counting from the top:
+`{{signer1}}` for the first card, `{{signer2}}` for the second, and so on. With signing at once the
+cards show no number, but the order still counts. You can use any font, as long as the PDF contains the marker as text and not as
 an image. When sealing, bb-sign removes the marker and places the seal with its top-left corner where
 the marker began.
 

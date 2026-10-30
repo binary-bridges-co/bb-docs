@@ -11,7 +11,7 @@ import { DOCUMENTS, ENVELOPE } from '../../../facts/sign';
 
 Un **sobre** reúne uno o más documentos PDF, las personas que deben firmarlos y las condiciones de la
 firma. Con el asistente **Crear Sobre**, al que se accede con el botón **Nuevo Sobre** del menú
-lateral, usted lo prepara y lo envía en cinco pasos: **Detalles**, **Documentos**, **Firmantes**,
+lateral, usted lo prepara y lo envía en cinco pasos: **Detalles**, **Firmantes**, **Documentos**,
 **Revisión** y **Listo**.
 
 Mientras avanza, el asistente guarda un borrador en su navegador ("Borrador guardado en este
@@ -39,21 +39,23 @@ dejó. Para descartar el borrador, use **Empezar de nuevo**.
    <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />) y la fecha **Expira el (opcional)**.
    Pulse **Siguiente**. Cada campo se explica en [Crear un sobre](/sign/sending/create-an-envelope/).
 
-2. **Documentos.** En **Subir documentos**, pulse **Haz clic para subir un PDF** y elija uno o
+2. **Firmantes.** En **Añadir firmantes**, escriba el **Correo** y el **Nombre** de cada persona y
+   use **Añadir otro firmante** para agregar más. Si eligió firma en orden, ordene las tarjetas de
+   arriba abajo arrastrándolas o con **Subir** y **Bajar**: la primera firma primero. Consulte
+   [Firmantes y orden](/sign/sending/signers-and-order/).
+
+3. **Documentos.** En **Subir documentos**, pulse **Haz clic para subir un PDF** y elija uno o
    varios archivos PDF. Cada archivo se carga de inmediato y aparece en la lista. Consulte
    [Adjuntar documentos](/sign/sending/documents/).
 
-3. **Firmantes.** En **Añadir firmantes**, escriba el **Correo** y el **Nombre** de cada persona y
-   use **Añadir otro firmante** para agregar más. Si eligió firma en orden, verá también el campo
-   **Orden**. Consulte [Firmantes y orden](/sign/sending/signers-and-order/).
-
 4. **Revisión.** En **Revisar y enviar**, verifique el resumen: título, espacio de trabajo,
-   verificación OTP, firma secuencial, documentos, firmantes y etiquetas. Pulse **Enviar sobre** y
+   verificación OTP, firma secuencial, la lista **Firmantes (N)** (con la posición de cada uno si
+   firman en orden), documentos y etiquetas. Pulse **Enviar sobre** y
    confirme con **Enviar** en el diálogo **¿Enviar el sobre?**.
 
 5. **Listo.** La pantalla **¡Sobre enviado!** muestra el enlace de firma de cada firmante con un
    botón **Copiar**. bb-sign ya envió a cada firmante el correo con su enlace (en la firma en orden,
-   a los primeros del orden). Desde aquí puede ir a **Ver detalles del sobre** o **Crear otro**.
+   solo al primero). Desde aquí puede ir a **Ver detalles del sobre** o **Crear otro**.
 
 </Steps>
 

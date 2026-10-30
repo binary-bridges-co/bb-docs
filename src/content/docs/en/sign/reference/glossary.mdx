@@ -6,7 +6,7 @@ audience: all
 ---
 
 import Fact from '../../../../../components/facts/Fact.astro';
-import { RESTORE, WEBHOOK_EVENTS } from '../../../../facts/sign';
+import { RESTORE, SIGNING_ORDER, WEBHOOK_EVENTS } from '../../../../facts/sign';
 
 Each term appears with its English name as used in the API, its Spanish name (the one the law and the
 Spanish application use) and, where it applies, the label the application shows. The links lead to
@@ -31,7 +31,9 @@ the page that explains it in detail.
 - **Signer (firmante).** The person who must sign an envelope. Identified by their email; no bb-sign
   account needed.
 - **Sign order (orden de firma).** Each signer's turn when the envelope uses sequential signing.
-  Signers in the same turn sign in parallel.
+  In the application it is the order of the cards on the Signers step. In the API it is each
+  signer's `signOrder`, from <Fact of={SIGNING_ORDER.minSignOrder} />; signers with the same value
+  form one turn and sign in parallel.
 - **Label (etiqueta).** A key and value pair the organization defines and assigns to its envelopes to
   filter them. See [Labels](/en/sign/concepts/labels/).
 - **Archived (archivados).** The view that completed, cancelled or expired envelopes move to once a

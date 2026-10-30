@@ -7,7 +7,7 @@ source: docs/api/migrating-from-adobe.md
 ---
 
 import Fact from '../../../../components/facts/Fact.astro';
-import { AUTH, DOCUMENTS, EVIDENCE } from '../../../facts/sign';
+import { AUTH, DOCUMENTS, EVIDENCE, SIGNING_ORDER } from '../../../facts/sign';
 
 Si su equipo ya tiene una integración con Acrobat Sign, esta guía le permite trasladarla a bb-sign
 con un mapa claro de conceptos, autenticación, webhooks y endpoints. Toma como referencia la API v6
@@ -116,6 +116,8 @@ La [referencia de la API](/sign/api/) describe la superficie completa.
   las cuotas se aplican por organización.
 - **Ubicación de la firma.** Agregue el marcador de texto al PDF en el lugar donde debe ir cada
   sello.
-- **Orden de firma.** Use `signOrder` y el booleano `sequentialSigning`.
+- **Orden de firma.** Use `signOrder` y el booleano `sequentialSigning`. `signOrder` empieza en
+  <Fact of={SIGNING_ORDER.minSignOrder} /> y debe ser <Fact of={SIGNING_ORDER.minSignOrder} /> o
+  mayor; los firmantes con el mismo `signOrder` firman como un grupo.
 - **Espacios de trabajo.** Cada sobre pertenece a un espacio de trabajo, y una credencial accede a
   los espacios que se le asignaron; consulte [Autenticación de máquinas](/sign/developers/authentication/).

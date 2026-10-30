@@ -1,13 +1,13 @@
 ---
 title: Firmantes y orden
-description: Indique quién firma y en qué orden. Cómo funcionan los turnos, quién recibe el enlace al enviar y cómo seguir a cada firmante.
+description: Indique quién firma y en qué orden. Cómo ordenar las tarjetas de firmantes, cómo funcionan los turnos y cómo seguir a cada firmante.
 product: sign
 audience: user
 ---
 
 import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE } from '../../../facts/sign';
+import { ENVELOPE, SIGNING_ORDER } from '../../../facts/sign';
 
 En el paso **Firmantes** del asistente **Crear Sobre** usted indica quién firma. Junto con el
 **Orden de firma** elegido en **Detalles**, este paso determina quién recibe el enlace al enviar y
@@ -15,67 +15,95 @@ quién firma después, para que cada firma llegue en el momento adecuado.
 
 ## Añadir los firmantes
 
-La pantalla **Añadir firmantes** muestra una fila por persona con dos campos:
+La pantalla **Añadir firmantes** muestra una tarjeta por persona con dos campos:
 
 | Campo | Uso |
 |---|---|
 | **Correo** | Dirección a la que llegan el enlace de firma y, si activó la verificación OTP, el código. Identifica al firmante durante todo el proceso. |
 | **Nombre** | Nombre completo. Aparece en la página de firma ("Firmando como ...") y en el sello del documento. |
 
-**Añadir otro firmante** agrega una fila y el icono **Quitar firmante** la elimina. Las filas vacías
-se descartan al continuar. Si falta un dato, la aplicación lo señala con "El correo es obligatorio"
-o "El nombre es obligatorio".
+**Añadir otro firmante** agrega una tarjeta al final de la lista. Con
+<Fact of={SIGNING_ORDER.removeFromCards} /> tarjetas o más, cada una tiene un botón con el icono de
+papelera para quitarla. Las tarjetas vacías se descartan al continuar. Si falta un dato, la
+aplicación lo señala con "El correo es obligatorio" o "El nombre es obligatorio".
 
-Cada fila genera un enlace de firma propio. Una misma persona puede firmar en varios sobres.
+Cada firmante recibe un enlace de firma propio. Una misma persona puede firmar en varios sobres.
 
 Revise la lista antes de continuar: los firmantes quedan fijos una vez creado el sobre. Si necesita
 cambiarlos después, [cancele el sobre](/sign/sending/cancel/) y cree uno nuevo.
 
-## Firmar a la vez
-
-Con **Todos firman a la vez** (firma en paralelo), el campo **Orden** no se muestra. Al enviar,
-todos los firmantes reciben al mismo tiempo el correo `You have a document to sign: {title}` y cada
-uno firma cuando le resulte conveniente. El sobre pasa a **En Progreso** con la primera firma y a
-**Completado** con la última.
-
-La página del sobre lo indica: "Firma en paralelo · Todos recibieron el correo a la vez. Los
-números de orden de abajo no se aplican." En este modo, los números solo reflejan el orden en que
-se ingresaron las filas.
-
 ## Firmar en orden
 
-Con **Los firmantes firman en orden** (firma secuencial), cada fila tiene un campo **Orden** con un
-número. Los números definen turnos:
+Con **Los firmantes firman en orden** (firma secuencial), la pantalla indica: "Los firmantes firman en este orden. Arrastra un firmante con el control para arrastrar, o usa Subir y Bajar."
 
-- Al enviar, reciben el correo los firmantes con el número más bajo.
-- Cuando todos los firmantes de un turno han firmado, los del número siguiente reciben
-  `It's your turn to sign: {title}`. Su enlace se genera en ese momento, por lo que la caducidad del
-  enlace (por defecto <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />) empieza a contar
-  entonces.
-- Los firmantes con el mismo número forman un turno y firman a la vez.
+Cada tarjeta muestra su posición con un número, 1 para la primera. El orden de firma es el orden de
+las tarjetas, de arriba abajo: no hay ningún número que escribir. Con
+<Fact of={SIGNING_ORDER.reorderControlsFromCards} /> tarjetas o más, cada una tiene también:
+
+| Control | Uso |
+|---|---|
+| Control para arrastrar (el icono de puntos, a la izquierda del número) | Arrastre la tarjeta con el ratón o con el dedo hasta su nueva posición. |
+| **Subir** y **Bajar** (las flechas, a la derecha) | Mueven la tarjeta una posición. **Subir** está desactivado en la primera tarjeta y **Bajar**, en la última. |
+
+Los botones solo muestran un icono. Un lector de pantalla los anuncia con el nombre del firmante, por
+ejemplo "Subir a Ana Pérez" o "Quitar a Ana Pérez"; una tarjeta sin nombre se llama "Firmante 2".
+
+También puede ordenar con el teclado. Lleve el foco al control para arrastrar y pulse Espacio o Enter
+para tomar la tarjeta, muévala con las flechas, y pulse Espacio o Enter para soltarla o Escape para
+cancelar. Cada movimiento se anuncia a los lectores de pantalla, por ejemplo: "Ana Pérez pasó a la posición 1 de 3."
+
+Si la función de arrastrar no se puede cargar, la pantalla indica "No se pudo cargar arrastrar y soltar. Usa Subir y Bajar."
+y los botones **Subir** y **Bajar** siguen funcionando.
+
+Las posiciones definen los turnos:
+
+- Al enviar, solo recibe el correo el firmante de la posición 1.
+- Cuando un firmante firma, el de la posición siguiente recibe `It's your turn to sign: {title}`.
+  Su enlace se genera en ese momento, por lo que la caducidad del enlace (por defecto
+  <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" />) empieza a contar entonces.
 
 Si un firmante abre su enlace antes de su turno, ve **Esperando a los firmantes anteriores** y puede
 pulsar **Comprobar de nuevo** más tarde. La página del sobre lo resume: "Firma secuencial · Cada
 firmante recibe el correo solo cuando han firmado todos los anteriores."
 
+Desde la aplicación, cada turno es de un solo firmante. Varios firmantes en un mismo turno solo se
+pueden definir por la API, con el mismo `signOrder`; consulte
+[De la credencial al documento firmado](/sign/developers/envelope-walkthrough/).
+
+## Firmar a la vez
+
+Con **Todos firman a la vez** (firma en paralelo), la pantalla indica: "Todos reciben la invitación a la vez y pueden firmar en cualquier orden."
+Las tarjetas no muestran posiciones ni controles para reordenar. Al enviar, todos los firmantes
+reciben al mismo tiempo el correo `You have a document to sign: {title}` y cada uno firma cuando le
+resulte conveniente. El sobre pasa a **En Progreso** con la primera firma y a **Completado** con la
+última.
+
+La página del sobre lo indica: "Firma en paralelo · Todos recibieron el correo a la vez y pueden firmar en cualquier orden."
+
+Si cambia el **Orden de firma** en **Detalles**, la lista conserva el orden de las tarjetas.
+
 ## Elegir el modo adecuado
 
 | | Todos a la vez | En orden |
 |---|---|---|
-| Campo **Orden** | No se muestra | Un número por firmante |
-| Quién recibe el enlace al enviar | Todos | El primer turno |
-| Correo a los turnos siguientes | No aplica | `It's your turn to sign: {title}` cuando termina el turno anterior |
-| Mientras un firmante no firma | Los demás continúan | Los turnos siguientes esperan |
+| Tarjetas | Sin posición | Con posición, control para arrastrar, **Subir** y **Bajar** |
+| Quién recibe el enlace al enviar | Todos | El firmante de la posición 1 |
+| Correo a los siguientes | No aplica | `It's your turn to sign: {title}` cuando firma el anterior |
+| Mientras un firmante no firma | Los demás continúan | Los siguientes esperan |
 
 Elija **en orden** cuando una firma deba preceder a la siguiente, por ejemplo cuando quien aprueba
 firma después de quien solicita. En los demás casos, **a la vez** es más rápido y ningún firmante
 espera a otro.
 
-## Seguir a cada firmante
+## Revisar la lista y seguir a cada firmante
 
-Desde la página del sobre puede ver el estado de cada firmante: **Pendiente** (aún sin enlace),
-**Notificado** (recibió el correo), **Visto** (abrió el enlace) y **Firmado**. Si un firmante no
-va a firmar, cancele el sobre o deje que expire. Consulte
-[Enviar y seguir](/sign/sending/send-and-track/).
+El paso **Revisión** muestra la misma lista en **Firmantes (N)**, en el mismo orden y sin controles.
+En la firma en orden, cada firmante lleva su posición; en la firma a la vez, no.
+
+La página del sobre muestra la lista de la misma forma, con el estado de cada firmante: **Pendiente**
+(aún sin enlace), **Notificado** (recibió el correo), **Visto** (abrió el enlace) y **Firmado**. Si
+la API definió varios firmantes en un mismo turno, comparten la posición y las siguientes continúan
+sin saltos, por ejemplo 1, 1, 2. Si un firmante no va a firmar, cancele el sobre o deje que expire.
+Consulte [Enviar y seguir](/sign/sending/send-and-track/).
 
 <LinkCard title="Enviar y seguir" href="/sign/sending/send-and-track/" description="Estados, filtros de la lista, la página de detalle y los recordatorios automáticos." />

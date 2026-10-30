@@ -11,7 +11,7 @@ import { DOCUMENTS, ENVELOPE } from '../../../../facts/sign';
 
 An **envelope** gathers one or more PDF documents, the people who must sign them and the conditions
 of the signature. With the **Create Envelope** wizard, opened from the **New Envelope** button in the
-side menu, you prepare and send it in five steps: **Details**, **Documents**, **Signers**,
+side menu, you prepare and send it in five steps: **Details**, **Signers**, **Documents**,
 **Review** and **Done**.
 
 As you move through it, the wizard keeps a draft in your browser ("Draft saved in this browser.
@@ -38,21 +38,23 @@ left off. To discard the draft, use **Start over**.
    (optional)**. Press **Next**. Every field is explained in
    [Create an envelope](/en/sign/sending/create-an-envelope/).
 
-2. **Documents.** In **Upload Documents**, press **Click to upload PDF** and choose one or more PDF
+2. **Signers.** In **Add Signers**, type the **Email** and **Name** of each person and use **Add
+   another signer** to add more. If you chose signing in order, arrange the cards top to bottom by
+   dragging them or with **Move up** and **Move down**: the first one signs first. See
+   [Signers and order](/en/sign/sending/signers-and-order/).
+
+3. **Documents.** In **Upload Documents**, press **Click to upload PDF** and choose one or more PDF
    files. Each file uploads right away and appears in the list. See
    [Attach documents](/en/sign/sending/documents/).
 
-3. **Signers.** In **Add Signers**, type the **Email** and **Name** of each person and use **Add
-   another signer** to add more. If you chose signing in order, you also see the **Order** field.
-   See [Signers and order](/en/sign/sending/signers-and-order/).
-
 4. **Review.** In **Review & Send**, check the summary: title, workspace, OTP verification,
-   sequential signing, documents, signers and labels. Press **Send Envelope** and confirm with
+   sequential signing, the **Signers (N)** list (with each one's position if they sign in order),
+   documents and labels. Press **Send Envelope** and confirm with
    **Send** in the **Send Envelope?** dialog.
 
 5. **Done.** The **Envelope Sent!** screen shows each signer's signing link with a **Copy** button.
-   bb-sign has already emailed each signer their link (with signing in order, the first ones in the
-   order). From here you can go to **View Envelope Details** or **Create Another**.
+   bb-sign has already emailed each signer their link (with signing in order, only the
+   first one). From here you can go to **View Envelope Details** or **Create Another**.
 
 </Steps>
 
