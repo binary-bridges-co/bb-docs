@@ -15,6 +15,10 @@
  * On 2026-10-29 every citation into a file bb-sign v0.37.1 changed (tag daa783ec: bb-sign#310 removed the signer's
  * evidence certificate, #311 redesigned the signature capture step) was re-read on bb-sign `main` e1519854, and the
  * signer-copy facts were replaced by EVIDENCE.signersReceiveCertificate and EVIDENCE.signerDownloadsUntil.
+ * On 2026-10-29 every citation into a file bb-sign v0.38.0 changed (tag 4c39ee7c: bb-sign#293 drag-and-drop signing
+ * order, #128 signOrder below 1 refused, #129 positions only on sequential envelopes) was re-read at that tag:
+ * EnvelopeController.kt moved by 2 lines after 168, EnvelopeDetail.tsx by 1 after 23. The signing-order facts live in
+ * `sign-signing-order.ts`.
  * When a value moves in the product, change it here and the whole site follows.
  * `tests/unit/facts.test.ts` checks the relationships between values (an OTP
  * outlives its resend cooldown, the retention outlives the archive threshold,
@@ -45,6 +49,7 @@ import { RATE_LIMITS, WEBHOOKS } from './sign-integrations';
 
 export type { Fact } from './fact';
 export * from './sign-integrations';
+export * from './sign-signing-order';
 
 const LIVE_LIFECYCLE_READ =
   'live read 2026-10-21T00:02Z: aws s3api get-bucket-lifecycle-configuration --bucket production-bbsign-documents (one rule, Expiration 365 d, prefix "", no transitions); bb-infrastructure/docs/runbooks/documents-lifecycle-guard.md:8-17';
@@ -192,7 +197,7 @@ export const ORG_API_NEVER: readonly string[] = [
 export const PERMISSION_SCOPE = {
   downloadCoversEvidenceAndRestore: fact(
     true,
-    'EA/presentation/admin/EnvelopeController.kt:369,673-687; EA/presentation/admin/EvidenceCertificateController.kt:37-45; bb-sign/frontend/src/i18n/locales/es/envelopes.json:96',
+    'EA/presentation/admin/EnvelopeController.kt:371,675-689; EA/presentation/admin/EvidenceCertificateController.kt:37-45; bb-sign/frontend/src/i18n/locales/es/envelopes.json:96',
   ),
   auditReadCoversAuditApi: fact(
     true,
@@ -265,7 +270,7 @@ export const ARCHIVED_ENVELOPES = {
   /** The detail page opens read-only with every download, the evidence certificate and the audit trail. */
   readOnlyWithDownloads: fact(
     true,
-    'bb-sign/frontend/src/pages/ArchivedEnvelopes.tsx:156-164; EnvelopeDetail.tsx:171,176-180; bb-sign/frontend/src/i18n/locales/es/envelopes.json:66; EA/infrastructure/persistence/JpaSignedDocumentRegistry.kt:15,30',
+    'bb-sign/frontend/src/pages/ArchivedEnvelopes.tsx:156-164; EnvelopeDetail.tsx:172,177-181; bb-sign/frontend/src/i18n/locales/es/envelopes.json:66; EA/infrastructure/persistence/JpaSignedDocumentRegistry.kt:15,30',
   ),
   /** The signer's link keeps serving the signed copy after archiving, with no expiry check (never the evidence certificate, bb-sign#310). */
   signerLinkKeepsCopy: fact(
@@ -273,7 +278,7 @@ export const ARCHIVED_ENVELOPES = {
     'EA/application/usecase/GetSignedCopyUseCase.kt:27-53; EA/application/usecase/SignedCopyGate.kt:5-11',
   ),
   /** No labels, no cancel: an archived envelope has no actions. */
-  noActions: fact(true, 'bb-sign/frontend/src/pages/EnvelopeDetail.tsx:77-80'),
+  noActions: fact(true, 'bb-sign/frontend/src/pages/EnvelopeDetail.tsx:78-81'),
 } as const;
 
 export const OTP = {
@@ -379,7 +384,7 @@ export const DOCUMENTS = {
     'W/application/usecase/StampSignedPdfUseCase.kt:306-309 (stored bytes vs recorded hash), :235-243 (document set vs each signer), :210-214 (bbsign_stamp_integrity_mismatch_total, logged)',
   ),
   /** The envelope page never shows the signed SHA-256 line (a bb-sign bug, plan D7): do not promise it. */
-  signedSha256OnEnvelopePage: fact(false, 'EA/presentation/admin/EnvelopeController.kt:291-304 (signedSha256 omitted from the response)'),
+  signedSha256OnEnvelopePage: fact(false, 'EA/presentation/admin/EnvelopeController.kt:293-306 (signedSha256 omitted from the response)'),
 } as const;
 
 export const LABELS = {
@@ -649,7 +654,7 @@ export const RETENTION_IMPLEMENTED = {
   /** Restore on request is deployed (v0.34.0) and idle: nothing is archived in production. */
   restoreOnRequest: fact(
     'deployed, idle until archiving is enabled (bb-sign#214 P5)',
-    'EA/presentation/admin/EnvelopeController.kt:673-687; EA/presentation/signer/SigningController.kt:277-290; bb-infrastructure/apps/bb-sign/edge-api.yaml:72-75; lv-retention-restore-iam.md:184-185',
+    'EA/presentation/admin/EnvelopeController.kt:675-689; EA/presentation/signer/SigningController.kt:277-290; bb-infrastructure/apps/bb-sign/edge-api.yaml:72-75; lv-retention-restore-iam.md:184-185',
   ),
 } as const;
 
