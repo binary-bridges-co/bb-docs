@@ -30,7 +30,7 @@ export const ENVELOPE_EVENTS = {
   DOCUMENTS_SEALED: { label: 'Signed documents sealed', when: 'The signed PDFs are ready, with the SHA-256 fingerprint of each one.' },
   EVIDENCE_CERTIFICATE_ISSUED: { label: 'Evidence certificate issued', when: "The envelope's evidence certificate is issued." },
   EVIDENCE_CERTIFICATE_FAILED: { label: 'Evidence certificate could not be generated', when: 'The automatic issuing of the certificate fails.' },
-  EVIDENCE_CERTIFICATE_ACCESSED: { label: 'Evidence certificate downloaded', when: 'A user or an API credential downloads the certificate, or a signer downloads their copy.' },
+  EVIDENCE_CERTIFICATE_ACCESSED: { label: 'Evidence certificate downloaded', when: `A user or an API credential downloads the certificate. Up to bb-sign version ${EVIDENCE.signerDownloadsUntil.value}, a signer could also download a copy, so that download can appear in older trails.` },
   EVIDENCE_CERTIFICATE_REISSUE_REQUESTED: { label: 'Evidence certificate re-issued by platform staff', when: 'Platform staff issue again a certificate that failed.' },
   SIGNED_COPY_ACCESSED: { when: 'A signer downloads their signed copy.' },
   AUDIT_TRAIL_EXPORTED: { when: "The envelope's audit trail is exported." },
@@ -223,7 +223,7 @@ Each file can weigh up to <Fact of={VERIFY.fileMaxMb} unit="MB" /> and is checke
 Each envelope's evidence is consulted in its **Audit Trail**, inside the application. When the
 envelope completes, bb-sign also delivers it in the **evidence certificate**, a sealed PDF, together
 with the audit trail frozen as JSON. They are downloaded by whoever can download the envelope's
-documents, and each signer downloads their own copy from their link. bb-sign keeps them for
+documents; signers do not receive them. bb-sign keeps them for
 <Fact of={EVIDENCE.retentionDays} unit="days" /> from issue. See
 [Evidence certificate](/en/sign/concepts/evidence-certificate/).
 

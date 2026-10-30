@@ -27,7 +27,7 @@ de Acrobat Sign.
 | **Webhook** con verificación por eco | **Webhook** con firma HMAC | Ver [Webhooks](#webhooks-de-la-verificación-por-eco-a-la-firma-hmac); es el cambio principal |
 | **Megasign / bulk send** | Un sobre por destinatario | Cree los sobres en un ciclo con `POST /api/v1/envelopes` |
 | **Custom workflow** | Firma secuencial o en paralelo | Se define con el booleano `sequentialSigning` del sobre y el `signOrder` de cada firmante |
-| **Audit report** | **Certificado de evidencia** | Un PDF sellado por sobre completado, con una copia para la organización y otra para cada firmante. Consulte [Certificado de evidencia](/sign/concepts/evidence-certificate/) |
+| **Audit report** | **Certificado de evidencia** | Un PDF sellado por sobre completado, para la organización; los firmantes no lo reciben. Consulte [Certificado de evidencia](/sign/concepts/evidence-certificate/) |
 | **Form fields / anchors** | Un marcador de texto en el PDF | El sello se ubica donde el PDF contiene <code>{DOCUMENTS.placementMarker.value}</code> (N es el orden del firmante); sin marcador, los sellos se ubican en la última página. Consulte [Documentos](/sign/concepts/documents/) |
 
 ## Autenticación: de la clave de integración a client credentials

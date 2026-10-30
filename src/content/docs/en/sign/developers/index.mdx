@@ -42,7 +42,7 @@ operations) organized in these areas:
 |---|---|---|
 | Documents | Upload a PDF before creating the envelope | Yes |
 | Envelopes | Create, list, read, attach documents, add signers, send, cancel, count by status; read and download the [evidence certificate](/sign/api/operations/getevidencecertificate/); [request a restore](/sign/api/operations/restoreenvelopedocument/) of an archived file | Yes |
-| Signing ceremony | Open a link, request and verify a one-time code, sign, download the signed copy and the signer's certificate, request the archived copy, record open and close | No: the link token is the credential |
+| Signing ceremony | Open a link, request and verify a one-time code, sign, download the signed copy, request the archived copy, record open and close | No: the link token is the credential |
 | Verify | Check a seal from the QR code on a signed document, or [upload the file](/sign/api/operations/verifydocumentfile/) to check its SHA-256 (limited to <Fact of={RATE_LIMITS.verifyFilePerMinutePerClient} /> requests a minute per client) | No |
 | Workspaces | List the workspaces the credential can access | Yes |
 | Agreement copies | [Read an immutable copy](/sign/api/operations/getagreementcopy/) of an agreement text, with its version, language and SHA-256 | Yes |

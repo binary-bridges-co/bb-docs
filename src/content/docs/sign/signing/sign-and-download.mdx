@@ -1,6 +1,6 @@
 ---
 title: Firmar y descargar
-description: Cómo dibujar, escribir o subir su firma, qué queda registrado, cómo descargar la copia firmada y su certificado de evidencia, y cuánto tiempo están disponibles.
+description: Cómo dibujar, escribir o subir su firma, qué queda registrado, cómo descargar su documento firmado y cuánto tiempo está disponible.
 product: sign
 audience: signer
 ---
@@ -14,10 +14,13 @@ firmado, descarga su copia sellada.
 
 ## Dibujar, escribir o subir una imagen
 
-- **Dibujar**: trace su firma con el dedo, un lápiz digital o el mouse en el recuadro "Dibuja tu
-  firma aquí". **Borrar** limpia el recuadro.
-- **Escribir**: escriba su nombre en "Escribe tu nombre completo". bb-sign lo convierte en una
-  firma con letra manuscrita.
+Elija cómo firmar con las pestañas **Dibujar**, **Escribir** o **Subir imagen**. La firma se ve sobre
+un recuadro blanco, igual que quedará en el documento.
+
+- **Dibujar**: en **Dibuja tu firma**, firme sobre la línea del recuadro con el dedo, un lápiz óptico
+  o el mouse. **Borrar**, encima del recuadro, lo limpia.
+- **Escribir**: escriba su nombre en **Escribe tu nombre completo**. Debajo, "Así quedará estampada"
+  muestra su nombre con letra manuscrita.
 - **Subir imagen**: use una foto o un escaneo de la firma que hizo a mano. Se explica en el
   apartado siguiente.
 
@@ -26,18 +29,21 @@ escribe tu nombre." o "Elige una imagen de tu firma."
 
 ### Subir una imagen de su firma
 
-La página le indica qué imagen sirve: "Una foto o un escaneo de tu firma sobre papel claro. PNG o
-JPEG, de hasta <Fact of={SIGNATURE_UPLOAD.maxSourceMb} unit="MB" />."
+El recuadro **Sube una foto de tu firma** indica qué imagen sirve: "PNG o JPEG, de hasta
+<Fact of={SIGNATURE_UPLOAD.maxSourceMb} unit="MB" />." Debajo, la página da tres consejos: firmar en una
+hoja blanca y lisa con tinta oscura, tomar la foto con luz pareja y sin sombras, y que la foto se queda en
+su dispositivo.
 
-1. Firme sobre papel claro y tómele una foto o escanéelo.
+1. Firme sobre papel blanco y tómele una foto o escanéelo.
 2. Pulse **Elegir una imagen** y elija el archivo. En el teléfono puede tomar la foto con la cámara
    o elegirla de la galería.
-3. Revise la vista previa: muestra su firma tal como se estampará en el documento. Para usar otra
-   imagen, pulse **Cambiar la imagen**.
+3. Revise "Así quedará estampada": muestra su firma tal como se estampará en el documento, con el
+   nombre y el tamaño del archivo. Para usar otra imagen, pulse **Cambiar la imagen**. Para empezar
+   de nuevo, pulse **Quitar**.
 
-**Quitar el fondo claro** está activado de forma predeterminada: la página vuelve transparente el
-papel para que en el sello quede solo el trazo. Si la vista previa no se ve bien, desactívelo y
-revise de nuevo la vista previa.
+Al elegir la imagen aparece **Quitar el fondo claro**, activado de forma predeterminada: "Hace
+transparente el papel que hay detrás de tu firma.", para que en el sello quede solo el trazo. Si la
+vista previa no se ve bien, desactívelo y revise de nuevo la vista previa.
 
 Si el archivo pesa más de <Fact of={SIGNATURE_UPLOAD.resizeNoticeMb} unit="MB" />, la página
 muestra: "Esta imagen pesa más de <Fact of={SIGNATURE_UPLOAD.resizeNoticeMb} unit="MB" />, así que
@@ -68,9 +74,8 @@ cliente de firma)", con el valor "dibujada en pantalla", "nombre escrito en pant
 cargada desde el dispositivo". Es lo que declaró la página de firma: bb-sign no lo deduce de la
 imagen. Si la firma se registró sin esa declaración, el certificado muestra "no registrado".
 
-Esta información forma parte de la evidencia del sobre y aparece en su certificado de evidencia. Su
-nombre, su correo y la fecha también aparecen en el sello del documento. La copia del certificado que
-usted descarga enmascara los correos y no incluye su IP, su navegador ni el destino del código.{!EVIDENCE.signerCopyIncludesAuditTrail.value && ' Tampoco incluye el registro de auditoría del sobre; si lo necesita, pídaselo a quien le envió el documento.'}
+Esta información forma parte de la evidencia del sobre, que conserva la organización que le envió el
+documento. Su nombre, su correo y la fecha también aparecen en el sello del documento.
 
 <Aside type="caution" title="La firma enviada es definitiva">
   Al registrarse la firma, el sobre avanza al siguiente paso. Si firmó por error o los datos no
@@ -90,29 +95,18 @@ de su copia firmada:
 | "Tu copia firmada aún se está preparando. Te enviamos un enlace por correo — podrás descargarla desde ahí cuando esté lista." | El sellado está tomando más tiempo. Puede cerrar la página y descargar la copia desde el correo de finalización. |
 | Sin botón de descarga | Otras personas aún deben firmar. La copia estará disponible cuando todas hayan firmado. |
 
-Cuando la copia está lista, la página ofrece además su certificado de evidencia:
-
-| Lo que ve | Qué significa |
-|---|---|
-| "Preparando tu certificado de evidencia — esto puede tardar unos minutos." | bb-sign está emitiendo el certificado. La página se actualiza automáticamente. |
-| **Descargar tu certificado de evidencia** | El certificado está listo. |
-| "No se pudo descargar el certificado de evidencia. Inténtalo de nuevo." | La descarga no comenzó. Pulse de nuevo el botón. |
-
-Si el sobre se completó antes de que existieran los certificados de evidencia, la página no ofrece
-certificado.
-
 ## Correo de finalización
 
 Cuando todas las personas firman, recibe el correo `Signing complete: {title}` con el enlace a su
-copia. Normalmente sale cuando su certificado de evidencia está listo y, si este tarda, sin esperarlo
-más de <Fact of={EVIDENCE.degradedAfterHours} unit="horas" />; el correo indica si el certificado
-está listo o en preparación. El enlace abre la pantalla de confirmación con el mensaje "Este sobre
+copia. Sale cuando bb-sign termina de procesar el sobre{EVIDENCE.usuallyIssuedWithinMinutes.value && ', normalmente pocos minutos después de la última firma'},
+y nunca espera más de <Fact of={EVIDENCE.degradedAfterHours} unit="horas" />. Si su copia aún se está preparando, el correo lo
+indica, en inglés: "Your signed documents are being prepared; they will appear at the same link." El enlace abre la pantalla de confirmación con el mensaje "Este sobre
 está completo. Puedes descargar tu copia firmada abajo." Puede usarlo las veces que necesite mientras
 la copia esté disponible.
 
 ## Disponibilidad de la copia
 
-Su copia firmada y su certificado de evidencia se pueden descargar desde su enlace durante
+Su copia firmada se puede descargar desde su enlace durante
 <Fact of={RETENTION_POLICY.retentionDays} unit="días" /> desde que el sobre se completó, aunque el
 plazo para firmar haya vencido y aunque el sobre ya esté archivado. Le recomendamos guardar su copia en
 cuanto la descargue.
@@ -127,9 +121,6 @@ Hoy bb-sign no traslada ninguna copia a ese almacenamiento, pero si ocurre, ver�
 | "Te enviaremos tu copia por correo cuando esté disponible, normalmente en unas horas." | Su solicitud quedó registrada. | Espere el correo `Tu solicitud de restauración de documentos / Your document restore request` y abra su enlace. La copia restaurada se puede descargar durante <Fact of={RESTORE.days} unit="días" />{RESTORE.requestableAgainAfterWindow.value && <>; después puede volver a pulsar <strong>Solicitar mi copia</strong></>}. |
 | "Recibimos muchas solicitudes desde este enlace o tu conexión. Si ya la solicitaste, te llegará el correo; si no, inténtalo de nuevo en unos minutos." | Se alcanzó el límite de <Fact of={RATE_LIMITS.signerRestorePerLink} /> solicitudes por enlace, o de <Fact of={RATE_LIMITS.signerRestorePerIp} /> por conexión, en <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutos" />. | Si ya la solicitó, espere el correo. Si no, vuelva a intentarlo en unos minutos. |
 | "No pudimos solicitar tu copia. Inténtalo de nuevo en unos minutos." | La solicitud no se completó. | Vuelva a intentarlo en unos minutos. |
-
-Su certificado de evidencia nunca se archiva: se sigue descargando directamente mientras espera su
-copia.
 
 Pasado el plazo de conservación, la página muestra "Tu copia firmada ya no está disponible: se cumplió
 su plazo de conservación de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />." En ese caso,

@@ -30,7 +30,7 @@ datos que resume, consulte [Evidencia y auditoría](/sign/concepts/evidence-and-
 
 | Bloque | Qué muestra |
 | --- | --- |
-| Encabezado | El identificador del certificado, el sobre y su título, la organización, el remitente, la fecha en que se completó y la copia de que se trata. |
+| Encabezado | El identificador del certificado, el sobre y su título, la organización, el remitente, la fecha en que se completó y la indicación "Copia de la organización". |
 | Documentos | Para cada documento: su nombre, las páginas del original, la huella SHA-256 del original y cómo se calculó, la huella SHA-256 del documento firmado y la fecha de carga. |
 | Firmantes | Para cada firmante: nombre, correo, orden, método de identificación, el código de un solo uso si se exigió (canal, destino enmascarado y hora en que se aceptó), dirección IP, navegador, cuándo se le invitó, abrió el sobre y firmó, la huella del conjunto de documentos que firmó, y el hash y la versión de su sello. |
 | Acuerdos | Hoy siempre indica "Sin acuerdos adjuntos". |
@@ -44,14 +44,11 @@ Si el sobre se selló con el certificado de pruebas de bb-sign, el bloque **Sell
 una parte del registro de auditoría se registró con un esquema anterior, el bloque **Integridad** lo
 indica y explica qué prueba la cadena para esos eventos.
 
-## Copia de la organización y copia del firmante
+## Quién lo descarga
 
-Cada certificado tiene dos copias:
-
-| Copia | Quién la descarga | Qué muestra |
-| --- | --- | --- |
-| De la organización | Los usuarios y las credenciales de API que pueden descargar los documentos del sobre (rol Auditor o superior en su espacio). | Todo lo que registra el certificado, junto con el registro de auditoría en JSON. |
-| Del firmante | Cada firmante, desde su enlace de firma. | El mismo sobre, con todos los correos enmascarados y sin direcciones IP, navegadores ni destinos del código de un solo uso.{!EVIDENCE.signerCopyIncludesAuditTrail.value && ' No incluye el registro de auditoría; si un firmante lo necesita, la organización puede entregárselo.'} |
+Lo descargan los usuarios y las credenciales de API que pueden descargar los documentos del sobre
+(rol Auditor o superior en su espacio), junto con el registro de auditoría en JSON. Todos reciben el
+mismo archivo.{!EVIDENCE.signersReceiveCertificate.value && ' Los firmantes no reciben el certificado. Desde su enlace descargan su documento firmado.'}
 
 ## Idioma
 
@@ -62,11 +59,11 @@ que se emitió; si necesita cambiar el de los próximos certificados, pídaselo 
 ## Cuándo se emite
 
 bb-sign emite el certificado después de completarse el sobre y de sellar sus documentos{EVIDENCE.usuallyIssuedWithinMinutes.value && ', normalmente en pocos minutos'}. Mientras tanto, el detalle del sobre muestra "Procesando el certificado de
-evidencia...", y la página de firma muestra al firmante "Preparando tu certificado de evidencia".
+evidencia...".
 
 El correo "Signing complete" que reciben los firmantes espera al certificado durante un máximo de
-<Fact of={EVIDENCE.degradedAfterHours} unit="horas" />. Si el certificado aún no está listo, el correo
-sale de todos modos e indica que se está preparando, en el mismo enlace. Las integraciones reciben el
+<Fact of={EVIDENCE.degradedAfterHours} unit="horas" /> y luego sale de todos modos. El correo no
+menciona el certificado: solo lleva al firmante a su documento firmado. Las integraciones reciben el
 webhook `envelope.completed` con el estado del certificado y, si llega después, `envelope.evidence_issued`.
 Consulte [Webhooks](/sign/developers/webhooks/).
 
@@ -110,10 +107,6 @@ y queda registrada en el registro de auditoría como `EVIDENCE_CERTIFICATE_ACCES
 caduca, vuelva a pulsar la descarga. Los sobres que ya pasaron a **Archivados** conservan las dos
 descargas.
 
-**Desde el enlace del firmante.** Cuando el sobre se completa, la página de firma ofrece al firmante
-**Descargar tu certificado de evidencia**, con su copia. El enlace sigue sirviendo la copia después de
-que el sobre pase a Archivados. Consulte [Firmar y descargar](/sign/signing/sign-and-download/).
-
 **Por la API.** Las integraciones consultan el estado del certificado y obtienen los enlaces de
 descarga con las operaciones
 [getEvidenceCertificate](/sign/api/operations/getevidencecertificate/) y
@@ -122,7 +115,7 @@ permiso que los documentos.
 
 ## Cuánto tiempo se conserva
 
-bb-sign conserva el certificado, la copia del firmante y el registro de auditoría durante
+bb-sign conserva el certificado y el registro de auditoría durante
 <Fact of={EVIDENCE.retentionDays} unit="días" /> desde su emisión, protegidos contra borrado y modificación durante ese plazo.
 No se trasladan nunca a almacenamiento de archivo, así que se descargan directamente durante todo el
 plazo. Al terminar, el detalle muestra "El periodo de conservación terminó y el certificado fue

@@ -92,9 +92,9 @@ export const ERROR_CODES: readonly ErrorCodeFact[] = [
   { code: 'DOCUMENT_HASH_MISMATCH', status: 409, where: 'signing with documentHashes that no longer match the documents', source: 'EA/presentation/DocumentExceptionHandler.kt:47-51,68' },
   { code: 'DOCUMENT_HASH_MISSING', status: 409, where: 'send (or sign) while a document has no recorded SHA-256', source: 'EA/presentation/DocumentExceptionHandler.kt:41-45,67; EA/application/usecase/SendEnvelopeUseCase.kt:50-51' },
   // POST /api/v1/sign/{token}/sign, since bb-sign v0.37.0 (#298, #292).
-  { code: 'SIGNATURE_IMAGE_INVALID', status: 400, where: 'the sign call, when signatureImage is not a PNG data URL the server accepts', source: 'EA/presentation/SigningImageExceptionHandler.kt:29,44-47,84; EA/presentation/signer/SigningController.kt:584-594' },
-  { code: 'SIGNATURE_IMAGE_TOO_LARGE', status: 400, where: 'the sign call, when the PNG is over the byte or pixel limits', source: 'EA/presentation/SigningImageExceptionHandler.kt:30,44-47,85; EA/presentation/signer/SigningController.kt:584-594' },
-  { code: 'SIGNATURE_METHOD_INVALID', status: 400, where: 'the sign call, when signatureMethod is not DRAWN, TYPED or UPLOADED_IMAGE', source: 'EA/presentation/SigningExceptionHandler.kt:23,30-32,49; EA/domain/signature/SigningErrors.kt:9-10; EA/application/usecase/SubmitSignatureUseCase.kt:29,79-81; EA/presentation/signer/SigningController.kt:596-602' },
+  { code: 'SIGNATURE_IMAGE_INVALID', status: 400, where: 'the sign call, when signatureImage is not a PNG data URL the server accepts', source: 'EA/presentation/SigningImageExceptionHandler.kt:29,44-47,84; EA/presentation/signer/SigningController.kt:519-529' },
+  { code: 'SIGNATURE_IMAGE_TOO_LARGE', status: 400, where: 'the sign call, when the PNG is over the byte or pixel limits', source: 'EA/presentation/SigningImageExceptionHandler.kt:30,44-47,85; EA/presentation/signer/SigningController.kt:519-529' },
+  { code: 'SIGNATURE_METHOD_INVALID', status: 400, where: 'the sign call, when signatureMethod is not DRAWN, TYPED or UPLOADED_IMAGE', source: 'EA/presentation/SigningExceptionHandler.kt:23,30-32,49; EA/domain/signature/SigningErrors.kt:9-10; EA/application/usecase/SubmitSignatureUseCase.kt:29,79-81; EA/presentation/signer/SigningController.kt:531-537' },
   { code: 'SIGNATURE_UPLOAD_TIMEOUT', status: 408, where: 'the sign call, when the body arrives too slowly; a client that stops sending entirely gets a bare 408 or an empty 401 instead', source: 'EA/presentation/SigningImageExceptionHandler.kt:32,55-58,86; EA/infrastructure/web/SignRequestBodyLimitFilter.kt:53-57' },
   { code: 'OTP_VERIFICATION_EXPIRED', status: 409, where: 'the sign call, when the signer verified the code more than OTP.verifiedValidityMinutes ago', source: 'EA/presentation/SigningExceptionHandler.kt:24,34-36,50; EA/domain/signature/SigningErrors.kt:12-17; EA/domain/signature/SigningEligibility.kt:72,103' },
   { code: 'SIGNING_BUSY', status: 503, where: 'the sign call, when bb-sign is at capacity for signatures (Retry-After: 1)', source: 'EA/presentation/SigningImageExceptionHandler.kt:34,67-71,88; EA/infrastructure/ratelimit/InMemorySignatureImageThrottle.kt:107-114; EA/infrastructure/web/SignRequestBodyLimitFilter.kt:124,130,136; EA/infrastructure/ratelimit/InMemorySignRequestThrottle.kt:86' },
@@ -109,9 +109,9 @@ export const ERROR_CODES: readonly ErrorCodeFact[] = [
  */
 export const SIGN_REQUEST = {
   /** 1,048,576 bytes. */
-  maxPngMib: fact(1, 'yml:259 (max-png-bytes 1048576); EA/presentation/signer/SigningController.kt:586'),
+  maxPngMib: fact(1, 'yml:259 (max-png-bytes 1048576); EA/presentation/signer/SigningController.kt:521'),
   /** 1,572,864 bytes: the longest accepted image as base64 plus 64 KiB of JSON. */
-  maxBodyMib: fact(1.5, 'yml:248-250 (max-body-bytes 1572864); EA/presentation/signer/SigningController.kt:590'),
+  maxBodyMib: fact(1.5, 'yml:248-250 (max-body-bytes 1572864); EA/presentation/signer/SigningController.kt:525'),
   /** The minimum body cap the server's own rule allows for maxPngMib (yml:248-249). */
   minBodyBytesForPng: fact(1_463_662, 'yml:248-249 (">= 1,463,662 for the 1 MiB default")'),
   /** The `Retry-After` of a 503 SIGNING_BUSY. */
