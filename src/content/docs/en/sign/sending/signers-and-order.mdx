@@ -1,13 +1,13 @@
 ---
 title: Signers and order
-description: Set who signs and in what order. How turns work, who receives the link at send and how to follow each signer.
+description: Set who signs and in what order. How to arrange the signer cards, how turns work and how to follow each signer.
 product: sign
 audience: user
 ---
 
 import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { ENVELOPE } from '../../../../facts/sign';
+import { ENVELOPE, SIGNING_ORDER } from '../../../../facts/sign';
 
 In the **Signers** step of the **Create Envelope** wizard you set who signs. Together with the
 **Signing order** chosen in **Details**, this step determines who receives the link at send and who
@@ -15,63 +15,94 @@ signs later, so each signature arrives at the right moment.
 
 ## Add the signers
 
-The **Add Signers** screen shows one row per person with two fields:
+The **Add Signers** screen shows one card per person with two fields:
 
 | Field | Use |
 |---|---|
 | **Email** | Address that receives the signing link and, if you turned on OTP verification, the code. It identifies the signer throughout the process. |
 | **Name** | Full name. It appears on the signing page ("Signing as ...") and in the seal on the document. |
 
-**Add another signer** adds a row and the **Remove signer** icon deletes it. Empty rows are
-discarded when you continue. If something is missing, the application flags it with "Email is
-required" or "Name is required".
+**Add another signer** adds a card at the end of the list. With
+<Fact of={SIGNING_ORDER.removeFromCards} /> cards or more, each one has a button with a trash icon
+to remove it. Empty cards are discarded when you continue. If something is missing, the application
+flags it with "Email is required" or "Name is required".
 
-Each row generates its own signing link. The same person can sign in several envelopes.
+Each signer gets their own signing link. The same person can sign in several envelopes.
 
 Review the list before you continue: the signers are fixed once the envelope is created. If you
 need to change them later, [cancel the envelope](/en/sign/sending/cancel/) and create a new one.
 
-## Sign at once
-
-With **Everyone signs at once** (parallel signing), the **Order** field is not shown. At send,
-every signer receives the email `You have a document to sign: {title}` at the same time, and each
-signs whenever it suits them. The envelope moves to **In Progress** with the first signature and to
-**Completed** with the last.
-
-The envelope page shows: "Parallel signing · Everyone was emailed at once. The order numbers below
-are not enforced." In this mode, the numbers only reflect the order in which the rows were entered.
-
 ## Sign in order
 
-With **Signers sign in order** (sequential signing), each row has an **Order** field with a number.
-The numbers define turns:
+With **Signers sign in order** (sequential signing), the screen says: "Signers sign in this order. Drag a signer by the handle, or use Move up and Move down."
 
-- At send, the signers with the lowest number receive the email.
-- When everyone in a turn has signed, those with the next number receive
-  `It's your turn to sign: {title}`. Their link is generated at that moment, so the link expiry (by
-  default <Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" />) starts counting then.
-- Signers with the same number form one turn and sign at the same time.
+Each card shows its position as a number, 1 for the first. The signing order is the order of the
+cards, top to bottom: there is no number to type. With
+<Fact of={SIGNING_ORDER.reorderControlsFromCards} /> cards or more, each one also has:
+
+| Control | Use |
+|---|---|
+| Drag handle (the dotted icon, left of the number) | Drag the card with the mouse or your finger to its new position. |
+| **Move up** and **Move down** (the arrows, on the right) | Move the card one position. **Move up** is disabled on the first card and **Move down** on the last. |
+
+The buttons show only an icon. A screen reader announces them with the signer's name, for example
+"Move Ana Perez up" or "Remove Ana Perez"; a card without a name is called "Signer 2".
+
+You can also reorder with the keyboard. Move the focus to the drag handle and press Space or Enter
+to pick up the card, move it with the arrow keys, and press Space or Enter to drop it or Escape to
+cancel. Every move is announced to screen readers, for example: "Ana Perez moved to position 1 of 3."
+
+If drag and drop cannot load, the screen says "Drag and drop could not load. Use Move up and Move down."
+and the **Move up** and **Move down** buttons keep working.
+
+The positions define the turns:
+
+- At send, only the signer in position 1 receives the email.
+- When a signer signs, the one in the next position receives `It's your turn to sign: {title}`.
+  Their link is generated at that moment, so the link expiry (by default
+  <Fact of={ENVELOPE.linkTtlHoursDefault} unit="h" />) starts counting then.
 
 If a signer opens their link before their turn, they see **Waiting for Previous Signers** and can
 press **Check Again** later. The envelope page sums it up: "Sequential signing · Each signer is
 emailed only once everyone before them has signed."
 
+From the application, each turn has one signer. Several signers in the same turn can only be set
+through the API, with the same `signOrder`; see
+[From credential to signed document](/en/sign/developers/envelope-walkthrough/).
+
+## Sign at once
+
+With **Everyone signs at once** (parallel signing), the screen says: "Everyone is invited at once and can sign in any order."
+The cards show no positions and no reorder controls. At send, every signer receives the email
+`You have a document to sign: {title}` at the same time, and each signs whenever it suits them. The
+envelope moves to **In Progress** with the first signature and to **Completed** with the last.
+
+The envelope page shows: "Parallel signing · Everyone was emailed at once and can sign in any order."
+
+If you change the **Signing order** in **Details**, the list keeps the order of the cards.
+
 ## Choose the right mode
 
 | | At once | In order |
 |---|---|---|
-| **Order** field | Not shown | One number per signer |
-| Who gets the link at send | Everyone | The first turn |
-| Email to the following turns | Not applicable | `It's your turn to sign: {title}` when the previous turn finishes |
-| While a signer has not signed | The others continue | The following turns wait |
+| Cards | No position | Position, drag handle, **Move up** and **Move down** |
+| Who gets the link at send | Everyone | The signer in position 1 |
+| Email to the next signers | Not applicable | `It's your turn to sign: {title}` when the previous one signs |
+| While a signer has not signed | The others continue | The next ones wait |
 
 Choose **in order** when one signature must come before the next, for example when the approver
 signs after the requester. Otherwise, **at once** is faster and no signer waits for another.
 
-## Follow each signer
+## Review the list and follow each signer
 
-From the envelope page you can see each signer's status: **Pending** (no link yet), **Notified**
-(received the email), **Viewed** (opened the link) and **Signed**. If a signer is not going to
-sign, cancel the envelope or let it expire. See [Send and track](/en/sign/sending/send-and-track/).
+The **Review** step shows the same list under **Signers (N)**, in the same order and without
+controls. With signing in order, each signer carries their position; with signing at once, they do
+not.
+
+The envelope page shows the list the same way, with each signer's status: **Pending** (no link
+yet), **Notified** (received the email), **Viewed** (opened the link) and **Signed**. If the API set
+several signers in the same turn, they share the position and the next ones follow without gaps,
+for example 1, 1, 2. If a signer is not going to sign, cancel the envelope or let it expire. See
+[Send and track](/en/sign/sending/send-and-track/).
 
 <LinkCard title="Send and track" href="/en/sign/sending/send-and-track/" description="Statuses, list filters, the detail page and automatic reminders." />

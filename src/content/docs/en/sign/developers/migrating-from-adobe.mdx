@@ -7,7 +7,7 @@ source: docs/api/migrating-from-adobe.md
 ---
 
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, DOCUMENTS, EVIDENCE } from '../../../../facts/sign';
+import { AUTH, DOCUMENTS, EVIDENCE, SIGNING_ORDER } from '../../../../facts/sign';
 
 If your team already has an Acrobat Sign integration, this guide lets you move it to bb-sign with a
 clear map of concepts, authentication, webhooks and endpoints. It is based on the Acrobat Sign v6
@@ -113,6 +113,8 @@ The [API reference](/sign/api/) describes the full surface.
 - **Sending to many recipients.** Create one envelope per recipient with `POST /api/v1/envelopes`;
   quotas apply per organization.
 - **Signature placement.** Add the text marker to the PDF where each seal should go.
-- **Signing order.** Use `signOrder` and the `sequentialSigning` boolean.
+- **Signing order.** Use `signOrder` and the `sequentialSigning` boolean. `signOrder` starts at
+  <Fact of={SIGNING_ORDER.minSignOrder} /> and must be <Fact of={SIGNING_ORDER.minSignOrder} /> or
+  greater; signers with the same `signOrder` sign as a group.
 - **Workspaces.** Every envelope belongs to a workspace, and a credential accesses the workspaces
   assigned to it; see [Machine authentication](/en/sign/developers/authentication/).

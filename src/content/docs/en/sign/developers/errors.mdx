@@ -10,6 +10,7 @@ import Fact from '../../../../../components/facts/Fact.astro';
 import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK, OTP, SIGN_REQUEST } from '../../../../facts/sign';
 
 export const codeHelp = {
+  VALIDATION_FAILED: ['The request failed a validation rule: a missing or invalid value, a malformed body, or a path or query value of the wrong type. `message` says what was refused, for example `signers[1].signOrder must be 1 or greater`', 'Fix the value `message` points to and send the request again. Base your logic on `code`, not on the text of `message`'],
   QUOTA_EXCEEDED: ['Creating or sending an envelope while an organization quota is exhausted; the body carries `quota`', 'Ask the platform administrator to raise or renew the quota. Retrying does not help'],
   RATE_LIMITED: ['Too many calls in a row to verify by file, to the audit trail verification or export, or to signing (`POST /api/v1/sign/{token}/sign`)', 'Wait the seconds given in `Retry-After`, then call again'],
   RESTORE_LIMIT_REACHED: ['Requesting a restore while the organization already has the maximum number of restores in progress', 'Wait for the running ones to end (the `document.restored` event), then request it again'],
@@ -43,7 +44,7 @@ it and why an envelope the credential cannot access returns `404`.
 
 | Status | Meaning | Action |
 |---|---|---|
-| `400` | Malformed request or failed validation. On signing, also an image or a `signatureMethod` the server does not accept (`code` says which) | Compare the body with the schema in the [API reference](/sign/api/); dates must be ISO-8601 |
+| `400` | Malformed request or failed validation (`code` `VALIDATION_FAILED`). On signing, also an image or a `signatureMethod` the server does not accept (`code` says which) | Compare the body with the schema in the [API reference](/sign/api/); dates must be ISO-8601 |
 | `401` | Credentials rejected: no token, an expired token (a token is valid for <Fact of={AUTH.tokenLifetimeSeconds} unit="s" />), a token from another issuer or a token the realm will not validate | Request a new token and check the `Bearer ` prefix. Both SDKs refresh the token and retry once before reporting this status |
 | `403` | Authenticated, but the credential lacks the organization permission | The operation is a management operation that exists only in the UI, or the token has no `bb_sign_org_id`. See [Machine authentication](/en/sign/developers/authentication/) |
 | `404` | The resource does not exist, or belongs to another organization or a workspace the credential cannot see. Deliberately indistinguishable | Check the id; if the workspace is the issue, ask an admin to grant the credential a role there |

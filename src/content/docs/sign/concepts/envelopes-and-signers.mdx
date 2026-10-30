@@ -40,7 +40,8 @@ ellos.
 <StatusFlow locale="es" of="signer" />
 
 Cada firmante avanza de forma independiente. En el detalle del sobre, la lista **Firmantes** muestra
-el estado de cada uno (**Pendiente**, **Notificado**, **Visto**, **Firmado**) y su **Orden n.º**.
+el estado de cada uno (**Pendiente**, **Notificado**, **Visto**, **Firmado**) y, en la firma
+secuencial, su posición.
 Si un firmante no va a firmar, cancele el sobre o deje que llegue a su fecha de vencimiento.
 
 ## Firma secuencial o en paralelo
@@ -50,11 +51,12 @@ secuencial** o **Firma en paralelo**:
 
 | Modalidad | Qué ocurre al enviar | Orden |
 | --- | --- | --- |
-| En paralelo | Todos los firmantes reciben el correo a la vez y firman en cualquier orden. | El número de orden es informativo. |
-| Secuencial | Los firmantes reciben el correo de uno en uno, en el orden definido en el paso de firmantes. | Cada firmante recibe su enlace cuando han firmado todos los anteriores. |
+| En paralelo | Todos los firmantes reciben el correo a la vez y firman en cualquier orden. | No se muestran posiciones. |
+| Secuencial | Los firmantes reciben el correo de uno en uno, en el orden de las tarjetas del paso de firmantes. | Cada firmante recibe su enlace cuando han firmado todos los anteriores. |
 
-En la modalidad secuencial, varios firmantes pueden compartir el mismo número de orden: forman un
-grupo y reciben el correo a la vez. Cuando el grupo termina, el siguiente recibe el correo
+Desde la aplicación, cada turno de la modalidad secuencial es de un firmante. Por la API, varios
+firmantes pueden compartir el mismo `signOrder`: forman un grupo, reciben el correo a la vez y
+comparten la posición en el detalle del sobre. Cuando el grupo termina, el siguiente recibe el correo
 "It's your turn to sign". Consulte [Firmantes y orden](/sign/sending/signers-and-order/).
 
 ## Validez del enlace de firma
