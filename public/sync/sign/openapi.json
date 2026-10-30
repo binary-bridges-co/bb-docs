@@ -10,6 +10,7 @@
             "type": "string"
           },
           "signOrder": {
+            "description": "1-based position in the signing order. Signers with equal values sign as a group, in any order within it; the next group starts when the whole group has signed. Must be 1 or greater. Defaults to 1. Only enforced as an order when sequentialSigning is true.",
             "format": "int32",
             "type": "integer"
           }
@@ -221,6 +222,7 @@
             "type": "string"
           },
           "signOrder": {
+            "description": "1-based position in the signing order. Signers with equal values sign as a group, in any order within it; the next group starts when the whole group has signed. Must be 1 or greater. Defaults to 1. Only enforced as an order when sequentialSigning is true.",
             "format": "int32",
             "type": "integer"
           }
