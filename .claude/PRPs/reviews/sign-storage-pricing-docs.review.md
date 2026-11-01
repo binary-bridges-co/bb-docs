@@ -1,7 +1,7 @@
 ---
 plan: .claude/PRPs/plans/sign-storage-pricing-docs.plan.md
 issue: binary-bridges-co/bb-docs#14
-status: PENDING
+status: REJECTED
 reviewer: independent plan reviewer (general-purpose subagent)
 reviewed: 2026-11-01
 ---
@@ -59,3 +59,40 @@ setup fees, what "10 years" includes). The plan's defaults for them are safe.
 ## Round 2
 
 Round 2: plan revised, awaiting re-review. The revision answers every round-1 finding; see "Change log (round 1 → revision 2)" at the end of the plan.
+
+## Verdict (round 2)
+
+REJECTED, because of one new HIGH finding. All fourteen round-1 findings are fixed in revision 2, and I re-checked
+the new claims against the product at `v0.42.0`:
+
+- D10 matches the product: only evidence gets a deletion lock, and the documents' storage is versioned with no default lock.
+- The four organization-storage audit events exist and are recorded on the organization's chain.
+- The English availability labels and the "preparing" string are quoted correctly.
+- `STORAGE_NOT_READY` is on the two upload operations named.
+- Flux's commit title is "chore(docs): bump image".
+
+The leak check (A4) keeps exact names out of the repository. It covers every public source folder and every text
+output, and its fixtures are placeholders. PR A ships the live leak fix first and waits on nothing. P1 is a clear
+public-source rule. The owner answers are reflected in AC2, the pricing outline and B1.
+
+The new problem is in the one output the plan never read: the synced contract. AC4 lists it, and the plan says A4
+guards it, but A4 does not catch what is in it. This review also covers Phase A (PR A); no separate review file is
+needed.
+
+## Findings (round 2)
+
+| # | Severity | Finding | Required change |
+|---|---|---|---|
+| R2-1 | HIGH | **The published contract still carries internal references and the old fixed rule.** At `v0.42.0` the contract's descriptions include two bare product issue references in parentheses (on the envelope archive-date field and on the signed-documents failure fields). It also states "Fixed 365-day retention", "past its 365 days" (twice) and "From day 90 ... may be in archive storage". The contract is synced verbatim into `src/content/sync/sign/`, published at `/sync/sign/openapi.json` and rendered into the `/sign/api/` reference pages. A4's issue patterns only match the `bb-sign#<n>` forms, so the bare form passes. The validation also excludes `dist/sign/api/` from the fixed-period check. As planned, AC4 ("the published contract") and AC1 (no fixed period) are false for the API reference, and that reference would contradict the new Storage page. | Ask the app side to rewrite those contract descriptions: no issue references, and the organization's period instead of a fixed 365 or 90 days. The natural place is the app's vendor-name removal work, which already touches public text. Then sync at that tag. Until that ships, record a dated, owner-approved exception that names the API reference, or hold PR B's sync. Add a bare-reference pattern to A4 for synced and built files (for example `\(#\d{2,}\)`, which does not match "PKCS#12"). Drop the `dist/sign/api/` exclusion from the fixed-period check, or justify it in the plan. |
+| R2-2 | LOW | **R8 misses one pinned infrastructure source.** `facts.test.ts:235-237` asserts a production-manifest line reference in the rate-limit sources. The header of `sign-integrations.ts` defines the `prod` shorthand as an infrastructure path. A3 covers both in principle, but neither is listed, and A4 has no pattern for the `prod:<n>` shorthand. | Add both to R8. Add a `\bprod:\d` pattern to A4. |
+| R2-3 | LOW | **Locale-dependent price check.** `grep -c 'COP.1,000'` relies on a UTF-8 locale, because the no-break space is two bytes. "Expect 1" also counts lines, not occurrences. | Use `LC_ALL=en_US.UTF-8` or `COP.\{1,2\}1,000`, and expect "1 or more". |
+| R2-4 | LOW | **P1 reads AC4 narrowly.** The issue says "no ... code paths". P1 (and this plan) keep product code paths at a release tag in fact sources and PRP files. That is reasonable and consistent with CLAUDE.md, but it is an interpretation of the issue. | State in the PR A description that the owner accepts P1 as the reading of AC4 for fact sources. |
+
+## Checklist (round 2)
+
+- [x] Every acceptance criterion in the issue maps to at least one task
+- [x] No task exceeds the issue's scope
+- [x] Research findings cite real `file:line`, and those lines say what the plan claims (re-checked: audit events, en labels, preparing string, the evidence lock, the Flux title)
+- [x] Validation commands are runnable (R2-3 is minor)
+- [ ] Security-sensitive surfaces (auth, PII, uploads, quotas) called out and handled (public-content leakage: the contract is not handled, R2-1)
+- [x] Rollback is described and plausible (revert B before A)
