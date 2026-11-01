@@ -90,7 +90,7 @@ at one stable documentation URL, so that the link never breaks.
 | D9 | The old platform storage page (in the app until its app-side removal) is not described; the Storage page documents Configuración > Almacenamiento only. bb-docs never documented the shared lifecycle API (no such path in the synced contract, no page link), so only the old page's description and its three facts go. | The page never applied to production retention and is being removed. |
 | D10 | **Deletion protection is split.** Evidence certificates and their audit trail are locked against deletion until the end of their period (the period in force when issued). Documents and signed PDFs are versioned, not locked: they are kept for the organization's period and then deleted, and only a shorter period applied by Binary Bridges, after its reviewer sees what would be deleted, removes them earlier. No general "protected against early deletion" sentence. | The product locks evidence only. |
 | D11 | **Pricing facts cite an owner decision**: "owner decision 2026-11-01 in issue #14". Written into CLAUDE.md §0 by PR A as one of the three P1 source forms. | Prices are a business decision. |
-| D12 | **One dated exemption for the current contract, until PR C.** The contract synced today (SHA-256 `a2afe0f674b4712fe7316c2d686db733ea9a001365c15bd2fb10406b326755a6`, Sign `v0.38.0`) contains two bare product issue references and states a fixed 365-day retention. A4 exempts exactly these outputs from exactly two rules (bare issue references, fixed-period phrases): `src/content/sync/sign/openapi.json`, `public/sync/sign/openapi.json`, `dist/sync/sign/openapi.json`, and `dist/sign/api/**` (pages rendered from that contract). The exemption lives in `scripts/public-terms-exemptions.json` with `since: 2026-11-01`, `reason`, `sha256`, `rules`, `paths` and `removedBy: "PR C, after the app's vendor-name removal work ships"`. It applies **only while the synced contract's hash equals the recorded one**: any other contract makes the check fail until the entry is removed or the contract is clean. Every build prints "exemption active since 2026-11-01: synced API contract (bare issue references, fixed period), removed by PR C", and PR A's description names it for the owner. Every other rule (vendor names, identifiers, storage words, infrastructure paths, `prod:` shorthand) still applies to these files. | The owner's resolution is to fix the descriptions at the source and re-sync (PR C). Holding the whole site until then is worse than a pinned, visible, time-boxed exception that cannot silently cover a different file. |
+| D12 | **One dated exemption for the current contract, until PR C.** The contract synced today (SHA-256 `a2afe0f674b4712fe7316c2d686db733ea9a001365c15bd2fb10406b326755a6`, Sign `v0.38.0`) contains two bare product issue references and states a fixed 365-day retention. A4 exempts exactly these outputs from exactly two rules (bare issue references, fixed-period phrases): `src/content/sync/sign/openapi.json`, `public/sync/sign/openapi.json`, `dist/sync/sign/openapi.json`, and `dist/sign/api/**` (pages rendered from that contract). The exemption lives in `scripts/public-terms-exemptions.json` with `since: 2026-11-01`, `reason`, `sha256`, `rules`, `paths` and `removedBy: "PR C, after the app's vendor-name removal work ships"`. It applies **only while every listed source copy (`src/content/sync/sign/openapi.json` and `public/sync/sign/openapi.json`) hashes to the recorded value**, and the built copy `dist/sync/sign/openapi.json` is byte-identical to the public one (the `dist/sign/api/**` pages are derived from the `src` copy). Any other contract, or a hand edit to any copy, makes the check fail until the entry is removed or the contract is clean. The test pins an allow-list: the entry may carry at most these two rules and only these four paths; adding a rule or a path fails the test and needs a plan change (R3-1). Every build prints "exemption active since 2026-11-01: synced API contract (bare issue references, fixed period), removed by PR C", and PR A's description names it for the owner. Every other rule (vendor names, identifiers, storage words, infrastructure paths, `prod:` shorthand) still applies to these files. | The owner's resolution is to fix the descriptions at the source and re-sync (PR C). Holding the whole site until then is worse than a pinned, visible, time-boxed exception that cannot silently cover a different file. |
 | D13 | **PR B does not re-sync the contract or the vectors.** It syncs the terms only (`--only legal/terminos-y-condiciones.md`, Task B7); `src/content/sync/sign/openapi.json`, `webhook-signature-vectors.json` and `public/sync/sign/*` stay byte-identical, so the D12 hash keeps matching. The `v0.42.0` contract is never synced: it carries the same references. `STORAGE_NOT_READY` is documented on the errors page from the fact sheet (B2); the API reference shows it after PR C. | The owner wants the cleaned contract synced once, at the release that cleans it. |
 
 ### P1. The public-source rule (CLAUDE.md §0 and README, applied by PR A to every public file)
@@ -108,9 +108,10 @@ commands or storage names. The reviewer of each plan verifies sources against th
 
 **One narrow exception, needed for the sync to work:** the locations of the three published artifacts the sync
 copies (the API contract, the webhook signature vectors and the terms of service) may appear in the sync
-configuration (`src/config/products.ts`, `scripts/sync-product.mjs`), the sync manifest (`sign.json`) and the
-generated Spanish terms page's header. They are the published documents themselves, not code. No other page carries
-a `source:` frontmatter field.
+configuration (`src/config/products.ts`, `scripts/sync-product.mjs`, `scripts/legal-mirror.mjs`) and the sync
+manifest (`sign.json`). They are the published documents themselves, not code. No page carries a `source:`
+frontmatter field or a source path in its header: the legal generator writes neither (R3-3), and PR A regenerates the
+mirrored pages from the already-synced texts so the generated pages match the generator byte for byte.
 
 ## Research findings
 
@@ -267,8 +268,10 @@ reading of issue #14 AC4 for fact sources (2026-11-01), and names the D12 exempt
     days", "plazo fijo", "fixed period", "same for every organization", "igual para todas las organizaciones"); and,
     in published output and page sources, the generic word for the vendor's storage container.
   - **D12 exemption**, read from `scripts/public-terms-exemptions.json`: applied only to the listed paths and rules,
-    and only while `sha256(src/content/sync/sign/openapi.json)` equals the recorded hash; prints the "exemption active"
-    line on every run; a hash mismatch fails with "the synced contract changed: remove or update the exemption".
+    and only while every listed source copy (`src/content/sync/sign/openapi.json`, `public/sync/sign/openapi.json`)
+    hashes to the recorded value and `dist/sync/sign/openapi.json`, when present, is byte-identical to the public copy;
+    prints the "exemption active" line on every run; a hash mismatch fails with "the synced contract changed: remove
+    or update the exemption" (R3-1).
   - **Exact names** (storage names, prefixes, hosts): never in the repository. Read from `PUBLIC_TERMS_EXTRA` (a CI
     secret, newline-separated) or a git-ignored `.public-terms.local`; when neither exists the script prints
     "extra terms: skipped" and does not fail. `.gitignore` gains the file.
@@ -277,8 +280,14 @@ reading of issue #14 AC4 for fact sources (2026-11-01), and names the D12 exempt
     placeholders injected as the list (`PLACEHOLDER_TERM`), never real names. Cases: attribute match; `.txt`/`.json`/
     `.xml` match; word-bounding ("standard configuration" passes); "PKCS#12" passes and a parenthesised hash with three digits fails in a synced
     file; the `prod` shorthand followed by a digit fails (both built from fragments in the test); the exemption applies with the matching hash and fails with another; the extra list from
-    the environment; the skip message.
+    the environment; the skip message; a hand-edited public copy fails; a `dist` copy that differs from the public one
+    fails; the shipped exemption file carries at most the two D12 rules and only the four D12 paths (allow-list, R3-1).
   - Prints file, line and term; exits 1 on any match.
+- **A4b. llms outputs (R3-4).** On the first build, check whether `dist/llms*.txt` include the generated API pages.
+  If they do, exclude the API pages from `starlight-llms-txt` (its `exclude` option) rather than widening D12.
+- **A4c. Generated legal pages (R3-3).** `renderLegalPage` stops writing the `source:` field and the source path in
+  the GENERATED comment; the three mirrored pages are regenerated from the synced texts already in the repository
+  (same commit, no network sync), so `sync.test.ts`'s byte-equality check holds.
 - **A5. Current page text**: `admin/storage` (es + en) loses its description of the old platform page and the tier
   names in it (D9), so the check passes; the rest of the page waits for PR B.
 - **A6.** Report `.claude/PRPs/reports/public-fact-sources-report.md`. `npm run verify` green. PR, merge, Flux image
@@ -367,7 +376,9 @@ Rebase this branch on `origin/main` first. **The synced contract and vectors are
   - Add `--only <synced name>` to `sync-product.mjs`: copies the named files only and leaves every other synced file
     byte-identical. The manifest moves `ref`, `commit` and `commitDate` from the top level into each file entry, so a
     partial sync records the release each file came from (openapi and vectors keep `v0.38.0`; the terms get
-    `v0.42.0`). `sync.test.ts` reads per-file entries and asserts a partial sync changes only the named files.
+    `v0.42.0`). The top-level `rewrites` moves into the contract's per-file entry (`files["openapi.json"].rewrites`),
+    so a terms-only sync never empties it (R3-2). `sync.test.ts` reads per-file entries, asserts the contract entry's
+    `rewrites`, and asserts a partial sync changes only the named files.
   - `PRODUCT_REPO_TOKEN=$(gh auth token) npm run sync:sign -- v0.42.0 --only legal/terminos-y-condiciones.md`.
   - Delete the two synced guide files and their manifest entries. Update `legal.test.ts` (one mirror).
 - **B8. English terms** `en/sign/legal/terms.mdx`: Versión 5 and 6 translated (service name, §3.1-3.3, new §3.4,
@@ -432,7 +443,7 @@ LC_ALL=en_US.UTF-8 sed -e 's/<[^>]*>/ /g' dist/en/sign/pricing/index.html | LC_A
 
 # AC4: no fact source in any output, no source frontmatter outside the generated terms; expect no output
 grep -rl "data-source" dist --include='*.html'
-grep -rl '^source:' src/content/docs | grep -v 'src/content/docs/sign/legal/terms.md'
+grep -rl '^source:' src/content/docs
 
 # Redirects: expect the D1 path in each, and 0 redirect pages in the sitemap
 for p in sign/legal/own-certificate-guide en/sign/legal/own-certificate-guide sign/legal/retention-guide en/sign/legal/retention-guide; do
@@ -513,3 +524,12 @@ order C, B, A (reverting A alone re-exposes sources). After the app drops its gu
 | R2-2 LOW, pinned infrastructure source | R8 lists `facts.test.ts:235-237` and the `prod` shorthand in `sign-integrations.ts:8`; A3 rewrites both; A4 adds `\bprod:\d` |
 | R2-3 LOW, locale-dependent price check | `LC_ALL=en_US.UTF-8`, `.\{1,2\}` for the no-break space, `grep -o … \| wc -l`, expect 1 or more |
 | R2-4 LOW, P1 reading of AC4 (owner decision, stricter) | P1 rewritten: no private-repository paths in any public file; sources cite behaviour at a release, production configuration by date, or an owner decision; one narrow, stated exception for the three published artifacts' locations in the sync configuration, manifest and generated terms header. All product paths removed from this plan's research. PR A removes page `source:` frontmatter, path shorthands in fact headers, and states the owner's adoption of P1 in its description; the facts test checks the three source forms |
+
+## Change log (round 3 → revision 4, folded in before implementation)
+
+| Finding | Change |
+|---|---|
+| R3-1 MEDIUM, unpinned copies | D12 and A4: both source copies must match the recorded hash and the `dist` copy must equal the public one; the test pins an allow-list of at most the two rules and the four paths |
+| R3-2 LOW, rewrites on partial sync | B7: `rewrites` moves into the contract's per-file manifest entry; `sync.test.ts` adapted |
+| R3-3 LOW, narrower exception | P1 exception limited to the sync configuration and manifest; A4c: the generator drops `source:` and the header path, pages regenerated from the synced texts in PR A; the AC4 validation expects no `source:` frontmatter at all |
+| R3-4 LOW, llms outputs | A4b: check `dist/llms*.txt` on PR A's first build and exclude the API pages from the plugin if they appear, never widening D12 |
