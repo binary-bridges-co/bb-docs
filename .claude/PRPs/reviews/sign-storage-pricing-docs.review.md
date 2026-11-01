@@ -1,7 +1,7 @@
 ---
 plan: .claude/PRPs/plans/sign-storage-pricing-docs.plan.md
 issue: binary-bridges-co/bb-docs#14
-status: REJECTED
+status: PENDING
 reviewer: independent plan reviewer (general-purpose subagent)
 reviewed: 2026-11-01
 ---
@@ -55,3 +55,7 @@ setup fees, what "10 years" includes). The plan's defaults for them are safe.
 - [ ] Validation commands are runnable (zsh glob quoting, tag-split phrases, no `llms*.txt` check; finding 9)
 - [ ] Security-sensitive surfaces (auth, PII, uploads, quotas) called out and handled (public-repo leakage handling is incomplete; findings 2-5, 10)
 - [x] Rollback is described and plausible (revert, then Flux's next image PR; the guides stay bb-docs pages once the app drops them)
+
+## Round 2
+
+Round 2: plan revised, awaiting re-review. The revision answers every round-1 finding; see "Change log (round 1 → revision 2)" at the end of the plan.
