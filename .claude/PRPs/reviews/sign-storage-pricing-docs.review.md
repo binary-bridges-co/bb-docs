@@ -1,7 +1,7 @@
 ---
 plan: .claude/PRPs/plans/sign-storage-pricing-docs.plan.md
 issue: binary-bridges-co/bb-docs#14
-status: REJECTED
+status: PENDING
 reviewer: independent plan reviewer (general-purpose subagent)
 reviewed: 2026-11-01
 ---
@@ -96,3 +96,7 @@ needed.
 - [x] Validation commands are runnable (R2-3 is minor)
 - [ ] Security-sensitive surfaces (auth, PII, uploads, quotas) called out and handled (public-content leakage: the contract is not handled, R2-1)
 - [x] Rollback is described and plausible (revert B before A)
+
+## Round 3
+
+Round 3: plan revised, awaiting re-review. The revision answers every round-2 finding; see "Change log (round 2 → revision 3)" at the end of the plan.
