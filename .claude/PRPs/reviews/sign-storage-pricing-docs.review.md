@@ -1,7 +1,7 @@
 ---
 plan: .claude/PRPs/plans/sign-storage-pricing-docs.plan.md
 issue: binary-bridges-co/bb-docs#14
-status: PENDING
+status: APPROVED
 reviewer: independent plan reviewer (general-purpose subagent)
 reviewed: 2026-11-01
 ---
@@ -100,3 +100,49 @@ needed.
 ## Round 3
 
 Round 3: plan revised, awaiting re-review. The revision answers every round-2 finding; see "Change log (round 2 → revision 3)" at the end of the plan.
+
+## Verdict (round 3)
+
+APPROVED. No CRITICAL or HIGH finding remains. Revision 3 fixes all four round-2 findings.
+
+- **R2-1 (published contract): fixed.**
+  - PR B syncs the terms only (`--only`). The contract, the vectors and `public/sync` stay byte-identical, and the validation checks that with `git diff`.
+  - The manifest moves to per-file release entries.
+  - PR C syncs the cleaned contract once the app's vendor-name removal work is in a release. It first re-reads that contract and stops if any reference or fixed-period phrase remains.
+  - The D12 hash matches the contract on `origin/main` (`v0.38.0`; recomputed).
+  - The exemption is narrow: four paths, two rules (bare references and fixed-period phrases), printed on every build, and failing on a hash mismatch. All other rules still apply to those files.
+  - `dist/sign/api/` is excluded from the validation only while D12 is in force, and PR C removes the exclusion.
+- **R2-2 (pinned infrastructure source): fixed.** R8 lists the pinned test lines and the `prod` shorthand in the facts header. A4 gains the shorthand pattern, and the test builds it from fragments.
+- **R2-3 (locale-dependent price check): fixed.** The price check sets a UTF-8 locale, matches one or two characters for the no-break space, counts occurrences, and expects 1 or more.
+- **R2-4 (P1 reading of AC4): fixed, and stricter than asked.** No private-repository path is left in the plan. P1 allows three source forms (behaviour at a release, production configuration by date, owner decision). PR A removes the page `source:` frontmatter, and A4 adds a code-path rule.
+
+**The stated P1 exception is acceptable.** The three locations name the published documents themselves (contract, vectors, terms) under the product's `docs/` folder. They reveal no code, module or infrastructure layout. The product repository's name is already public in the sync configuration, and the contract itself is published at `/sync/sign/openapi.json`. A release-asset URL would add release work on the app side. It would still need a token, because the repository is private, and it would still name the repository, so it hides nothing more. Keep the paths, confined to the sync configuration and the manifest (see R3-3).
+
+## Findings (round 3)
+
+| # | Severity | Finding | Required change |
+|---|---|---|---|
+| R3-1 | MEDIUM | **The exemption can widen through the unpinned copies.** D12 pins the hash of `src/content/sync/sign/openapi.json` only. `public/sync/sign/openapi.json` is listed as exempt, but nothing hashes it, and `sync.test.ts` checks only the `src/content/sync` copies (`tests/unit/sync.test.ts:64-69`). A hand edit to the public copy would also flow to `dist/sync/`, and it would be exempt from the two rules without anyone noticing. The rules and paths in the JSON can also grow with nothing but a diff. | Require every listed source file to match the recorded hash: the `src` and `public` copies are byte-identical today. Treat the `dist` entries as derived and check them against the public copy. In `public-terms.test.ts`, pin an allow-list: at most the two rules, and only the four D12 paths. Adding a rule or a path should fail the test and need a plan change. |
+| R3-2 | LOW | **A terms-only sync can break the rewrites assertion.** The manifest's top-level `rewrites` is set only when the contract is processed (`scripts/sync-product.mjs`). `sync.test.ts:75` expects `['servers[0].url']`, so a terms-only sync that rewrites the manifest would empty it. | In B7, move `rewrites` into the contract's per-file entry (or keep the previous value on a partial sync), and adapt the test. |
+| R3-3 | LOW | **The exception can be narrower.** Nothing renders the generated Spanish terms page's `source:` field or header path, and the manifest already records it. | Optional: generate that page without the path, so the exception covers only `products.ts`, `sync-product.mjs` and `sign.json`. |
+| R3-4 | LOW | **The llms outputs may include the API reference.** If `starlight-llms-txt` includes the generated API pages, `dist/llms*.txt` would carry the exempted contract text outside the D12 paths, and PR A's build would fail. It would fail loudly, not leak silently. | On PR A's first build, check `dist/llms*.txt`. If the API pages are included, exclude them from the plugin rather than widening D12. |
+
+## Leak check (round 3)
+
+I grepped the added lines of every commit on the branch since `origin/main`, the round-1 commit included, for:
+
+- private issue references, `bb-sign#<n>` forms and bare parenthesised references
+- decision labels and the `prod:` shorthand with a line number
+- infrastructure paths, vendor and storage-class names, and storage name prefixes
+- private-repository paths: module folders, path shorthands, `.kt`, `.java`, `.tsx` and `.properties` files, and the product's `docs/` paths
+
+The only hit is the generic word for the storage container: four times in this review, quoting the round-1 wording, and once in the plan, quoting the CLAUDE.md text that A2 replaces. Neither is in published output or page sources.
+
+## Checklist (round 3)
+
+- [x] Every acceptance criterion in the issue maps to at least one task
+- [x] No task exceeds the issue's scope (PR C is the owner's chosen fix for R2-1)
+- [x] Research findings say what the product does at `v0.42.0` (checked privately; D12's hash recomputed)
+- [x] Validation commands are runnable and state expected output
+- [x] Security-sensitive surfaces (auth, PII, uploads, quotas) called out and handled (public-content leakage: R3-1 tightens the exemption)
+- [x] Rollback is described and plausible (revert C, then B, then A)
