@@ -1,42 +1,44 @@
 ---
-title: "bb-sign terms and conditions of service"
-description: "Courtesy translation of the bb-sign terms of service in force: nature of the service, seal certificate, and retention of documents and evidence."
+title: "Sign terms and conditions of service"
+description: "Courtesy translation of the Sign terms of service in force: nature of the service, seal certificate, and retention of documents and evidence."
 product: sign
 audience: legal
 source: docs/legal/terminos-y-condiciones.md
 legal: true
-legalVersion: "Versión 4 · 2026-10-20"
+legalVersion: "Versión 6 · 2026-10-31"
 ---
 
 These terms are part of the service agreement entered into between Binary Bridges S.A.S. and each customer. They are published in the application for reference; they do not require online acceptance. Each change increases the version and is recorded in the history at the end of the document.
 
 ## 1. Nature of the service
 
-**1.1** bb-sign offers an electronic signature mechanism in the terms of Decreto 2364 de 2012 (compiled in Decreto 1074 de 2015). It is not a digital signature in the terms of article 28 of Ley 527 de 1999.
+**1.1** Sign by Binary Bridges ("Sign") offers an electronic signature mechanism in the terms of Decreto 2364 de 2012 (compiled in Decreto 1074 de 2015). It is not a digital signature in the terms of article 28 of Ley 527 de 1999.
 
 **1.2** Each customer, through its legal office, decides whether the mechanism is appropriate for the documents it sends for signature.
 
 ## 2. Seal certificate
 
-**2.1** When an envelope is completed, bb-sign seals each signed document with a digital certificate; any later alteration of the document is detectable.
+**2.1** When an envelope is completed, Sign seals each signed document with a digital certificate; any later alteration of the document is detectable.
 
-**2.2** As long as the customer has not configured its own certificate, bb-sign seals with a Binary Bridges **testing certificate**. It is self-signed, it does not grant trust before third parties, and validators (for example Adobe Acrobat or the European Commission's validator) will show it as untrusted.
+**2.2** As long as the customer has not configured its own certificate, Sign seals with a Binary Bridges **testing certificate**. It is self-signed, it does not grant trust before third parties, and validators (for example Adobe Acrobat or the European Commission's validator) will show it as untrusted.
 
-**2.3** It is the customer's responsibility to obtain a certificate issued by a Digital Certification Entity accredited by ONAC, to configure it in bb-sign with its complete certification chain and to renew it before it expires. The guide for doing so is the [Own certificate guide](/en/sign/legal/own-certificate-guide).
+**2.3** It is the customer's responsibility to obtain a certificate issued by a Digital Certification Entity accredited by ONAC, to configure it in Sign with its complete certification chain and to renew it before it expires. The guide for doing so is the [Own certificate guide](/en/sign/admin/own-certificate).
 
-**2.4** bb-sign sends email notices to the organization's administrators 30 and 7 days before its own certificate expires. These notices are an aid; they do not transfer responsibility for the renewal to Binary Bridges.
+**2.4** Sign sends email notices to the organization's administrators 30 and 7 days before its own certificate expires. These notices are an aid; they do not transfer responsibility for the renewal to Binary Bridges.
 
 **2.5** The lack of an own certificate does not prevent sending envelopes; in that case the documents are sealed with the testing certificate.
 
-**2.6** bb-sign stores the certificate file and its password encrypted, and uses them to seal that organization's documents and the evidence bb-sign generates for them, and for no other purpose.
+**2.6** Sign stores the certificate file and its password encrypted, and uses them to seal that organization's documents and the evidence Sign generates for them, and for no other purpose.
 
 ## 3. Retention of documents and evidence
 
-**3.1 Fixed period.** bb-sign keeps the original documents, the signed documents and the evidence of each envelope for a fixed period of three hundred sixty-five (365) days, counted from when each file is uploaded or generated. The period is not configurable. When it ends, the file stops being available and is permanently deleted from our storage in the following days; after that it cannot be recovered.
+**3.1 Retention period.** Sign keeps the original documents, the signed documents and the evidence of each envelope for the period agreed in the customer's contract: three hundred sixty-five (365) days, unless another period has been agreed, and at most ten (10) years (3,650 days), counted from when each file is uploaded or generated. When the period ends, the file stops being available and is permanently deleted from our storage in the following days; after that it cannot be recovered. A change of the agreed period applies to the files kept at that moment, and may bring their deletion forward.
 
-**3.2 Archive after 90 days.** Documents older than ninety (90) days may be moved to archive storage; in that case **they cannot be downloaded immediately**. An authorized user of the organization (in the application or through the API) can request their restore, and the signer, from their link, the restore of their signed copy. When the file is available, bb-sign sends an email to the people who requested it and, to subscribed integrations, the `document.restored` webhook; it usually takes a few hours, with no guaranteed time. The restored copy remains available for seven (7) days. The evidence certificate and the audit trail are not archived and can be downloaded immediately throughout the 365 days.
+**3.2 Archive.** Documents may be moved to archive storage after ninety (90) days, or after the time agreed in the customer's contract; in that case **they cannot be downloaded immediately**. An authorized user of the organization (in the application or through the API) can request their restore, and the signer, from their link, the restore of their signed copy. When the file is available, Sign sends an email to the people who requested it and, to subscribed integrations, the `document.restored` webhook; it usually takes a few hours, with no guaranteed time. The restored copy remains available for seven (7) days. The evidence certificate and the audit trail are not archived and can be downloaded immediately throughout the retention period.
 
-**3.3 Retention by the customer.** Retention after the 365 days, in accordance with article 12 of Ley 527 de 1999 and the customer's own retention rules, is the customer's responsibility. We recommend archiving each envelope in the customer's systems as soon as it is completed, using the `envelope.completed` webhook and the download API. The [Document retention and restore guide](/en/sign/legal/retention-guide) explains how.
+**3.3 Retention by the customer.** Retention after the retention period, in accordance with article 12 of Ley 527 de 1999 and the customer's own retention rules, is the customer's responsibility. We recommend archiving each envelope in the customer's systems as soon as it is completed, using the `envelope.completed` webhook and the download API. The [Document retention and restore guide](/en/sign/sending/retention-and-restore) explains how.
+
+**3.4 Certificate language.** The evidence certificate is issued in Spanish or in English, according to the language configured for the organization, and states the retention period that applies to each file under the rules of this section. If the two versions differ, the Spanish text of these terms prevails.
 
 ## Version history
 
@@ -44,3 +46,5 @@ These terms are part of the service agreement entered into between Binary Bridge
 - Version 2 (2026-10-19): section 3, retention of documents and evidence.
 - Version 3 (2026-10-19): certificate expiry notices (2.4); clauses 2.4 and 2.5 become 2.5 and 2.6.
 - Version 4 (2026-10-20): final publication; the clauses do not change.
+- Version 5 (2026-10-30): the service is renamed Sign by Binary Bridges; the content of the clauses does not change.
+- Version 6 (2026-10-31): section 3, the retention period is the one agreed in the customer's contract (365 days unless agreed otherwise, at most 10 years); new clause 3.4 on the certificate language.
