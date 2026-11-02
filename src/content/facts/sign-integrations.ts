@@ -64,6 +64,14 @@ export const DELIVERY_STATUSES: readonly DeliveryStatus[] = ['PENDING_RENDER', '
 
 // -------------------------------------------------------------- errors ---
 
+/** The upload refusal while an organization's dedicated storage is being prepared (Sign v0.42.0). */
+export const STORAGE_NOT_READY = {
+  /** Seconds in the `Retry-After` header of a `503 STORAGE_NOT_READY`. */
+  retryAfterSeconds: fact(60, 'Sign v0.42.0 behaviour: a 503 STORAGE_NOT_READY carries Retry-After 60'),
+  /** Nothing is stored, checked or counted when the upload is refused. */
+  nothingStored: fact(true, 'Sign v0.42.0 behaviour: a refused upload stores nothing and is not counted'),
+} as const;
+
 export interface ErrorCodeFact {
   readonly code: string;
   readonly status: number;
@@ -88,6 +96,7 @@ export const ERROR_CODES: readonly ErrorCodeFact[] = [
   { code: 'DOCUMENT_DELETED', status: 410, where: 'restores, once the file has passed its retention', source: 'EA/domain/restore/RestoreRefusals.kt:15; EA/presentation/RestoreExceptionHandler.kt:33' },
   { code: 'DOCUMENT_NOT_SIGNED', status: 409, where: 'restore of a signed file that does not exist', source: 'EA/domain/restore/RestoreRefusals.kt:12; EA/presentation/RestoreExceptionHandler.kt:32' },
   { code: 'ARCHIVAL_STORAGE_UNAVAILABLE', status: 503, where: 'restores, when the archive storage does not answer', source: 'EA/domain/restore/RestoreRefusals.kt:27; EA/presentation/RestoreExceptionHandler.kt:35' },
+  { code: 'STORAGE_NOT_READY', status: 503, where: 'document upload and envelope document upload, while the organization\'s dedicated storage is still being prepared; nothing is stored, Retry-After gives the wait', source: 'Sign v0.42.0 behaviour: both upload operations answer 503 STORAGE_NOT_READY with Retry-After 60 and store nothing while the organization\'s storage is being prepared' },
   { code: 'SERVICE_UNAVAILABLE', status: 503, where: 'audit read and export, when the audit service does not answer', source: 'EA/presentation/AuditReadExceptionHandler.kt:26,37-43' },
   { code: 'ENVELOPE_NOT_COMPLETED', status: 409, where: 'evidence certificate status or download before completion', source: 'EA/presentation/EvidenceExceptionHandler.kt:34,63' },
   { code: 'EVIDENCE_NOT_AVAILABLE', status: 409, where: 'evidence certificate download when it is not ISSUED', source: 'EA/presentation/EvidenceExceptionHandler.kt:30,62' },

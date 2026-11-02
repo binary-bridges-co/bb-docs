@@ -7,7 +7,7 @@ audience: developer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK, OTP, SIGN_REQUEST } from '../../../facts/sign';
+import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK, OTP, SIGN_REQUEST, STORAGE_NOT_READY } from '../../../facts/sign';
 
 export const codeHelp = {
   VALIDATION_FAILED: ['La solicitud no cumple una regla de validación: un valor que falta o no es válido, un cuerpo mal formado o un parámetro de ruta o consulta con un tipo incorrecto. `message` indica qué se rechazó, por ejemplo `signers[1].signOrder must be 1 or greater`', 'Corrija el valor que indica `message` y vuelva a enviar la solicitud. Base la lógica en `code`, no en el texto de `message`'],
@@ -20,6 +20,7 @@ export const codeHelp = {
   DOCUMENT_DELETED: ['Restaurar un archivo que ya superó su plazo de conservación', 'Ninguna: bb-sign ya no tiene el archivo. Use la copia que archivó su sistema'],
   DOCUMENT_NOT_SIGNED: ['Restaurar la copia firmada de un documento que no tiene copia firmada', 'Pida el original (`"kind": "ORIGINAL"`) o espere a que el sobre se complete'],
   ARCHIVAL_STORAGE_UNAVAILABLE: ['El almacenamiento de archivo no respondió a una restauración', 'Vuelva a intentarlo más tarde'],
+  STORAGE_NOT_READY: ['Subir un documento mientras se prepara el almacenamiento dedicado de la organización. No se guardó nada', 'Espere los segundos que indica `Retry-After` y vuelva a subir el documento'],
   SERVICE_UNAVAILABLE: ['El servicio de auditoría no respondió a una lectura o exportación', 'Vuelva a intentarlo más tarde'],
   ENVELOPE_NOT_COMPLETED: ['Consultar o descargar el certificado de evidencia de un sobre no completado', 'Espere a `envelope.completed`'],
   EVIDENCE_NOT_AVAILABLE: ['Descargar un certificado de evidencia que no está `ISSUED`; el mensaje indica su estado', 'Consulte el estado con `GET /api/v1/envelopes/{id}/evidence-certificate`; si es `PENDING`, espere `envelope.evidence_issued`'],
@@ -54,7 +55,7 @@ el cuerpo que lo acompaña y por qué un sobre al que la credencial no tiene acc
 | `413` | El cuerpo es demasiado grande: un archivo de más de <Fact of={VERIFY.fileMaxMb} unit="MB" /> en la verificación por archivo, una exportación de auditoría de más de <Fact of={AUDIT.exportMaxRows} /> filas o una firma de más de <Fact of={SIGN_REQUEST.maxBodyMib} unit="MiB" /> | Envíe el archivo correcto, pida la exportación por páginas o reduzca la imagen de la firma |
 | `422` | Una regla de negocio rechazó la solicitud, por ejemplo enviar un sobre sin documento o sin firmante | Corrija el sobre y vuelva a intentarlo |
 | <code>{QUOTA.httpStatusWhenExhausted.value}</code> | El servidor no procesó la solicitud. `code` indica por qué: una cuota agotada (`QUOTA_EXCEEDED`), un límite de tasa (`RATE_LIMITED`) o demasiadas restauraciones en curso (`RESTORE_LIMIT_REACHED`) | Depende de `code`: amplíe la cuota, espere `Retry-After` o espere a que terminen las restauraciones |
-| `503` | Un servicio del que depende la operación no respondió. En la firma, `SIGNING_BUSY`: bb-sign está al límite de su capacidad de firma en este momento | Vuelva a intentarlo más tarde; ante `SIGNING_BUSY`, tras los segundos de `Retry-After` |
+| `503` | Un servicio del que depende la operación no respondió. En la firma, `SIGNING_BUSY`: bb-sign está al límite de su capacidad de firma en este momento. Al subir un documento, `STORAGE_NOT_READY`: el [almacenamiento de la organización](/sign/admin/storage/) aún se está preparando y no se guardó nada | Vuelva a intentarlo más tarde; ante `SIGNING_BUSY` o `STORAGE_NOT_READY`, tras los segundos de `Retry-After` (<Fact of={STORAGE_NOT_READY.retryAfterSeconds} unit="s" /> en `STORAGE_NOT_READY`) |
 | `0` (solo SDKs) | La solicitud no obtuvo respuesta: no llegó a bb-sign o la respuesta se perdió | En un `POST`, **liste antes de reintentar** (ver más abajo) |
 
 `401` y `403` los genera la cadena de filtros de seguridad y **no llevan cuerpo**. Los demás

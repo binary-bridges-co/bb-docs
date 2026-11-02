@@ -33,6 +33,7 @@ import {
   SIGNATURE_UPLOAD,
   SIGNER,
   SIGNING_ORDER,
+  STORAGE_NOT_READY,
   URLS,
   VERIFY,
   VERIFY_QR_ARCHIVED_ISSUE,
@@ -61,7 +62,7 @@ describe('bb-sign fact sheet', () => {
     const groups = {
       URLS, AUTH, ADMIN_MFA, PERMISSION_SCOPE, AGREEMENTS, ENVELOPE, ARCHIVED_ENVELOPES, OTP, SIGNER, DOCUMENTS, LABELS,
       REMINDERS, QUOTA, WEBHOOKS, RATE_LIMITS, SIGN_REQUEST, VERIFY, SDK, CERTIFICATE, EVIDENCE, AUDIT, RETENTION_POLICY,
-      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER, PRICING,
+      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER, PRICING, STORAGE_NOT_READY,
     };
     expect(walk(groups, 'facts')).toEqual([]);
     for (const email of EMAILS) expect(email.source.length).toBeGreaterThan(10);
@@ -232,6 +233,15 @@ describe('bb-sign fact sheet', () => {
     expect(QUOTA.httpStatusWhenExhausted.value).toBe(429);
     for (const status of [408, 410, 413, 503]) expect(ERROR_CODES.some((e) => e.status === status), String(status)).toBe(true);
     expect(SDK.honoursRetryAfter.value).toBe(false);
+  });
+
+  test('an upload while the organization storage is being prepared is a 503 with Retry-After and stores nothing', () => {
+    const row = ERROR_CODES.find((e) => e.code === 'STORAGE_NOT_READY');
+    expect(row?.status).toBe(503);
+    expect(row?.source).toMatch(P1_SOURCE);
+    expect(STORAGE_NOT_READY.retryAfterSeconds.value).toBeGreaterThan(0);
+    expect(STORAGE_NOT_READY.nothingStored.value).toBe(true);
+    expect(p1Offenders(STORAGE_NOT_READY)).toEqual([]);
   });
 
   test('the sign call names every refusal with its own code (bb-sign#298, #292)', () => {
