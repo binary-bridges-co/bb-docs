@@ -147,7 +147,7 @@ export const PRODUCTS: readonly Product[] = [
           page('sign/admin/api-credentials', 'Credenciales de API', 'API credentials'),
           page('sign/admin/webhooks', 'Webhooks', 'Webhooks'),
           page('sign/admin/own-certificate', 'Certificado propio', 'Your own certificate'),
-          page('sign/admin/storage', 'Almacenamiento', 'Storage'),
+          page('sign/admin/storage', 'Almacenamiento y conservación', 'Storage and retention'),
           page('sign/admin/quota-and-usage', 'Cuota y uso', 'Quota and usage'),
           page('sign/admin/audit-trail', 'Auditoría', 'Audit trail'),
           page('sign/admin/permissions', 'Matriz de permisos', 'Permissions matrix'),
