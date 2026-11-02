@@ -179,8 +179,6 @@ export const PRODUCTS: readonly Product[] = [
         label: { es: 'Legal', en: 'Legal' },
         pages: [
           page('sign/legal/terms', 'Términos y condiciones', 'Terms and conditions'),
-          page('sign/legal/own-certificate-guide', 'Guía de certificado propio', 'Own certificate guide'),
-          page('sign/legal/retention-guide', 'Guía de conservación y restauración', 'Retention and restore guide'),
           page('sign/legal/retention', 'Alcance y conservación', 'Scope and retention'),
           page('sign/legal/electronic-vs-digital-signature', 'Firma electrónica y firma digital', 'Electronic and digital signature'),
         ],
