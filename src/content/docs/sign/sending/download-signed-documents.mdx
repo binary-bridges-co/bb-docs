@@ -7,7 +7,7 @@ audience: user
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE, EVIDENCE, RETENTION_POLICY } from '../../../facts/sign';
+import { ORG_STORAGE, ENVELOPE, EVIDENCE, RETENTION_POLICY } from '../../../facts/sign';
 
 Cuando un sobre se completa, bb-sign genera un PDF firmado por cada documento: el original con el
 sello de cada firmante, firmado con el certificado de la organización y su cadena de certificados.
@@ -80,16 +80,17 @@ Pasados <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> desde su creación,
 pasa a [Sobres archivados](/sign/sending/archived-envelopes/). Desde allí se abre en modo de solo
 lectura y sus archivos se siguen descargando de la misma forma.
 
-bb-sign conserva cada archivo durante <Fact of={RETENTION_POLICY.retentionDays} unit="días" />, un
-plazo fijo y no negociable que se cuenta por archivo: el original desde que se sube, el PDF firmado
+bb-sign conserva cada archivo durante el plazo de la política de su organización
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> con la configuración estándar), que se
+cuenta por archivo: el original desde que se sube, el PDF firmado
 desde que el sobre se completa y el certificado desde que se emite. La sección **Conservación** de
 la página del sobre indica la fecha desde la que sus archivos dejan de estar disponibles. A partir de
 entonces, la conservación es responsabilidad de su organización. Consulte
 [Alcance y conservación](/sign/legal/retention/).
 
-Si un archivo está archivado, la página muestra **Solicitar restauración** en lugar del botón de
-descarga. Hoy bb-sign no traslada ningún archivo a almacenamiento de archivo; cuando una copia lo
-está, el procedimiento se describe en
+Si un archivo está en un nivel que requiere restauración, la página muestra **Solicitar restauración**
+en lugar del botón de descarga. Con la configuración estándar ningún archivo lo necesita; el
+procedimiento se describe en
 [Conservación y restauración](/sign/sending/retention-and-restore/).
 
 <Aside type="tip" title="Descargue el sobre al completarse">

@@ -7,7 +7,7 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { EMAILS, EVIDENCE, REMINDERS, RESTORE, URLS } from '../../../../facts/sign';
+import { ORG_STORAGE, EMAILS, EVIDENCE, REMINDERS, RESTORE, URLS } from '../../../../facts/sign';
 
 export const RECIPIENT = {
   signer: 'Signer',
@@ -84,8 +84,8 @@ The envelope completed email waits for the evidence certificate for at most
 <Fact of={EVIDENCE.degradedAfterHours} unit="hours" />, but does not mention it: it only links to the
 signer's signed copy and says when the signed documents are still being prepared. See [Evidence certificate](/en/sign/concepts/evidence-certificate/).
 
-The restore notice is only sent when the restore of an archived file ends, and today no file is moved
-to archive storage. API credentials do not receive this email: their integrations learn of it through the
+The restore notice is only sent when the restore of a file in a tier that needs a restore ends; with the
+standard configuration, no file is in one. API credentials do not receive this email: their integrations learn of it through the
 `document.restored` webhook.{RESTORE.emailLinksToEnvelopeOrSigningPage.value && ' The email attaches no files: it links to the envelope page or, when a signer asked, to their signing page.'}{RESTORE.emailGenericWithoutConfirmedAccess.value && ' If bb-sign cannot confirm that the user can still download the envelope\'s documents, the email is generic: no envelope title and no file names.'} See [Retention and restore](/en/sign/sending/retention-and-restore/).
 
 <Aside type="note" title="Language of envelope emails">

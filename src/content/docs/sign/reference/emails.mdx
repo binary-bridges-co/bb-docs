@@ -85,8 +85,8 @@ El correo de sobre completado espera al certificado de evidencia durante un máx
 <Fact of={EVIDENCE.degradedAfterHours} unit="horas" />, pero no lo menciona: solo enlaza a la copia
 firmada del firmante e indica si los documentos firmados aún se están preparando. Consulte [Certificado de evidencia](/sign/concepts/evidence-certificate/).
 
-El aviso de restauración solo se envía al terminar la restauración de un archivo archivado, y hoy
-ningún archivo se traslada a almacenamiento de archivo. Las credenciales de API no reciben este correo: sus
+El aviso de restauración solo se envía al terminar la restauración de un archivo que estaba en un nivel
+que requiere restauración; con la configuración estándar, ningún archivo lo está. Las credenciales de API no reciben este correo: sus
 integraciones lo conocen por el webhook `document.restored`.{RESTORE.emailLinksToEnvelopeOrSigningPage.value && ' El correo no adjunta archivos: enlaza a la página del sobre o, si lo pidió un firmante, a su página de firma.'}{RESTORE.emailGenericWithoutConfirmedAccess.value && ' Si bb-sign no puede confirmar que el usuario sigue pudiendo descargar los documentos del sobre, el correo es genérico: sin el título del sobre ni los nombres de los archivos.'} Consulte
 [Conservación y restauración](/sign/sending/retention-and-restore/).
 

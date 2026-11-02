@@ -27,7 +27,6 @@ import {
   RATE_LIMITS,
   REMINDERS,
   RESTORE,
-  RETENTION_IMPLEMENTED,
   RETENTION_POLICY,
   SDK,
   SIGN_REQUEST,
@@ -63,7 +62,7 @@ describe('bb-sign fact sheet', () => {
     const groups = {
       URLS, AUTH, ADMIN_MFA, PERMISSION_SCOPE, AGREEMENTS, ENVELOPE, ARCHIVED_ENVELOPES, OTP, SIGNER, DOCUMENTS, LABELS,
       REMINDERS, QUOTA, WEBHOOKS, RATE_LIMITS, SIGN_REQUEST, VERIFY, SDK, CERTIFICATE, EVIDENCE, AUDIT, RETENTION_POLICY,
-      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER, PRICING, STORAGE_NOT_READY, ORG_STORAGE,
+      RESTORE, WIZARD, SIGNING_ORDER, PRICING, STORAGE_NOT_READY, ORG_STORAGE,
     };
     expect(walk(groups, 'facts')).toEqual([]);
     for (const email of EMAILS) expect(email.source.length).toBeGreaterThan(10);
@@ -94,30 +93,21 @@ describe('bb-sign fact sheet', () => {
     expect(OTP.verifiedValidityMinutes.value).toBeLessThan(ENVELOPE.linkTtlHoursDefault.value * 60);
   });
 
-  test('the retention policy outlives the cold archive and the database archive', () => {
-    expect(RETENTION_POLICY.retentionDays.value).toBeGreaterThan(RETENTION_POLICY.archiveAfterDays.value);
+  test('every retention period outlives the cold archive and the database archive', () => {
+    expect(ORG_STORAGE.minRetentionDays.value).toBeGreaterThanOrEqual(RETENTION_POLICY.archiveAfterDays.value);
     expect(RETENTION_POLICY.archiveAfterDays.value).toBeGreaterThan(ENVELOPE.archiveAfterDays.value);
+    expect(ORG_STORAGE.minRetentionDays.value).toBeGreaterThan(ENVELOPE.archiveAfterDays.value);
     expect(RETENTION_POLICY.configurable.value).toBe(true);
   });
 
-  test('what runs today never claims more than the policy (production wins over the template, D1)', () => {
-    // Live: one 365-day expiration on the whole bucket, no transition to archive storage.
-    expect(RETENTION_IMPLEMENTED.documentsExpirationDays.value).toBe(RETENTION_POLICY.retentionDays.value);
-    expect(RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value).toBe(false);
-    expect(RETENTION_IMPLEMENTED.documentsExpirationDays.source).toContain('live read 2026-10-21');
-    // The template's numbers are kept as declared, never as what happens.
-    expect(RETENTION_IMPLEMENTED.documentsGlacierDaysDeclared.value).toBe(RETENTION_POLICY.archiveAfterDays.value);
-    expect(RETENTION_IMPLEMENTED.documentsGlacierDaysDeclared.source).toContain('not applied');
-    expect(RETENTION_IMPLEMENTED.archiveDatesVisible.value).toBe(false);
-    // Restore is deployed and idle; it is no longer "not shipped".
-    expect(RETENTION_IMPLEMENTED.restoreOnRequest.value).toMatch(/^deployed, idle/);
+  test('restore on request serves files in a tier that needs one; evidence is never archived', () => {
+    expect(ORG_STORAGE.restoreOnRequest.value).toMatch(/^live/);
     expect(NOT_SHIPPED).not.toContain('restore on request');
     expect(RESTORE.days.value).toBe(RETENTION_POLICY.restoredCopyDays.value);
     expect(RESTORE.firstPollHours.value).toBeLessThan(RESTORE.timeoutHours.value);
-    expect(RESTORE.purgeAfterDays.value).toBeGreaterThan(RETENTION_POLICY.retentionDays.value);
-    // Evidence is kept as long as the documents and never archived.
-    expect(EVIDENCE.retentionDays.value).toBe(RETENTION_POLICY.retentionDays.value);
+    expect(RESTORE.purgeAfterDays.value).toBeGreaterThan(ORG_STORAGE.defaultRetentionDays.value);
     expect(EVIDENCE.archived.value).toBe(false);
+    expect(ORG_STORAGE.evidenceAlwaysImmediate.value).toBe(true);
   });
 
   test('an archived envelope (the 30-day view) is not an archived file (D2)', () => {
@@ -354,13 +344,12 @@ describe('bb-sign fact sheet', () => {
     expect(RESTORE.emailGenericWithoutConfirmedAccess.value).toBe(true);
   });
 
-  test('admin access: invitation, lost authenticator, certificate expiry highlight, storage action', () => {
+  test('admin access: invitation, lost authenticator, certificate expiry highlight', () => {
     expect(AUTH.invitationActions.value[0]).toBe('UPDATE_PASSWORD');
     expect(AUTH.invitationActions.value).toContain('CONFIGURE_TOTP');
     expect(ADMIN_MFA.lostAuthenticatorResetBySupport.value).toBe(true);
     expect(ADMIN_MFA.passwordResetClearsSecondFactor.value).toBe(false);
     expect(CERTIFICATE.expiryHighlightDays.value).toBeGreaterThan(0);
-    expect(RETENTION_IMPLEMENTED.storageApplyWritesProduction.value).toBe(true);
     expect(AUDIT.orgEventsPublished.value).toBe(false);
   });
 

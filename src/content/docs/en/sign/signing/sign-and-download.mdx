@@ -7,7 +7,7 @@ audience: signer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD } from '../../../../facts/sign';
+import { ORG_STORAGE, EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD } from '../../../../facts/sign';
 
 On the **Add your signature** screen you sign the document and, once everyone has signed, download
 your sealed copy.
@@ -107,13 +107,14 @@ while the copy is available.
 
 ## Copy availability
 
-Your signed copy can be downloaded from your link for
-<Fact of={RETENTION_POLICY.retentionDays} unit="days" /> from the envelope's completion, even after the
-signing period has ended and even once the envelope is archived. We recommend saving your copy as soon
+Your signed copy can be downloaded from your link for the retention period set by the organization
+that sent you the document, counted from the envelope's completion
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the standard configuration), even
+after the signing period has ended and even once the envelope is archived. We recommend saving your copy as soon
 as you download it.
 
-If your copy were ever in archive storage, the page says so and lets you ask for it. Today bb-sign
-does not move any copy to that storage, but if it happens, you see:
+If the organization that sent you the document keeps older copies in a storage tier that needs a
+restore, the page says so and lets you ask for your copy. You then see:
 
 | What you see | What it means | What to do |
 |---|---|---|
@@ -124,7 +125,8 @@ does not move any copy to that storage, but if it happens, you see:
 | "We could not request your copy. Try again in a few minutes." | The request did not complete. | Try again in a few minutes. |
 
 Once the retention period has ended, the page shows "Your signed copy is no longer available: its
-<Fact of={RETENTION_POLICY.retentionDays} />-day retention period has ended." In that case, request
+<Fact of={ORG_STORAGE.defaultRetentionDays} />-day retention period has ended." (the message names the
+standard configuration's period). In that case, request
 the document from the person who sent it: from then on, keeping it is the sending organization's
 responsibility.
 

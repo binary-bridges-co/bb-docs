@@ -21,7 +21,7 @@ Los roles de espacio de trabajo definen qué se puede hacer con los sobres de ca
 | Rol | Quién lo tiene | Alcance |
 | --- | --- | --- |
 | Administrador de plataforma (`platform_admin`) | Personal de Binary Bridges | Todo lo del administrador de organización, en cualquier organización, más la creación de organizaciones, las cuotas, la apariencia de la firma y el idioma de los certificados de evidencia. |
-| Administrador de organización (`org_admin`) | Administradores de su organización | Usuarios, espacios, etiquetas, credenciales, webhooks, certificado, acuerdos y auditoría. Accede a todos los espacios sin ser miembro (`workspace:access-all`). |
+| Administrador de organización (`org_admin`) | Administradores de su organización | Usuarios, espacios, etiquetas, credenciales, webhooks, certificado, acuerdos, solicitudes de almacenamiento y auditoría. Accede a todos los espacios sin ser miembro (`workspace:access-all`). |
 | Miembro de organización (`org_member`) | Usuarios de su organización | Consultar espacios, claves de etiqueta y los textos de acuerdos publicados. El resto lo dan sus roles de espacio, incluido el de Colaborador en General. |
 | Credencial de API (`org_api`) | Integraciones | Lo mismo que un miembro, con los roles de espacio que usted le asigne. |
 
@@ -36,7 +36,10 @@ demás espacios usted asigna Lector, Auditor o Gestor desde
 
 Los permisos `agreement:read` y `agreement:manage` corresponden a la pestaña **Acuerdos** de
 **Configuración**, donde los administradores publican textos de acuerdos que todavía no se muestran a
-los firmantes ni se adjuntan a los sobres.
+los firmantes ni se adjuntan a los sobres. El permiso `document-settings:manage` muestra la pestaña
+**Almacenamiento** de **Configuración**, donde los administradores consultan la política de
+conservación de la organización y solicitan un cambio. Ver
+[Almacenamiento y conservación](/sign/admin/storage/).
 
 ## Tareas reservadas a las personas
 
@@ -59,6 +62,8 @@ Estos permisos nunca se conceden a una credencial:
    los espacios que usted le asignó.
 6. **Gestionar los acuerdos y la identificación de la organización** (`agreement:manage`), para que
    una credencial no pueda cambiar los textos legales ni los datos de la organización.
+7. **Solicitar cambios en la política de conservación** (`document-settings:manage`), para que una
+   credencial no pueda pedir que los archivos de la organización se conserven menos tiempo.
 
 Cuando una credencial necesita más alcance, se añade como miembro de otros espacios, igual que una
 persona. Ver [Credenciales de API](/sign/admin/api-credentials/).

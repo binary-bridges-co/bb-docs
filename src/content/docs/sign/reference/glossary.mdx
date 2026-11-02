@@ -97,11 +97,14 @@ etiqueta que muestra la aplicación. Los enlaces llevan a la página que lo expl
 ## Conservación
 
 - **Plazo de conservación (retention period).** El tiempo durante el que bb-sign guarda cada archivo
-  antes de eliminarlo. En el detalle del sobre: "Deja de estar disponible el". Ver
-  [Alcance y conservación](/sign/legal/retention/).
-- **Archivo de un archivo (file archiving).** El traslado de un archivo a un almacenamiento más
-  económico, del que solo se descarga después de restaurarlo. Los términos del servicio lo permiten,
-  pero hoy no se traslada ningún archivo. No es lo mismo que la vista Archivados.
+  antes de eliminarlo. Lo fija la política de cada organización. En el detalle del sobre: "Deja de
+  estar disponible el". Ver [Almacenamiento y conservación](/sign/admin/storage/).
+- **Nivel de almacenamiento (storage tier).** Cada etapa de la política de conservación de una
+  organización. Un nivel de «Acceso inmediato» se descarga directamente; uno que «Requiere restaurar,
+  listo en horas» solo se descarga después de restaurar el archivo.
+- **Archivo de un archivo (file archiving).** El traslado de un archivo a un nivel de almacenamiento que
+  requiere restauración. Con la configuración estándar no ocurre. No es lo mismo que la vista
+  Archivados.
 - **Restauración (restore).** La solicitud para volver a descargar un archivo archivado. La copia
   restaurada queda disponible durante <Fact of={RESTORE.days} unit="días" /> ("restaurado, disponible
   hasta el"){RESTORE.requestableAgainAfterWindow.value && '; después se puede solicitar de nuevo'}. Ver [Conservación y restauración](/sign/sending/retention-and-restore/).

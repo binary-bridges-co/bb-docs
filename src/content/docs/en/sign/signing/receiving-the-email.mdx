@@ -7,7 +7,7 @@ audience: signer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { ENVELOPE, EVIDENCE, REMINDERS, RESTORE, RETENTION_POLICY, URLS } from '../../../../facts/sign';
+import { ORG_STORAGE, ENVELOPE, EVIDENCE, REMINDERS, RESTORE, RETENTION_POLICY, URLS } from '../../../../facts/sign';
 
 The invitation to sign arrives by email and contains your personal signing link. bb-sign also
 emails you when it is your turn, when your signature is pending and when the document is complete.
@@ -62,6 +62,7 @@ invitation, bb-sign sends you a reminder. After that it sends at most one every
 
 The link is valid for <Fact of={ENVELOPE.linkTtlHoursDefault} unit="hours" /> by default, or for
 the period set by the person who sent the document. That period only limits signing. Once you have
-signed, the same link takes you to your signed copy for
-<Fact of={RETENTION_POLICY.retentionDays} unit="days" /> from the envelope's completion, even after the
-signing period has ended and even once the envelope is archived.
+signed, the same link takes you to your signed copy for the retention period set by the organization
+that sent you the document (<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the
+standard configuration), counted from the envelope's completion, even after the signing period has
+ended and even once the envelope is archived.

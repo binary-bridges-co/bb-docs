@@ -7,7 +7,7 @@ audience: admin
 
 import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUDIT, EVIDENCE } from '../../../../facts/sign';
+import { ORG_STORAGE, AUDIT, EVIDENCE } from '../../../../facts/sign';
 
 bb-sign records everything that happens to each envelope, from creation to archiving: who sent it,
 who opened the link, who signed, when and from which IP address. Every event is chained to the
@@ -74,6 +74,9 @@ bb-sign also records, with who did it, the configuration changes that affect you
 - Granting and removing workspace roles for people and API keys.
 - Uploading and removing the organization's certificate, and each notice of its expiry.
 - Publishing agreement texts.
+- The organization's storage: when it became ready, each request to change the retention policy,
+  Binary Bridges' decision and each new version of the policy (`ORG_STORAGE_PROVISIONED`,
+  `ORG_STORAGE_POLICY_REQUESTED`, `ORG_STORAGE_POLICY_REQUEST_DECIDED` and `ORG_STORAGE_POLICY_CHANGED`).
 
 These events do not appear on an envelope's detail page. If you need them, request them from Binary
 Bridges support.
@@ -109,7 +112,7 @@ Managers and admins. Each download creates a link valid for
 | "Evidence certificate processing..." | bb-sign is issuing the certificate. The page updates by itself when it is ready. |
 | "It could not be generated; the team was notified." | Issuing failed and Binary Bridges already knows; it can re-issue it within <Fact of={EVIDENCE.reissueWindowDays} unit="days" /> of the failure, while the envelope is not archived. If you need it, write to support before then. |
 | "Completed before evidence certificates were enabled." | The envelope completed before certificates existed. Use the signed documents and the audit trail on the page. |
-| "The retention period has ended and the certificate was deleted." | The <Fact of={EVIDENCE.retentionDays} unit="days" /> of retention have passed. Use the copy your organization kept. |
+| "The retention period has ended and the certificate was deleted." | Your organization's retention period ended and the certificate was deleted. Use the copy your organization kept. |
 | "The evidence certificate is available to those who can download this envelope's documents." | You do not have that permission in the envelope's workspace. Ask an admin for the Auditor role or higher. |
 
 An integration can get the same through the API, and export an envelope's full trail with

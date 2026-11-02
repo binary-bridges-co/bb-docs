@@ -8,7 +8,7 @@ source: docs/api/webhook-signature-spec.md
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { WEBHOOKS, WEBHOOK_EVENTS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED } from '../../../facts/sign';
+import { ORG_STORAGE, WEBHOOKS, WEBHOOK_EVENTS, EVIDENCE, RETENTION_POLICY } from '../../../facts/sign';
 
 **Estado: NORMATIVO.** Este documento es la fuente única de verdad del esquema de firma de
 webhooks de bb-sign. El dispatcher, el SDK de Java y el SDK de JavaScript lo implementan y remiten
@@ -385,8 +385,9 @@ enviado sin el certificado va seguido de **`envelope.evidence_issued`** cuando e
 
 ### P3c. Fechas de conservación en `envelope.completed`
 
-Todo `envelope.completed`, con o sin certificado, lleva las fechas del plazo fijo de conservación del
-sobre (<Fact of={RETENTION_POLICY.retentionDays} unit="días" />):
+Todo `envelope.completed`, con o sin certificado, lleva las fechas de conservación del sobre, según el
+plazo de la política de la organización (<Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> con
+la configuración estándar):
 
 ```json
 "data": {
@@ -403,7 +404,7 @@ sobre (<Fact of={RETENTION_POLICY.retentionDays} unit="días" />):
   conservar.
 - `archivesAt` es la fecha desde la que los archivos pueden pasar a almacenamiento de archivo, desde
   donde se restauran a pedido. Está siempre presente y vale `null` mientras el archivo no esté
-  habilitado.{!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && ' Hoy no lo está en producción.'}
+  habilitado.{!ORG_STORAGE.archiveDatesVisible.value && ' Hoy las fechas de archivo no se publican, así que vale null.'}
 - `retention` está solo en `envelope.completed`, y falta en uno enviado antes de que existiera.
 - El cuerpo se materializa una vez (P3b), de modo que un aviso conserva las fechas con las que se
   envió. Las fechas actuales de cada archivo están siempre en `GET documentsPath`.

@@ -7,7 +7,7 @@ audience: user
 
 import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { DOCUMENTS, RETENTION_POLICY } from '../../../facts/sign';
+import { ORG_STORAGE, DOCUMENTS, RETENTION_POLICY } from '../../../facts/sign';
 
 En el paso **Documentos** del asistente **Crear Sobre** usted adjunta los archivos que se van a
 firmar. Cada documento se sube en el momento y queda fijo al enviar el sobre, de modo que todos los
@@ -56,7 +56,7 @@ se coloca sobre el documento cuando el sobre se completa.
 | Tamaño máximo por archivo | <Fact of={DOCUMENTS.maxUploadMb} unit="MB" /> |
 | Documentos sin sobre por organización | <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" /> |
 | Conservación de un documento sin sobre | <Fact of={DOCUMENTS.unassignedRetentionHours} unit="horas" /> |
-| Conservación de cada archivo de un sobre | <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. Consulte [Conservación y restauración](/sign/sending/retention-and-restore/). |
+| Conservación de cada archivo de un sobre | El plazo de la política de su organización: <Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> con la configuración estándar. Consulte [Almacenamiento y conservación](/sign/admin/storage/). |
 
 Un sobre puede incluir tantos documentos como necesite. Cada uno cuenta para la cuota de
 almacenamiento de su organización cuando se crea el sobre. Consulte [Cuotas](/sign/concepts/quotas/).

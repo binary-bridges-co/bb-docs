@@ -7,7 +7,7 @@ audience: developer
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED, SDK, SIGNING_ORDER } from '../../../../facts/sign';
+import { ORG_STORAGE, AUTH, DOCUMENTS, ENVELOPE, WEBHOOKS, EVIDENCE, RETENTION_POLICY, SDK, SIGNING_ORDER } from '../../../../facts/sign';
 
 This guide walks through the complete integration flow: upload a PDF, create the envelope, add a
 second signer, send it, receive webhook confirmation that everyone signed, download the sealed PDF
@@ -328,7 +328,7 @@ the file without a token. `signedUrl` is `null` when:
 - the credential lacks `document:download` in the envelope's workspace;
 - the signed copy cannot be downloaded now: `signed.availability` is `ARCHIVED`,
   `RESTORE_IN_PROGRESS` or `DELETED` (see [Retention and restores](/en/sign/developers/webhooks/#retention-and-restores)).
-  {!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && 'Today no file moves to archive storage, so in production this happens only when the retention period ends.'}
+  {ORG_STORAGE.defaultAllImmediate.value && 'With the standard configuration no file needs a restore, so this happens only when the retention period ends, or when the organization\'s policy has a tier that needs a restore.'}
 
 Compute the SHA-256 of each downloaded PDF and compare it with `data.documents[].signedSha256`. If
 `data.signedDocumentsStatus` is `PREPARING`, that hash is not known yet: do not compare it, and
@@ -450,9 +450,9 @@ the status is `PENDING`, wait for `envelope.evidence_issued`.
   </TabItem>
 </Tabs>
 
-Archive what you download: bb-sign keeps each file of the envelope for
-<Fact of={RETENTION_POLICY.retentionDays} unit="days" /> (the signed copy from the completion and
-the certificate from its issue), and `data.retention.deletesAt` says from which date they are no
+Archive what you download: bb-sign keeps each file of the envelope for the period of the organization's
+policy (<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the standard configuration; the
+signed copy from the completion and the certificate from its issue), and `data.retention.deletesAt` says from which date they are no
 longer available. Keeping them after that is the organization's responsibility. See
 [Scope and retention](/en/sign/legal/retention/).
 

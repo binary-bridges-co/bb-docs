@@ -7,11 +7,11 @@ audience: legal
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { ENVELOPE, EVIDENCE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../../facts/sign';
+import { ENVELOPE, EVIDENCE, ORG_STORAGE, RETENTION_POLICY } from '../../../../facts/sign';
 
 bb-sign backs every signed document with integrity, signer identification and evidence, and keeps it
-for a fixed period. This page explains what the service covers, how long it keeps documents, how that
-policy applies today and how your organization can archive each envelope to keep it for as long as
+for the period of each organization's policy. This page explains what the service covers, how long it
+keeps documents, how that policy applies and how your organization can archive each envelope to keep it for as long as
 the law or your own rules require.
 
 ## What bb-sign covers
@@ -26,8 +26,8 @@ the law or your own rules require.
   (who, what, when and from where) that the organization downloads.
 - **Traceability.** Every relevant action on an envelope is recorded in its history.
 
-bb-sign keeps documents for a fixed period set out in its terms. Once that period ends, keeping them
-is the responsibility of the organization that sent them.
+bb-sign keeps documents for the period set out in its terms and in each organization's contract. Once
+that period ends, keeping them is the responsibility of the organization that sent them.
 
 ## Retention policy
 
@@ -37,25 +37,26 @@ These are the service's commitments, set out in section 3 of the
 
 | Item | Policy |
 |---|---|
-| Retention | The original documents, the signed documents and the evidence of each envelope are kept for <Fact of={RETENTION_POLICY.retentionDays} unit="days" />, counted from when each file is uploaded or generated. A fixed period, the same for every organization. When it ends, the file is deleted permanently. |
-| Move to archive storage | Documents older than <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> may move to archive storage; they then cannot be downloaded immediately. |
+| Retention | The original documents, the signed documents and the evidence of each envelope are kept for the period agreed in the customer's contract: <Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" />, unless another period has been agreed, and at most <Fact of={ORG_STORAGE.maxRetentionYears} unit="years" />, counted from when each file is uploaded or generated. When it ends, the file is deleted permanently. |
+| Change of period | A change of the agreed period applies to the files kept at that moment, and a shorter period may bring their deletion forward. |
+| Move to archive storage | Documents may move to archive storage after <Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" />, or after the time agreed in the contract; they then cannot be downloaded immediately. |
 | Restore | An authorized user of the organization, in the app or through the API, can request it, and the signer, from their link, can request it for their signed copy. When it finishes, bb-sign emails the people who asked and sends the `document.restored` webhook to subscribed integrations. It usually takes a few hours, with no guaranteed time. The restored copy stays available for <Fact of={RETENTION_POLICY.restoredCopyDays} unit="days" />. |
-| Evidence certificate and audit trail | Never archived: they download immediately throughout the period. |
+| Evidence certificate and audit trail | Never archived: they download immediately throughout the period. The certificate states each file's period. |
 | After the period | Retention is the customer's responsibility (Ley 527 de 1999, article 12). |
 
-## How the policy applies today
+## How the policy applies
 
-This table describes how the service behaves in production today.
-
-| Item | Current behaviour |
+| Item | How it works |
 |---|---|
-| Document retention | A single rule: each file is deleted after <Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="days" />. |
-| Move to archive storage | No file moves to archive storage today, so every file downloads immediately throughout its period. |
-| Restore on request | Available in the app, through the API and from the signer's link. While nothing is archived, there is no need to use it. |
+| Storage | Each organization's files are kept in storage dedicated to it, isolated from other customers and encrypted. |
+| Each organization's policy | The standard configuration keeps each file <Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> and, after <Fact of={ORG_STORAGE.defaultCheaperTierAfterDays} unit="days" />, moves it to a cheaper tier that still has instant access. An organization can request a period from <Fact of={ORG_STORAGE.minRetentionDays} unit="days" /> to <Fact of={ORG_STORAGE.maxRetentionYears} unit="years" />, with cheaper tiers as files age; Binary Bridges approves, adjusts or rejects the request. |
+| Restore on request | Only files in a tier marked "Needs a restore, ready in hours" need it. With the standard configuration, no file does. |
+| Protection against deletion | Evidence certificates and their audit trail are locked against deletion until the end of their period. Documents are kept with versions and deleted when your organization's period ends. |
+| Files from before dedicated storage | They keep the previous rule: <Fact of={ORG_STORAGE.legacyRetentionDays} unit="days" />. |
 | Envelope moves to "Archived" | <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after creation, a completed, cancelled or expired envelope moves to the "Archived" view. It is a change of list: the envelope and its files can still be downloaded until their retention period ends. |
 
-The application's **Storage** page shows, separately, the product's declared policy and the rules the
-storage actually applies. See [Storage](/en/sign/admin/storage/).
+The **Storage** tab in **Settings** shows your organization's policy and lets you request a change. See
+[Storage and retention](/en/sign/admin/storage/).
 
 ## What Ley 527 de 1999 says
 

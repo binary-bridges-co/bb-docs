@@ -7,7 +7,7 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUDIT, AUDIT_EVENT_TYPES, CERTIFICATE, ENVELOPE, EVIDENCE, VERIFY } from '../../../../facts/sign';
+import { ORG_STORAGE, AUDIT, AUDIT_EVENT_TYPES, CERTIFICATE, ENVELOPE, EVIDENCE, VERIFY } from '../../../../facts/sign';
 
 export const ENVELOPE_EVENTS = {
   ENVELOPE_CREATED: { label: 'Envelope created', when: 'The envelope is created, in the application or through the API.' },
@@ -223,8 +223,8 @@ Each file can weigh up to <Fact of={VERIFY.fileMaxMb} unit="MB" /> and is checke
 Each envelope's evidence is consulted in its **Audit Trail**, inside the application. When the
 envelope completes, bb-sign also delivers it in the **evidence certificate**, a sealed PDF, together
 with the audit trail frozen as JSON. They are downloaded by whoever can download the envelope's
-documents; signers do not receive them. bb-sign keeps them for
-<Fact of={EVIDENCE.retentionDays} unit="days" /> from issue. See
+documents; signers do not receive them. bb-sign keeps them for your organization's period, counted
+from issue, locked against deletion until it ends. See
 [Evidence certificate](/en/sign/concepts/evidence-certificate/).
 
 Integrations can also verify an envelope's chain (result

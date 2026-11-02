@@ -6,7 +6,7 @@ audience: signer
 ---
 
 import Fact from '../../../../../components/facts/Fact.astro';
-import { DOCUMENTS, ENVELOPE, OTP, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD, URLS } from '../../../../facts/sign';
+import { ORG_STORAGE, DOCUMENTS, ENVELOPE, OTP, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD, URLS } from '../../../../facts/sign';
 
 export const verifyUrl = `${URLS.app.value}${URLS.verifyPath.value}`;
 
@@ -51,7 +51,7 @@ document can review it, correct it or send you a new one.
 | "We received many requests from this link or your connection. If you already asked, the email will arrive; if not, try again in a few minutes." | The limit of <Fact of={RATE_LIMITS.signerRestorePerLink} /> requests per link or <Fact of={RATE_LIMITS.signerRestorePerIp} /> per connection within <Fact of={RATE_LIMITS.signerRestoreWindowMinutes} unit="minutes" /> was reached. | If you already asked, wait for the email. If not, try again in a few minutes. |
 | "We could not request your copy. Try again in a few minutes." | The request did not complete. | Press **Request my copy** again in a few minutes. |
 | The restore email says "The restore took longer than expected; you can request it again." or "It could not be restored." | The restore did not finish within <Fact of={RESTORE.timeoutHours} unit="hours" />, or it failed. | Open your link and press **Request my copy** again. If it fails again, contact the person who sent you the document. |
-| "Your signed copy is no longer available: its <Fact of={RETENTION_POLICY.retentionDays} />-day retention period has ended." | Your copy's retention period, counted from the envelope's completion, has passed and it was deleted. | Request the document from the person who sent it: from then on, their organization is responsible for keeping it. |
+| "Your signed copy is no longer available: its <Fact of={ORG_STORAGE.defaultRetentionDays} />-day retention period has ended." | The retention period set by the organization that sent you the document, counted from the envelope's completion, has passed and your copy was deleted. The message names the standard configuration's period. | Request the document from the person who sent it: from then on, their organization is responsible for keeping it. |
 | **Invalid Signature** when scanning the QR code on the seal | If the envelope has already moved to **Archived** (<Fact of={ENVELOPE.archiveAfterDays} unit="days" /> after its creation), the QR check currently fails even though the document is intact. | If the document was signed since bb-sign <Fact of={DOCUMENTS.signedSha256Since} />, check it with **Check a file** at <a href={verifyUrl}>{verifyUrl}</a>. If it was signed earlier, or if that check does not confirm it either, open the PDF in a reader and look at its signature panel. If in doubt, ask the person who sent you the document. See [Verify a signed document](/en/sign/signing/verify-a-document/). |
 
 ## If you do not wish to sign

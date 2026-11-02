@@ -115,8 +115,9 @@ The status of a completed envelope's evidence certificate. See
 
 Each file of an envelope (the original PDF and the signed PDF) has an availability, which the API
 returns with the document list and the **Retention** block of the detail shows next to the file name.
-Today no file is moved to archive storage, so in practice you only see `AVAILABLE` and, once the
-retention period ends, `DELETED`. See [Retention and restore](/en/sign/sending/retention-and-restore/).
+With the standard configuration no file needs a restore, so you only see `AVAILABLE` and, once the
+retention period ends, `DELETED`; the other values appear when the organization's policy has a tier
+that needs a restore. See [Retention and restore](/en/sign/sending/retention-and-restore/).
 
 <table>
   <thead>

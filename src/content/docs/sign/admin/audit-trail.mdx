@@ -7,7 +7,7 @@ audience: admin
 
 import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { AUDIT, EVIDENCE } from '../../../facts/sign';
+import { ORG_STORAGE, AUDIT, EVIDENCE } from '../../../facts/sign';
 
 bb-sign registra todo lo que ocurre con cada sobre, desde que se crea hasta que se archiva: quién lo
 envió, quién abrió el enlace, quién firmó, cuándo y desde qué dirección IP. Cada evento queda
@@ -76,6 +76,10 @@ organización:
 - La asignación y el retiro de roles de espacio a personas y claves de API.
 - La carga y el retiro del certificado de la organización, y cada aviso de su vencimiento.
 - La publicación de textos de acuerdos.
+- El almacenamiento de la organización: cuándo quedó listo, cada solicitud de cambio de la política de
+  conservación, la decisión de Binary Bridges y cada versión nueva de la política
+  (`ORG_STORAGE_PROVISIONED`, `ORG_STORAGE_POLICY_REQUESTED`, `ORG_STORAGE_POLICY_REQUEST_DECIDED` y
+  `ORG_STORAGE_POLICY_CHANGED`).
 
 Estos eventos no aparecen en el detalle de un sobre. Si los necesita, solicítelos al soporte de
 Binary Bridges.
@@ -111,7 +115,7 @@ administradores. Cada descarga genera un enlace válido durante
 | «Procesando el certificado de evidencia...» | bb-sign está emitiendo el certificado. La página se actualiza sola cuando está listo. |
 | «No se pudo generar; el equipo fue notificado.» | La emisión falló y Binary Bridges ya lo sabe; puede volver a emitirlo dentro de los <Fact of={EVIDENCE.reissueWindowDays} unit="días" /> siguientes al fallo, mientras el sobre no esté archivado. Si lo necesita, escriba al soporte antes de ese plazo. |
 | «Completado antes de habilitar los certificados de evidencia.» | El sobre se completó antes de que existieran los certificados. Use los documentos firmados y el registro de auditoría de la página. |
-| «El periodo de conservación terminó y el certificado fue eliminado.» | Pasaron los <Fact of={EVIDENCE.retentionDays} unit="días" /> de conservación. Use la copia que su organización guardó. |
+| «El periodo de conservación terminó y el certificado fue eliminado.» | Terminó el plazo de conservación de su organización y el certificado se eliminó. Use la copia que su organización guardó. |
 | «El certificado de evidencia está disponible para quienes pueden descargar los documentos de este sobre.» | Usted no tiene ese permiso en el espacio del sobre. Pida a un administrador el rol Auditor o superior. |
 
 Una integración puede obtener lo mismo por la API, y exportar el registro completo de un sobre con
