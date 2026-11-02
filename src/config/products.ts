@@ -87,8 +87,6 @@ export const PRODUCTS: readonly Product[] = [
       extra: [
         'docs/api/webhook-signature-vectors.json',
         'docs/legal/terminos-y-condiciones.md',
-        'docs/guias/certificado-propio.md',
-        'docs/guias/conservacion-y-restauracion.md',
       ],
     },
     icon: 'document',

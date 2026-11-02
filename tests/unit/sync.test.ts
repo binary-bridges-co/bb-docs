@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { PRODUCTS } from '../../src/config/products';
@@ -11,14 +12,20 @@ const DOCS = join(process.cwd(), 'src', 'content', 'docs');
 const PUBLIC_SYNC = join(process.cwd(), 'public', 'sync');
 const SCRIPT = join(process.cwd(), 'scripts', 'sync-product.mjs');
 
-interface Manifest {
-  readonly repo: string;
+/** One synced file: where it came from, at which release, and what was rewritten in it. */
+interface ManifestEntry {
+  readonly source: string;
+  readonly sha256: string;
   readonly ref: string;
   readonly commit: string;
   readonly commitDate: string;
-  readonly uncommitted?: readonly string[];
-  readonly rewrites: readonly string[];
-  readonly files: Readonly<Record<string, { readonly source: string; readonly sha256: string }>>;
+  readonly uncommitted?: true;
+  readonly rewrites?: readonly string[];
+}
+
+interface Manifest {
+  readonly repo: string;
+  readonly files: Readonly<Record<string, ManifestEntry>>;
 }
 
 const sha256 = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
@@ -33,12 +40,24 @@ describe('synced product files', () => {
     const dir = join(SYNC, product.id);
     const manifest = JSON.parse(readFileSync(join(dir, `${product.id}.json`), 'utf8')) as Manifest;
 
-    test(`${product.id}: manifest names the repo and a commit`, () => {
+    test(`${product.id}: manifest names the repo, and each file its release and commit`, () => {
       expect(manifest.repo).toBe(product.repo);
-      expect(manifest.commit).toMatch(/^[0-9a-f]{40}$/);
-      // The commit date, not the wall clock: the same commit always syncs to the same bytes.
-      expect(manifest.commitDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(manifest).not.toHaveProperty('syncedAt');
+      expect(Object.keys(manifest).sort()).toEqual(['files', 'repo']);
+      for (const [name, entry] of Object.entries(manifest.files)) {
+        expect(entry.ref, name).toMatch(/^[A-Za-z0-9._/-]+$/);
+        expect(entry.commit, name).toMatch(/^[0-9a-f]{40}$/);
+        // The commit date, not the wall clock: the same commit always syncs to the same bytes.
+        expect(entry.commitDate, name).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(entry, name).not.toHaveProperty('syncedAt');
+        // A release sync never records uncommitted changes.
+        expect(entry.uncommitted, name).toBeUndefined();
+      }
+    });
+
+    test(`${product.id}: the contract and the vectors stay at their release; the terms come from v0.42.0 (plan D13)`, () => {
+      expect(manifest.files['openapi.json']?.ref).toBe('v0.38.0');
+      expect(manifest.files['webhook-signature-vectors.json']?.ref).toBe('v0.38.0');
+      expect(manifest.files['legal/terminos-y-condiciones.md']?.ref).toBe('v0.42.0');
     });
 
     test(`${product.id}: the manifest lists the contract and every extra file of the registry`, () => {
@@ -72,7 +91,9 @@ describe('synced product files', () => {
     test(`${product.id}: the OpenAPI copy points at the production API and nothing else was rewritten`, () => {
       const spec = JSON.parse(readFileSync(join(dir, 'openapi.json'), 'utf8')) as { servers?: { url: string }[] };
       expect(spec.servers?.[0]?.url).toBe('https://sign-api.binarybridges.co');
-      expect(manifest.rewrites).toEqual(['servers[0].url']);
+      // The rewrite lives in the contract's own entry, so a partial sync of another file never drops it.
+      expect(manifest.files['openapi.json']?.rewrites).toEqual(['servers[0].url']);
+      for (const [name, entry] of Object.entries(manifest.files)) if (name !== 'openapi.json') expect(entry.rewrites, name).toBeUndefined();
       expect(manifest.files['openapi.json']?.source).toBe(product.sync.openapi);
     });
   }
@@ -99,10 +120,64 @@ describe('sync-product.mjs input validation', () => {
     expect(result.stderr).toContain('does not exist');
   });
 
+  test('rejects an --only name that is not a synced file', () => {
+    const result = run('sign', '--only', 'legal/certificado-propio.md', '--from', process.cwd());
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('--only names no synced file');
+  });
+
   test('refuses a remote clone without a token', () => {
     const result = spawnSync('node', [SCRIPT, 'sign'], { encoding: 'utf8', env: { ...process.env, PRODUCT_REPO_TOKEN: '' } });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('PRODUCT_REPO_TOKEN');
+  });
+});
+
+/**
+ * A partial sync (plan B7) runs against a temp copy of this repository's synced files and a throwaway product repo
+ * that holds only the terms. Every file it was not asked to copy must stay byte-identical.
+ */
+describe('sync-product.mjs --only', () => {
+  test('copies only the named file, keeps every other file and manifest entry, and regenerates the page', () => {
+    const scratch = mkdtempSync(join(tmpdir(), 'bb-docs-sync-test-'));
+    try {
+      const root = join(scratch, 'docs');
+      const repo = join(scratch, 'product');
+      cpSync(join(SYNC, 'sign'), join(root, 'src', 'content', 'sync', 'sign'), { recursive: true });
+      cpSync(join(PUBLIC_SYNC, 'sign'), join(root, 'public', 'sync', 'sign'), { recursive: true });
+      mkdirSync(join(root, 'src', 'content', 'docs', 'sign', 'legal'), { recursive: true });
+      const terms = readFileSync(join(SYNC, 'sign', 'legal', 'terminos-y-condiciones.md'), 'utf8');
+      const changed = `${terms}\nUn párrafo nuevo.\n`;
+      mkdirSync(join(repo, 'docs', 'legal'), { recursive: true });
+      writeFileSync(join(repo, 'docs', 'legal', 'terminos-y-condiciones.md'), changed);
+      const git = (...args: string[]) => execFileSync('git', ['-C', repo, '-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { stdio: 'pipe' });
+      git('init', '-q');
+      git('add', '.');
+      git('commit', '-q', '-m', 'terms');
+
+      const before = JSON.parse(readFileSync(join(SYNC, 'sign', 'sign.json'), 'utf8')) as Manifest;
+      const result = spawnSync('node', [SCRIPT, 'sign', '--from', repo, '--only', 'legal/terminos-y-condiciones.md'], {
+        encoding: 'utf8',
+        env: { ...process.env, BB_DOCS_SYNC_ROOT: root },
+      });
+      expect(result.status, result.stderr).toBe(0);
+
+      const out = join(root, 'src', 'content', 'sync', 'sign');
+      const after = JSON.parse(readFileSync(join(out, 'sign.json'), 'utf8')) as Manifest;
+      for (const name of ['openapi.json', 'webhook-signature-vectors.json']) {
+        expect(readFileSync(join(out, name)).equals(readFileSync(join(SYNC, 'sign', name))), name).toBe(true);
+        expect(readFileSync(join(root, 'public', 'sync', 'sign', name)).equals(readFileSync(join(PUBLIC_SYNC, 'sign', name))), name).toBe(true);
+        expect(after.files[name], name).toEqual(before.files[name]);
+      }
+      expect(readFileSync(join(out, 'legal', 'terminos-y-condiciones.md'), 'utf8')).toBe(changed);
+      expect(after.files['legal/terminos-y-condiciones.md']?.ref).toMatch(/^local:/);
+      expect(after.files['legal/terminos-y-condiciones.md']?.sha256).toBe(sha256(Buffer.from(changed)));
+      expect(after.files['openapi.json']?.rewrites).toEqual(['servers[0].url']);
+      const mirror = LEGAL_MIRRORS[0];
+      expect(readFileSync(join(root, 'src', 'content', 'docs', `${mirror.page}.md`), 'utf8')).toBe(renderLegalPage(changed, mirror, 'sign'));
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
   });
 });
 
@@ -136,6 +211,11 @@ describe('legal mirror transforms (plan D3)', () => {
     expect(body).toContain('[enlace externo](https://example.com/x)');
     const undo = Object.entries(LEGAL_LINK_MAP).reduce((text, [app, docs]) => text.split(`](${docs})`).join(`](${app})`), body);
     expect(undo).toBe(source.split('\n').slice(4).join('\n'));
+  });
+
+  test('the in-app guide routes point at the bb-docs pages the app links to (plan D1, D4)', () => {
+    expect(LEGAL_LINK_MAP['/guias/certificado-propio']).toBe('/sign/admin/own-certificate');
+    expect(LEGAL_LINK_MAP['/guias/conservacion-y-restauracion']).toBe('/sign/sending/retention-and-restore');
   });
 
   test('a guide without a version line has no legalVersion', () => {
