@@ -7,7 +7,7 @@ audience: all
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { RETENTION_POLICY, URLS } from '../../../facts/sign';
+import { ORG_STORAGE, URLS } from '../../../facts/sign';
 
 bb-sign is Binary Bridges' electronic signature platform. With it, an organization sends documents
 for signature, identifies every signer, receives the documents sealed with its certificate and keeps
@@ -39,11 +39,14 @@ The application is available at <a href={URLS.app.value}>{URLS.app.value}</a>.
   produced it. See [Verify a signed document](/en/sign/signing/verify-a-document/).
 - **Traceability.** Every relevant action on an envelope is kept in its history.
 
-bb-sign keeps signed documents and their evidence for a fixed period of
-<Fact of={RETENTION_POLICY.retentionDays} unit="days" />, counted for each file; from then on, keeping
-them is the organization's responsibility, as described in
-[Scope and retention](/en/sign/legal/retention/). If a file were ever archived, it can be requested
-again; see [Retention and restore](/en/sign/sending/retention-and-restore/).
+bb-sign keeps each organization's files in storage dedicated to it, for the period of its policy:
+<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> in the standard configuration, counted for
+each file, or the period your organization requests, up to
+<Fact of={ORG_STORAGE.maxRetentionYears} unit="years" />. When the period ends, keeping the files is the
+organization's responsibility, as described in [Scope and retention](/en/sign/legal/retention/). See
+[Storage and retention](/en/sign/admin/storage/) and [pricing](/en/sign/pricing/). If a file needs a
+restore before it downloads, it is requested from the envelope; see
+[Retention and restore](/en/sign/sending/retention-and-restore/).
 
 For each document's seal to carry your organization's name and for PDF readers to recognize it as
 trusted, we recommend configuring your [own certificate](/en/sign/admin/own-certificate/).

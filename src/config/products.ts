@@ -64,6 +64,8 @@ export interface Product {
   };
   /** Starlight icon for the topic switcher. */
   readonly icon: string;
+  /** Optional pricing page slug (path without locale); the hub card links to it. Must be in the sidebar. */
+  readonly pricing?: string;
   readonly sidebar: readonly SidebarGroup[];
 }
 
@@ -90,11 +92,13 @@ export const PRODUCTS: readonly Product[] = [
       ],
     },
     icon: 'document',
+    pricing: 'sign/pricing',
     sidebar: [
       {
         label: { es: 'Empezar', en: 'Start here' },
         pages: [
           page('sign/index', 'Qué es bb-sign', 'What bb-sign is'),
+          page('sign/pricing', 'Precios', 'Pricing'),
           page('sign/getting-started/your-account', 'Tu cuenta', 'Your account'),
           page('sign/getting-started/first-envelope', 'Tu primer sobre', 'Your first envelope'),
         ],

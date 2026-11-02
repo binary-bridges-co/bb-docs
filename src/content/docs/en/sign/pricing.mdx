@@ -1,0 +1,34 @@
+---
+title: Pricing
+description: "What bb-sign costs: a price per envelope in Colombian pesos plus VAT, set by how long files are kept, with volume discounts."
+product: sign
+audience: all
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../../components/facts/Fact.astro';
+import Price from '../../../../components/facts/Price.astro';
+import { CONTACT_EMAIL } from '../../../../config/site';
+import { ORG_STORAGE, PRICING } from '../../../facts/sign';
+
+bb-sign is charged per envelope. The price depends on how long your organization's files are kept.
+Prices are in Colombian pesos (COP) per envelope and exclude VAT (IVA).
+
+| Configuration | Price per envelope |
+| --- | --- |
+| **Standard configuration.** Each file is kept <Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" />. | <Price of={PRICING.standardPerEnvelopeCop} /> |
+| **<Fact of={ORG_STORAGE.maxRetentionYears} unit="years" /> retention.** Binary Bridges manages the storage tiers. | <Price of={PRICING.tenYearPerEnvelopeCop} /> |
+| **More than <Fact of={PRICING.volumeThresholdEnvelopesPerMonth} /> envelopes a month.** | Volume discounts, down to <Price of={PRICING.volumeFloorPerEnvelopeCop} />. Write to us for a quote. |
+| **Other configurations.** | Write to us for a quote. |
+
+## What is charged
+
+Every envelope created counts, drafts and cancelled envelopes included, just as the
+[quota](/en/sign/concepts/quotas/) counts them.
+
+## A quote for another configuration or a larger volume
+
+Write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> with the retention configuration you
+need and how many envelopes your organization creates a month.
+
+<LinkCard title="Storage and retention" href="/en/sign/admin/storage/" description="The standard configuration, the range of periods a policy can take and how to request a change." />
