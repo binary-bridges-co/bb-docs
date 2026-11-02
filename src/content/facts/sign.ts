@@ -51,6 +51,7 @@ export type { Fact } from './fact';
 export * from './sign-integrations';
 export * from './sign-signing-order';
 export * from './sign-pricing';
+export * from './sign-storage';
 
 const LIVE_LIFECYCLE_READ =
   'live read 2026-10-21T00:02Z: aws s3api get-bucket-lifecycle-configuration --bucket production-bbsign-documents (one rule, Expiration 365 d, prefix "", no transitions); bb-infrastructure/docs/runbooks/documents-lifecycle-guard.md:8-17';
@@ -164,6 +165,8 @@ export const ORG_PERMISSIONS: readonly { readonly key: string; readonly holders:
   { key: 'workspace:access-all', holders: ['platform_admin', 'org_admin'] },
   { key: 'agreement:read', holders: ['platform_admin', 'org_admin', 'org_member', 'org_api'] },
   { key: 'agreement:manage', holders: ['platform_admin', 'org_admin'] },
+  // Sign v0.42.0 behaviour: document-settings:manage, held by platform_admin and org_admin, shows Settings > Storage.
+  { key: 'document-settings:manage', holders: ['platform_admin', 'org_admin'] },
 ];
 
 /** Workspace-scope permissions per workspace role. Source: EA/domain/security/WorkspaceRoleBundles.kt:29-33. */
@@ -188,6 +191,8 @@ export const ORG_API_NEVER: readonly string[] = [
   'workspace:manage-members',
   'workspace:access-all',
   'agreement:manage',
+  // Sign v0.42.0 behaviour: an API key can never ask for the organization's files to be kept for a shorter time.
+  'document-settings:manage',
 ];
 
 /**
@@ -609,6 +614,8 @@ export const AUDIT_EVENT_TYPES: readonly string[] = [
   'EVIDENCE_CERTIFICATE_ISSUED', 'EVIDENCE_CERTIFICATE_FAILED', 'EVIDENCE_CERTIFICATE_ACCESSED', 'EVIDENCE_CERTIFICATE_REISSUE_REQUESTED',
   'DOCUMENT_RESTORE_REQUESTED', 'DOCUMENT_RESTORED',
   'CERTIFICATE_UPLOADED', 'CERTIFICATE_DELETED', 'CERTIFICATE_EXPIRING',
+  // Sign v0.42.0 behaviour: the organization's storage events, on the organization's audit trail.
+  'ORG_STORAGE_PROVISIONED', 'ORG_STORAGE_POLICY_CHANGED', 'ORG_STORAGE_POLICY_REQUESTED', 'ORG_STORAGE_POLICY_REQUEST_DECIDED',
 ];
 
 // ----------------------------------------------------------- retention ---
@@ -621,8 +628,8 @@ export const RETENTION_POLICY = {
   archiveAfterDays: fact(90, 'bb-sign/platform/contracts/.../retention/Retention.kt:36-37 (ARCHIVE_AFTER_DAYS); :70-80'),
   /** How long a restored copy stays readable (allowed range 1-30, production 7). */
   restoredCopyDays: fact(7, 'bb-sign/edge-api/src/main/resources/application.yml:291; EA/application/service/RestoreSettings.kt:15,33; bb-infrastructure/apps/bb-sign/edge-api.yaml:72'),
-  /** Fixed: `Retention` is a code object with no property behind it. */
-  configurable: fact(false, 'bb-sign/platform/contracts/.../retention/Retention.kt:31-37 (const val, no property)'),
+  /** Each organization has its own policy, changed on request (ORG_STORAGE). */
+  configurable: fact(true, 'Sign v0.42.0 behaviour: each organization has its own retention policy, changed by Binary Bridges on the organization admin\'s request; terms Versión 6 §3.1'),
 } as const;
 
 /** What production does today (plan decision D1: the live read wins over the declared CloudFormation template). */
@@ -736,7 +743,6 @@ export const NOT_SHIPPED: readonly string[] = [
   'signer acceptance of agreement texts (data-processing authorization)',
   'TSA / PAdES / LTV',
   'legal hold',
-  'per-organisation retention',
   'per-organisation branding',
   'billing or self-service plans',
   'free trial',

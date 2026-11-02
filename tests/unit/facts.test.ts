@@ -19,6 +19,7 @@ import {
   NOT_SHIPPED,
   ORG_API_NEVER,
   ORG_PERMISSIONS,
+  ORG_STORAGE,
   OTP,
   PERMISSION_SCOPE,
   PRICING,
@@ -62,7 +63,7 @@ describe('bb-sign fact sheet', () => {
     const groups = {
       URLS, AUTH, ADMIN_MFA, PERMISSION_SCOPE, AGREEMENTS, ENVELOPE, ARCHIVED_ENVELOPES, OTP, SIGNER, DOCUMENTS, LABELS,
       REMINDERS, QUOTA, WEBHOOKS, RATE_LIMITS, SIGN_REQUEST, VERIFY, SDK, CERTIFICATE, EVIDENCE, AUDIT, RETENTION_POLICY,
-      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER, PRICING, STORAGE_NOT_READY,
+      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER, PRICING, STORAGE_NOT_READY, ORG_STORAGE,
     };
     expect(walk(groups, 'facts')).toEqual([]);
     for (const email of EMAILS) expect(email.source.length).toBeGreaterThan(10);
@@ -96,7 +97,7 @@ describe('bb-sign fact sheet', () => {
   test('the retention policy outlives the cold archive and the database archive', () => {
     expect(RETENTION_POLICY.retentionDays.value).toBeGreaterThan(RETENTION_POLICY.archiveAfterDays.value);
     expect(RETENTION_POLICY.archiveAfterDays.value).toBeGreaterThan(ENVELOPE.archiveAfterDays.value);
-    expect(RETENTION_POLICY.configurable.value).toBe(false);
+    expect(RETENTION_POLICY.configurable.value).toBe(true);
   });
 
   test('what runs today never claims more than the policy (production wins over the template, D1)', () => {
@@ -233,6 +234,41 @@ describe('bb-sign fact sheet', () => {
     expect(QUOTA.httpStatusWhenExhausted.value).toBe(429);
     for (const status of [408, 410, 413, 503]) expect(ERROR_CODES.some((e) => e.status === status), String(status)).toBe(true);
     expect(SDK.honoursRetryAfter.value).toBe(false);
+  });
+
+  test('retention per organization: the standard period sits inside the range a policy may take', () => {
+    expect(p1Offenders(ORG_STORAGE)).toEqual([]);
+    expect(ORG_STORAGE.minRetentionDays.value).toBeLessThan(ORG_STORAGE.defaultRetentionDays.value);
+    expect(ORG_STORAGE.defaultRetentionDays.value).toBeLessThan(ORG_STORAGE.maxRetentionDays.value);
+    expect(ORG_STORAGE.maxRetentionDays.value).toBe(3650);
+    expect(ORG_STORAGE.maxRetentionYears.value * 365).toBe(ORG_STORAGE.maxRetentionDays.value);
+    expect(ORG_STORAGE.legacyRetentionDays.value).toBe(ORG_STORAGE.defaultRetentionDays.value);
+    expect(ORG_STORAGE.defaultCheaperTierAfterDays.value).toBeLessThan(ORG_STORAGE.defaultRetentionDays.value);
+    expect(ORG_STORAGE.defaultAllImmediate.value).toBe(true);
+    // A restore from the deepest tier finishes before a restore gives up.
+    expect(RESTORE.timeoutHours.value).toBeGreaterThanOrEqual(ORG_STORAGE.deepestRestoreMaxHours.value);
+    // A shorter period deletes long before a restored copy would be purged.
+    expect(ORG_STORAGE.shortenDeletionDays.value).toBeLessThan(RESTORE.days.value);
+    expect(ORG_STORAGE.requestReasonMin.value).toBeLessThan(ORG_STORAGE.requestReasonMax.value);
+    expect(ORG_STORAGE.onePendingRequest.value).toBe(true);
+    // Evidence is locked and always immediate; documents are versioned, not locked (plan D10).
+    expect(ORG_STORAGE.evidenceLocked.value).toBe(true);
+    expect(ORG_STORAGE.documentsVersionedNotLocked.value).toBe(true);
+    expect(ORG_STORAGE.evidenceAlwaysImmediate.value).toBe(true);
+    expect(ORG_STORAGE.onlyCompletedFilesNeedRestore.value).toBe(true);
+    expect(ORG_STORAGE.certificateStatesPeriod.value).toBe(true);
+    expect(ORG_STORAGE.archiveDatesVisible.value).toBe(false);
+    expect(ORG_STORAGE.preparingBlocksUploads.value).toBe(true);
+    // The permission is a real org permission, held by both admin roles and never by an API key.
+    const row = ORG_PERMISSIONS.find((p) => p.key === ORG_STORAGE.managePermission.value);
+    expect(row?.holders).toEqual(['platform_admin', 'org_admin']);
+    expect(ORG_API_NEVER).toContain(ORG_STORAGE.managePermission.value);
+    // Per-organization retention is shipped; billing and self-service plans are not.
+    expect(NOT_SHIPPED).not.toContain('per-organisation retention');
+    expect(NOT_SHIPPED).toContain('billing or self-service plans');
+    expect(AUDIT_EVENT_TYPES).toEqual(
+      expect.arrayContaining(['ORG_STORAGE_PROVISIONED', 'ORG_STORAGE_POLICY_CHANGED', 'ORG_STORAGE_POLICY_REQUESTED', 'ORG_STORAGE_POLICY_REQUEST_DECIDED']),
+    );
   });
 
   test('an upload while the organization storage is being prepared is a 503 with Retry-After and stores nothing', () => {
