@@ -50,6 +50,7 @@ import { RATE_LIMITS, WEBHOOKS } from './sign-integrations';
 export type { Fact } from './fact';
 export * from './sign-integrations';
 export * from './sign-signing-order';
+export * from './sign-pricing';
 
 const LIVE_LIFECYCLE_READ =
   'live read 2026-10-21T00:02Z: aws s3api get-bucket-lifecycle-configuration --bucket production-bbsign-documents (one rule, Expiration 365 d, prefix "", no transitions); bb-infrastructure/docs/runbooks/documents-lifecycle-guard.md:8-17';

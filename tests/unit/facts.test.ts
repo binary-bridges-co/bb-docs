@@ -21,6 +21,7 @@ import {
   ORG_PERMISSIONS,
   OTP,
   PERMISSION_SCOPE,
+  PRICING,
   QUOTA,
   RATE_LIMITS,
   REMINDERS,
@@ -60,11 +61,28 @@ describe('bb-sign fact sheet', () => {
     const groups = {
       URLS, AUTH, ADMIN_MFA, PERMISSION_SCOPE, AGREEMENTS, ENVELOPE, ARCHIVED_ENVELOPES, OTP, SIGNER, DOCUMENTS, LABELS,
       REMINDERS, QUOTA, WEBHOOKS, RATE_LIMITS, SIGN_REQUEST, VERIFY, SDK, CERTIFICATE, EVIDENCE, AUDIT, RETENTION_POLICY,
-      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER,
+      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER, PRICING,
     };
     expect(walk(groups, 'facts')).toEqual([]);
     for (const email of EMAILS) expect(email.source.length).toBeGreaterThan(10);
     for (const error of ERROR_CODES) expect(error.source.length, error.code).toBeGreaterThan(10);
+  });
+
+  /** The public-source rule (plan P1): a fact source is one of three forms, never a path into the product. */
+  const P1_SOURCE = /^(Sign v\d+\.\d+\.\d+ behaviour: |production configuration, read \d{4}-\d{2}-\d{2}: |owner decision \d{4}-\d{2}-\d{2} in issue #\d+: )/;
+  const p1Offenders = (group: Record<string, { source: string }>): string[] =>
+    Object.entries(group).filter(([, f]) => !P1_SOURCE.test(f.source)).map(([k]) => k);
+
+  test('prices: every source is an owner decision, and the volume floor < standard < 10 years', () => {
+    expect(p1Offenders(PRICING)).toEqual([]);
+    for (const f of Object.values(PRICING)) expect(f.source).toMatch(/^owner decision /);
+    expect(PRICING.volumeFloorPerEnvelopeCop.value).toBeLessThan(PRICING.standardPerEnvelopeCop.value);
+    expect(PRICING.standardPerEnvelopeCop.value).toBeLessThan(PRICING.tenYearPerEnvelopeCop.value);
+    expect(PRICING.volumeThresholdEnvelopesPerMonth.value).toBeGreaterThan(0);
+    expect(PRICING.billedUnit.value).toContain('drafts and cancelled included');
+    expect(PRICING.tenYearTiersManagedByBinaryBridges.value).toBe(true);
+    // Prices are published; checkout and self-service plans are still not shipped.
+    expect(NOT_SHIPPED).toContain('billing or self-service plans');
   });
 
   test('an OTP outlives its resend cooldown and its verified window fits the link', () => {

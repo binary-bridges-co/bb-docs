@@ -1,0 +1,36 @@
+---
+/**
+ * Renders a price from the pricing fact sheet, in Colombian pesos, for the page locale (plan D7):
+ * "$ 1.000 + IVA" on Spanish pages, "COP 1,000 + VAT (IVA)" on English ones.
+ *
+ *   import { PRICING } from '../../facts/sign';
+ *   <Price of={PRICING.standardPerEnvelopeCop} />
+ */
+import type { Fact } from '../../content/facts/sign';
+import { formatCop, formatPricePlusTax } from '../../lib/price';
+
+interface Props {
+  of: Fact<number>;
+  /** Show "+ IVA" / "+ VAT (IVA)" after the amount. Defaults to true. */
+  tax?: boolean;
+}
+
+const { of, tax = true } = Astro.props;
+// Outside a Starlight route (the llms.txt renders) `starlightRoute` throws; fall back to Spanish.
+let lang = 'es-CO';
+try {
+  lang = Astro.locals.starlightRoute.lang ?? lang;
+} catch {
+  // not a Starlight page
+}
+const text = tax ? formatPricePlusTax(of.value, lang) : formatCop(of.value, lang);
+---
+
+<span class="bb-price">{text}</span>
+
+<style>
+  .bb-price {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+</style>
