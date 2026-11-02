@@ -11,6 +11,9 @@ const PAGES = [
   { path: '/sign/legal/terms/', lang: 'es-CO' },
   { path: '/en/sign/legal/terms/', lang: 'en' },
   { path: '/sign/api/', lang: 'es-CO' },
+  { path: '/sign/pricing/', lang: 'es-CO' },
+  { path: '/en/sign/pricing/', lang: 'en' },
+  { path: '/sign/admin/storage/', lang: 'es-CO' },
 ] as const;
 
 for (const { path, lang } of PAGES) {
@@ -38,6 +41,35 @@ test('the hub lists exactly the registered products, in both locales', async ({ 
     expect(ids).toEqual(PRODUCTS.map((p) => p.id));
   }
 });
+
+test('the hub card links to the pricing page, in both locales', async ({ page }) => {
+  for (const [path, href, label] of [
+    ['/', '/sign/pricing/', 'Precios'],
+    ['/en/', '/en/sign/pricing/', 'Pricing'],
+  ] as const) {
+    await page.goto(path);
+    const link = page.locator(`[data-hub-products] [data-product="sign"] a[href="${href}"]`);
+    await expect(link).toHaveText(label);
+    await link.click();
+    await expect(page).toHaveURL(new RegExp(`${href}$`));
+    await expect(page.locator('h1')).toHaveText(label);
+  }
+});
+
+// The guides that used to be mirrored from the app moved to their product pages (plan D1, D2); the old URLs,
+// which the app and earlier links point at, must land there.
+for (const [from, to] of [
+  ['/sign/legal/own-certificate-guide/', '/sign/admin/own-certificate/'],
+  ['/en/sign/legal/own-certificate-guide/', '/en/sign/admin/own-certificate/'],
+  ['/sign/legal/retention-guide/', '/sign/sending/retention-and-restore/'],
+  ['/en/sign/legal/retention-guide/', '/en/sign/sending/retention-and-restore/'],
+] as const) {
+  test(`${from} ends on ${to}`, async ({ page }) => {
+    await page.goto(from);
+    await expect(page).toHaveURL(new RegExp(`${to}$`));
+    await expect(page.locator('h1')).toHaveCount(1);
+  });
+}
 
 test('a product page shows its topic in the sidebar and the audience badge', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
