@@ -392,6 +392,26 @@ Rebase this branch on `origin/main` first. **The synced contract and vectors are
   ends on its D1 page; the hub card links to pricing in both locales. Re-record and review `hub-*` baselines on macOS.
 - **B13. Report** `.claude/PRPs/reports/sign-storage-pricing-docs-report.md` (public: same rules, checked by A4).
 
+### Amendment (implementation, 2026-11-01): PR B implemented before PR A
+
+PR A had not been implemented when PR B was started (its worktree was still at `5ee7007`), and the app is
+waiting on the D1 URLs. PR B is therefore implemented on `5ee7007`, not rebased on PR A. What changes:
+
+- Everything PR B **adds** already follows P1: the new fact modules (`sign-pricing.ts`, `sign-storage.ts`), the new
+  facts in `sign.ts` and `sign-integrations.ts`, the new and rewritten pages (no `source:` frontmatter on them),
+  the tests and the report. The facts test checks the three P1 source forms for `ORG_STORAGE` and `PRICING` only.
+- What PR A **changes in existing files** stays for PR A: `Fact.astro`'s `data-source`, the existing fact sources
+  and module headers, the existing `source:` frontmatter (including the English terms page, which `legal.test.ts`
+  still pins), the generator's `source:` field, README and CLAUDE.md.
+- A4 (`check-public-terms.mjs`) does not exist yet. Until PR A lands, PR B runs an equivalent check by hand over its
+  own diff (vendor and vendor-product names, storage-class identifiers, product issue references, infrastructure
+  paths, the production-manifest shorthand, private-repository code paths) and reports the result. The
+  `npm run check:public` lines of the Validation block run after the rebase on PR A.
+- Whichever of PR A and PR B merges second rebases on the other and resolves the fact-module conflicts by keeping
+  PR A's P1 sources and PR B's values.
+- So that every commit builds, B3 adds the new facts and B11 removes `RETENTION_POLICY.retentionDays`,
+  `EVIDENCE.retentionDays` and `RETENTION_IMPLEMENTED` in the same commit as their last uses (still with no alias).
+
 ## Phase C: PR C, `chore/sync-sign-contract` (after the app's vendor-name removal work ships)
 
 Worktree `.claude/worktrees/sync-sign-contract` from fresh `origin/main`, once a Sign release contains the app's
