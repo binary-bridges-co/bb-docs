@@ -7,7 +7,7 @@ audience: user
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { DOCUMENTS, ENVELOPE, RETENTION_POLICY } from '../../../facts/sign';
+import { ORG_STORAGE, DOCUMENTS, ENVELOPE, RETENTION_POLICY } from '../../../facts/sign';
 
 bb-sign mantiene la lista de Sobres centrada en el trabajo en curso. Los sobres cerrados pasan,
 tras un tiempo, a la vista **Sobres Archivados**, donde siguen disponibles en modo de solo lectura,
@@ -60,14 +60,15 @@ Un sobre archivado no admite acciones: no se pueden cambiar sus etiquetas ni can
 ## Archivados no es almacenamiento de archivo
 
 Pasar a **Archivados** es un cambio de lista, no de almacenamiento: los archivos del sobre se
-descargan igual que antes. El almacenamiento de archivo es otra cosa: los términos permiten trasladar
-allí un archivo con más de <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" />, y entonces
-hay que solicitar su restauración para descargarlo. Hoy bb-sign no traslada ningún archivo a ese
-almacenamiento. Consulte [Conservación y restauración](/sign/sending/retention-and-restore/).
+descargan igual que antes. Un nivel de almacenamiento que requiere restauración es otra cosa: si la
+política de su organización lo incluye, un archivo que llega a ese nivel hay que restaurarlo antes de
+descargarlo. Con la configuración estándar ningún archivo llega a un nivel así. Consulte
+[Conservación y restauración](/sign/sending/retention-and-restore/).
 
 Archivar un sobre no elimina nada: el sobre, sus firmantes, sus documentos y su evidencia se
-conservan hasta que se cumple el plazo de cada archivo, <Fact of={RETENTION_POLICY.retentionDays} unit="días" />.
-Consulte [Alcance y conservación](/sign/legal/retention/).
+conservan hasta que se cumple el plazo de cada archivo, el de la política de su organización
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> con la configuración estándar). Consulte
+[Almacenamiento y conservación](/sign/admin/storage/).
 
 ## Los firmantes conservan el acceso
 

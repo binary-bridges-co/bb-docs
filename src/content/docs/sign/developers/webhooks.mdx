@@ -8,7 +8,7 @@ source: docs/api/webhooks.md
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { WEBHOOKS, WEBHOOK_EVENTS, ENVELOPE, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED, RESTORE } from '../../../facts/sign';
+import { ORG_STORAGE, WEBHOOKS, WEBHOOK_EVENTS, ENVELOPE, EVIDENCE, RETENTION_POLICY, RESTORE } from '../../../facts/sign';
 
 Con los webhooks, bb-sign envía un payload JSON firmado a su URL cada vez que ocurre algo en un
 sobre, y su sistema reacciona al instante sin consultas periódicas.
@@ -217,18 +217,18 @@ una entrega:
 
 ## Conservación y restauración
 
-bb-sign conserva cada archivo de un sobre durante un plazo fijo de
-<Fact of={RETENTION_POLICY.retentionDays} unit="días" />: el original desde su subida, la copia
-firmada desde la finalización y el certificado de evidencia desde su emisión. Las fechas se redondean
+bb-sign conserva cada archivo de un sobre durante el plazo de la política de la organización
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> con la configuración estándar, hasta
+<Fact of={ORG_STORAGE.maxRetentionYears} unit="años" />): el original desde su subida, la copia firmada
+desde la finalización y el certificado de evidencia desde su emisión. Las fechas se redondean
 a las 00:00 UTC.
 
 - **`deletesAt`** (en `data.retention` de `envelope.completed` y en cada archivo de
   `GET /api/v1/envelopes/{id}/documents`) significa «deja de estar disponible el»: desde esa fecha
   los archivos no se pueden descargar y se borran de forma definitiva en los días siguientes.
   Archive antes lo que deba conservar.
-- **`archivesAt`** es la fecha desde la que un archivo puede pasar a almacenamiento de archivo. Los
-  términos del servicio lo permiten desde el día <Fact of={RETENTION_POLICY.archiveAfterDays} />.
-  {!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && <>Hoy ningún archivo se mueve a almacenamiento de archivo, de modo que <code>archivesAt</code> es <code>null</code> y todos los archivos se descargan directamente.</>}
+- **`archivesAt`** es la fecha desde la que un archivo puede pasar a almacenamiento de archivo.
+  {!ORG_STORAGE.archiveDatesVisible.value && <>Hoy esas fechas no se publican, de modo que <code>archivesAt</code> es <code>null</code>. Si un archivo necesita restauración lo dice su <code>availability</code>, y depende del nivel de la política de la organización: con la configuración estándar, ninguno la necesita.</>}
 - El cuerpo de una entrega se fija en el primer envío. Las fechas actuales de cada archivo están
   siempre en `GET /api/v1/envelopes/{id}/documents`.
 

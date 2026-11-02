@@ -7,7 +7,7 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { EVIDENCE } from '../../../facts/sign';
+import { ORG_STORAGE, EVIDENCE } from '../../../facts/sign';
 
 export const STATUS = {
   PENDING: { label: '"Procesando el certificado de evidencia..."', meaning: 'bb-sign está emitiendo el certificado. Vuelva a consultar en unos minutos.' },
@@ -115,10 +115,11 @@ permiso que los documentos.
 
 ## Cuánto tiempo se conserva
 
-bb-sign conserva el certificado y el registro de auditoría durante
-<Fact of={EVIDENCE.retentionDays} unit="días" /> desde su emisión, protegidos contra borrado y modificación durante ese plazo.
-No se trasladan nunca a almacenamiento de archivo, así que se descargan directamente durante todo el
-plazo. Al terminar, el detalle muestra "El periodo de conservación terminó y el certificado fue
+bb-sign conserva el certificado y el registro de auditoría durante el plazo de conservación de su
+organización que estaba vigente al emitirse el certificado, contado desde su emisión, bloqueados contra
+el borrado y la modificación durante ese plazo. No se trasladan nunca a un nivel que requiera
+restauración, así que se descargan directamente durante todo el plazo. El certificado indica el plazo
+de conservación de cada archivo del sobre. Al terminar, el detalle muestra "El periodo de conservación terminó y el certificado fue
 eliminado.".
 
 <Aside type="caution" title="Guarde su copia">

@@ -8,7 +8,7 @@ source: docs/api/webhook-signature-spec.md
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { WEBHOOKS, WEBHOOK_EVENTS, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED } from '../../../../facts/sign';
+import { ORG_STORAGE, WEBHOOKS, WEBHOOK_EVENTS, EVIDENCE, RETENTION_POLICY } from '../../../../facts/sign';
 
 **Status: NORMATIVE.** This document is the single source of truth for the bb-sign webhook
 signature scheme. The dispatcher, the Java SDK and the JavaScript SDK implement it and refer to
@@ -377,8 +377,9 @@ arrives (never after `UNAVAILABLE`). Subscribe to it to receive a late certifica
 
 ### P3c. Retention dates on `envelope.completed`
 
-Every `envelope.completed`, with or without the certificate, carries the dates of the envelope's
-fixed retention (<Fact of={RETENTION_POLICY.retentionDays} unit="days" />):
+Every `envelope.completed`, with or without the certificate, carries the envelope's retention dates,
+set by the organization's policy (<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the
+standard configuration):
 
 ```json
 "data": {
@@ -393,7 +394,7 @@ fixed retention (<Fact of={RETENTION_POLICY.retentionDays} unit="days" />):
 - **`deletesAt` means "no longer available from"**: from that date the files cannot be downloaded,
   and they are erased permanently within the following days. Archive what you must keep before it.
 - `archivesAt` is when the files may move to archive storage, from where they are restored on
-  request. It is always present, and `null` until archiving is enabled.{!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && ' It is not enabled in production today.'}
+  request. It is always present, and `null` until archiving is enabled.{!ORG_STORAGE.archiveDatesVisible.value && ' Archive dates are not published today, so it is null.'}
 - `retention` is on `envelope.completed` only, and absent on one sent before it existed.
 - The body is materialised once (P3b), so a notice keeps the dates it was sent with. Each file's
   current dates are always on `GET documentsPath`.

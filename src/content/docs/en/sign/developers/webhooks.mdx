@@ -8,7 +8,7 @@ source: docs/api/webhooks.md
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { WEBHOOKS, WEBHOOK_EVENTS, ENVELOPE, EVIDENCE, RETENTION_POLICY, RETENTION_IMPLEMENTED, RESTORE } from '../../../../facts/sign';
+import { ORG_STORAGE, WEBHOOKS, WEBHOOK_EVENTS, ENVELOPE, EVIDENCE, RETENTION_POLICY, RESTORE } from '../../../../facts/sign';
 
 With webhooks, bb-sign sends a signed JSON payload to your URL each time something happens to an
 envelope, and your system reacts immediately without polling.
@@ -216,18 +216,18 @@ It is the first place to diagnose a delivery:
 
 ## Retention and restores
 
-bb-sign keeps every file of an envelope for a fixed
-<Fact of={RETENTION_POLICY.retentionDays} unit="days" />: the original from its upload, the signed
-copy from the completion and the evidence certificate from its issue. Dates are rounded up to
+bb-sign keeps every file of an envelope for the period of the organization's policy
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the standard configuration, up to
+<Fact of={ORG_STORAGE.maxRetentionYears} unit="years" />): the original from its upload, the signed copy
+from the completion and the evidence certificate from its issue. Dates are rounded up to
 00:00 UTC.
 
 - **`deletesAt`** (in `data.retention` on `envelope.completed`, and on each file of
   `GET /api/v1/envelopes/{id}/documents`) means "no longer available from": from that date the files
   cannot be downloaded, and they are erased permanently within the following days. Archive what you
   must keep before it.
-- **`archivesAt`** is the date from which a file may move to archive storage. The terms of service
-  allow it from day <Fact of={RETENTION_POLICY.archiveAfterDays} />.
-  {!RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value && <>Today no file is moved to archive storage, so <code>archivesAt</code> is <code>null</code> and every file downloads directly.</>}
+- **`archivesAt`** is the date from which a file may move to archive storage.
+  {!ORG_STORAGE.archiveDatesVisible.value && <>Those dates are not published today, so <code>archivesAt</code> is <code>null</code>. Whether a file needs a restore is in its <code>availability</code>, and depends on the tiers of the organization's policy: with the standard configuration, none does.</>}
 - A delivery's body is fixed at its first dispatch. Each file's current dates are always on
   `GET /api/v1/envelopes/{id}/documents`.
 

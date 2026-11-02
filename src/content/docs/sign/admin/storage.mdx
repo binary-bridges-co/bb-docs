@@ -1,66 +1,113 @@
 ---
-title: Almacenamiento
-description: "Qué muestra la página Almacenamiento, cuánto tiempo conserva bb-sign los archivos de su organización, qué se archiva hoy y cómo guardar sus copias a tiempo."
+title: Almacenamiento y conservación
+description: "Dónde guarda bb-sign los archivos de su organización, cuánto tiempo los conserva, cómo solicitar otro plazo y qué archivos se descargan de inmediato."
 product: sign
 audience: admin
 ---
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE, EVIDENCE, RESTORE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
+import { ENVELOPE, ORG_STORAGE, RESTORE } from '../../../facts/sign';
 
-bb-sign conserva cada archivo de su organización durante un plazo fijo, igual para todas las
-organizaciones. La página **Almacenamiento** le muestra la política del servicio y las reglas que el
-almacenamiento aplica realmente. Para los administradores de la organización es solo de consulta.
+Los archivos de cada organización se guardan en un almacenamiento dedicado a ella, aislado del de los
+demás clientes y cifrado. Cada organización tiene su propia política de conservación: cuánto tiempo se
+guardan sus archivos y en qué niveles de almacenamiento pasan ese tiempo.
 
-**Quién:** administradores de la organización y administradores de plataforma. **Dónde:**
-**Almacenamiento**, en el menú lateral.
+**Quién:** administradores de la organización (permiso
+<code>{ORG_STORAGE.managePermission.value}</code>). **Dónde:** **Configuración**, pestaña
+**Almacenamiento**.
 
-## Qué muestra la página
+## La configuración estándar
 
-La página **Ciclo de vida del almacenamiento** tiene dos partes:
+Una organización empieza con la configuración estándar:
 
-- **Configuración** muestra la política declarada del producto: **Transición a Standard-IA**,
-  **Transición a Glacier** y **Expiración de objetos**, en días. Son los mismos valores para todas las
-  organizaciones.
-- **Reglas de los buckets** muestra las reglas que cada depósito de almacenamiento tiene en realidad.
-  Los certificados de la organización quedan excluidos: no expiran.
+- Cada archivo se conserva <Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> y después se
+  elimina de forma definitiva. El plazo se cuenta para cada archivo: el original desde que se carga, el
+  documento firmado desde que el sobre se completa y el certificado de evidencia desde que se emite.
+- A los <Fact of={ORG_STORAGE.defaultCheaperTierAfterDays} unit="días" />, los archivos pasan a un
+  nivel de almacenamiento más económico que sigue siendo de «Acceso inmediato»: con la configuración
+  estándar, ningún archivo necesita una restauración para descargarse.
 
-Las dos partes se muestran por separado para que se vea si el almacenamiento aplica algo distinto de
-la política. Hoy, en producción, el almacenamiento de documentos tiene una sola regla:
-<Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="días" /> de conservación, sin
-transiciones. Ningún archivo pasa hoy a almacenamiento de archivo.
+## Cambiar la configuración
 
-{RETENTION_IMPLEMENTED.storageApplyWritesProduction.value && (
-  <p>
-    Los administradores de plataforma ven además, en <strong>Expiración de objetos</strong>, un campo
-    de días con el botón <strong>Aplicar</strong>. En producción ese botón sí escribe: reemplaza las
-    reglas del almacenamiento de documentos y del de evidencias por una sola regla de expiración. No
-    lo use para cambiar la conservación, que es fija: en producción las reglas las define la
-    infraestructura de Binary Bridges.
-  </p>
-)}
+El plazo puede ir de <Fact of={ORG_STORAGE.minRetentionDays} unit="días" /> a
+<Fact of={ORG_STORAGE.maxRetentionYears} unit="años" />, y la política puede incluir niveles de
+almacenamiento más económicos a medida que los archivos envejecen. El mínimo protege los documentos de
+los sobres que aún están en firma.
 
-## Cuánto tiempo se conservan sus archivos
+La pestaña **Almacenamiento** muestra la política vigente, solo para consulta: cuánto tiempo se conservan
+los archivos, una línea de tiempo con cada nivel y las versiones anteriores de la política. Para cambiarla:
 
-| Concepto | Política del servicio | Hoy |
-| --- | --- | --- |
-| Conservación | <Fact of={RETENTION_POLICY.retentionDays} unit="días" /> por archivo: el original desde que se carga, el documento firmado desde que el sobre se completa y el certificado de evidencia desde que se emite. Después, el archivo se elimina de forma definitiva. | Se aplica así. |
-| Paso a almacenamiento de archivo | Los documentos con más de <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" /> pueden trasladarse a almacenamiento de archivo y entonces requieren una restauración antes de descargarse. | Ningún archivo se traslada. |
-| Restauración | Una copia archivada se restaura a solicitud, desde la página del sobre, por la API o por el firmante desde su enlace. La copia restaurada queda disponible <Fact of={RESTORE.days} unit="días" />. | Disponible, sin uso mientras nada se archive. |
-| Certificado de evidencia y registro de auditoría | Nunca se archivan: se descargan de inmediato durante sus <Fact of={EVIDENCE.retentionDays} unit="días" />. | Se aplica así. |
+1. Pulse **Solicitar un cambio**, describa la política que necesita y explique el motivo, entre
+   <Fact of={ORG_STORAGE.requestReasonMin} /> y <Fact of={ORG_STORAGE.requestReasonMax} /> caracteres.
+2. Binary Bridges revisa la solicitud y la aprueba tal como se pidió, la ajusta y la aprueba, o la
+   rechaza. Cuando la ajusta o la rechaza, deja una nota que explica por qué.
+3. La decisión, con la nota, aparece en la misma pestaña. Si se aprueba, la política nueva aparece como
+   una versión más.
 
-El plazo es fijo y no se configura por organización. Los términos que lo establecen están en la
-sección 3 de los [Términos y condiciones](/sign/legal/terms/).
+Su organización puede tener una sola solicitud pendiente. Mientras espera la decisión, puede retirarla
+con **Retirar** y enviar otra.
 
-## Fechas de conservación de cada sobre
+<LinkCard title="Precios" href="/sign/pricing/" description="El precio por sobre de la configuración estándar y de una conservación más larga." />
 
-La sección **Conservación** del detalle de cada sobre muestra «Deja de estar disponible el …»: desde
-esa fecha, a las 00:00 UTC, los archivos del sobre ya no se pueden descargar. La fecha «Se archiva a
-partir del …» solo aparece cuando el archivo automático está activo, y hoy no se muestra. Ver
+## Disponibilidad
+
+Cada nivel de la política indica si sus archivos se descargan de inmediato:
+
+| Lo que muestra el nivel | Qué significa |
+| --- | --- |
+| «Acceso inmediato» | Los archivos se descargan directamente. |
+| «Requiere restaurar, listo en horas» | Antes de descargar un archivo hay que solicitar su restauración. En el nivel más profundo, la restauración tarda hasta unas <Fact of={ORG_STORAGE.deepestRestoreMaxHours} unit="horas" />. La copia restaurada se puede descargar durante <Fact of={RESTORE.days} unit="días" />. |
+
+Solo el original de un sobre completado y el documento firmado pueden llegar a necesitar una
+restauración. Los borradores nunca, y el certificado de evidencia y el registro de auditoría siempre se
+descargan de inmediato. Cómo se solicita una restauración, desde la aplicación, la API o el enlace del
+firmante, está en [Conservación y restauración](/sign/sending/retention-and-restore/).
+
+## Qué protege cada archivo
+
+- **Certificados de evidencia y su registro de auditoría.** Quedan bloqueados contra el borrado hasta el
+  final de su plazo, el que estaba vigente cuando se emitió el certificado. Nadie puede eliminarlos antes.
+- **Documentos originales y documentos firmados.** Se guardan con versiones, sin bloqueo: se conservan
+  durante el plazo de su organización y después se eliminan. Solo un plazo más corto, aplicado por
+  Binary Bridges, los elimina antes (sección siguiente).
+
+## Acortar el plazo
+
+Un plazo más corto solo lo aplica Binary Bridges, al aprobar o ajustar una solicitud. Antes de aplicarlo,
+la persona de Binary Bridges que lo revisa ve cuántos documentos se eliminarían, incluidos los de sobres
+que aún esperan firmas, y hasta qué fecha se conserva cada certificado de evidencia.
+
+Una vez aplicado, los documentos más antiguos que el nuevo plazo se eliminan en unos
+<Fact of={ORG_STORAGE.shortenDeletionDays} unit="días" /> y no se pueden recuperar. Los certificados de
+evidencia y su registro de auditoría se conservan hasta su fecha. Si su organización pide un plazo más
+corto, descargue antes lo que deba conservar.
+
+## Mientras se prepara el almacenamiento
+
+Mientras se prepara el almacenamiento de una organización nueva, la pestaña muestra «Su almacenamiento
+se está preparando. Las nuevas cargas empiezan cuando esté listo.» y no se puede subir ningún documento:
+la carga se rechaza sin guardar nada. Vuelva a intentarlo en un minuto. Una integración recibe el error
+[`STORAGE_NOT_READY`](/sign/developers/errors/).
+
+## Archivos anteriores al almacenamiento dedicado
+
+Los archivos que su organización creó antes de tener almacenamiento dedicado se quedan donde estaban y
+conservan la regla anterior: <Fact of={ORG_STORAGE.legacyRetentionDays} unit="días" />. La pestaña
+**Almacenamiento** indica desde qué fecha aplica la política de su organización.
+
+## El certificado de evidencia indica el plazo
+
+Cada certificado de evidencia indica el plazo de conservación de los archivos del sobre: uno solo, o uno
+por línea cuando los archivos tienen plazos distintos.
+
+## Fechas de cada sobre
+
+La sección **Conservación** del detalle de cada sobre muestra «Deja de estar disponible el …»: desde esa
+fecha, a las 00:00 UTC, los archivos del sobre ya no se pueden descargar. Ver
 [Conservación y restauración](/sign/sending/retention-and-restore/).
 
-<Aside type="note" title="La vista Archivados no es almacenamiento de archivo">
+<Aside type="note" title="La vista Archivados no es un nivel de almacenamiento">
   <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación, un sobre completado,
   cancelado o vencido pasa a la vista **Archivados**. Es solo un cambio de lista: el sobre y sus
   archivos se siguen descargando, incluido desde el enlace del firmante, hasta que termina su plazo de
@@ -71,10 +118,9 @@ partir del …» solo aparece cuando el archivo automático está activo, y hoy 
 
 <Aside type="caution" title="Al terminar el plazo, la conservación es de su organización">
   Descargue y archive los documentos firmados y los certificados de evidencia que su organización deba
-  conservar antes de que termine el plazo de
-  <Fact of={RETENTION_POLICY.retentionDays} unit="días" />. La forma recomendada, automática al
-  completarse cada sobre, está en la
-  [Guía de conservación y restauración](/sign/legal/retention-guide/).
+  conservar antes de que termine el plazo de su política. La forma recomendada, automática al
+  completarse cada sobre, está en
+  [Conservación y restauración](/sign/sending/retention-and-restore/).
 </Aside>
 
-<LinkCard title="Alcance y conservación" href="/sign/legal/retention/" description="Los términos de conservación del servicio, cómo se aplican hoy y cómo archivar sus documentos firmados." />
+<LinkCard title="Alcance y conservación" href="/sign/legal/retention/" description="Los términos de conservación del servicio y lo que corresponde a su organización." />

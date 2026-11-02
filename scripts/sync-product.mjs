@@ -6,6 +6,7 @@
  *   node scripts/sync-product.mjs sign                 # clone binary-bridges-co/bb-sign at main
  *   node scripts/sync-product.mjs sign v0.4.0          # at a tag or branch
  *   node scripts/sync-product.mjs sign --from ../bb-sign   # from a local checkout
+ *   node scripts/sync-product.mjs sign v0.42.0 --only legal/terminos-y-condiciones.md   # one file only
  *
  * A remote clone needs PRODUCT_REPO_TOKEN (a read-only token for the repo).
  *
@@ -19,6 +20,11 @@
  * Spanish docs pages by `scripts/legal-mirror.mjs` (plan decision D3). Every page
  * is rendered in memory before anything is written, so a text the generator
  * refuses (an unknown app link, a malformed version line) fails the sync cleanly.
+ *
+ * `--only <synced name>` (repeatable) copies the named files and leaves every other
+ * synced file byte-identical. The manifest therefore records the ref, commit and
+ * commit date per file, so a partial sync says which release each file came from,
+ * and the contract's rewrites live in its own entry.
  *
  * The run is deterministic: the manifest records the source commit and its
  * commit date, never the wall clock, so syncing the same commit twice writes
@@ -35,7 +41,10 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LEGAL_MIRRORS, renderLegalPage } from './legal-mirror.mjs';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// BB_DOCS_SYNC_ROOT redirects every write to another tree; the unit tests use it to run a sync in a temp copy.
+const ROOT = process.env.BB_DOCS_SYNC_ROOT
+  ? resolve(process.env.BB_DOCS_SYNC_ROOT)
+  : resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SYNC_DIR = join(ROOT, 'src', 'content', 'sync');
 const REF_PATTERN = /^[A-Za-z0-9._/-]{1,80}$/;
 
@@ -51,8 +60,6 @@ const PRODUCTS = {
       'openapi.json': 'docs/api/openapi.json',
       'webhook-signature-vectors.json': 'docs/api/webhook-signature-vectors.json',
       'legal/terminos-y-condiciones.md': 'docs/legal/terminos-y-condiciones.md',
-      'legal/certificado-propio.md': 'docs/guias/certificado-propio.md',
-      'legal/conservacion-y-restauracion.md': 'docs/guias/conservacion-y-restauracion.md',
     },
     /** Also served as downloadable files at /sync/<product>/<name>. The legal texts are pages, never downloads. */
     publish: ['openapi.json', 'webhook-signature-vectors.json'],
@@ -73,9 +80,13 @@ function parseArgs(argv) {
   }
   let ref = 'main';
   let from;
+  const only = [];
   for (let i = 0; i < rest.length; i += 1) {
     if (rest[i] === '--from') {
       from = rest[i + 1];
+      i += 1;
+    } else if (rest[i] === '--only') {
+      only.push(rest[i + 1]);
       i += 1;
     } else {
       ref = rest[i];
@@ -83,7 +94,10 @@ function parseArgs(argv) {
   }
   if (!REF_PATTERN.test(ref)) fail(`ref "${ref}" must match ${REF_PATTERN}`);
   if (from !== undefined && !existsSync(from)) fail(`--from path does not exist: ${from}`);
-  return { productId, ref, from };
+  const known = Object.keys(PRODUCTS[productId].files);
+  const unknown = only.filter((name) => !known.includes(name));
+  if (unknown.length > 0) fail(`--only names no synced file: ${unknown.join(', ')}. Synced names: ${known.join(', ')}`);
+  return { productId, ref, from, only };
 }
 
 const git = (dir, args) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).trim();
@@ -99,8 +113,8 @@ function uncommittedPaths(dir, paths) {
     .sort();
 }
 
-function checkout(product, ref, from, scratch) {
-  const sourcePaths = Object.values(product.files);
+function checkout(product, ref, from, scratch, names) {
+  const sourcePaths = names.map((name) => product.files[name]);
   if (from) {
     const dir = resolve(from);
     return {
@@ -133,29 +147,76 @@ function rewriteServers(json, apiUrl) {
   return { text: `${JSON.stringify(spec, null, 2)}\n`, rewrites };
 }
 
+/** The manifest already on disk, or an empty one. Its entries are kept for every file a partial sync does not copy. */
+function previousManifest(productId) {
+  const file = join(SYNC_DIR, productId, `${productId}.json`);
+  if (!existsSync(file)) return { files: {} };
+  const manifest = JSON.parse(readFileSync(file, 'utf8'));
+  // A manifest written before per-file entries kept ref, commit, commitDate and rewrites at the top level.
+  const files = Object.fromEntries(
+    Object.entries(manifest.files ?? {}).map(([name, entry]) => [
+      name,
+      {
+        source: entry.source,
+        sha256: entry.sha256,
+        ref: entry.ref ?? manifest.ref,
+        commit: entry.commit ?? manifest.commit,
+        commitDate: entry.commitDate ?? manifest.commitDate,
+        ...(entry.uncommitted || manifest.uncommitted?.includes(entry.source) ? { uncommitted: true } : {}),
+        ...(entry.rewrites ?? (name === 'openapi.json' && manifest.rewrites) ? { rewrites: entry.rewrites ?? manifest.rewrites } : {}),
+      },
+    ]),
+  );
+  return { files };
+}
+
 function main() {
-  const { productId, ref, from } = parseArgs(process.argv.slice(2));
+  const { productId, ref, from, only } = parseArgs(process.argv.slice(2));
   const product = PRODUCTS[productId];
+  const names = only.length > 0 ? only : Object.keys(product.files);
+  const previous = previousManifest(productId);
+  if (only.length > 0) {
+    const absent = Object.keys(product.files).filter((name) => !names.includes(name) && !previous.files?.[name]);
+    if (absent.length > 0) fail(`a partial sync needs a previous copy of: ${absent.join(', ')}. Run a full sync first`);
+  }
   const scratch = mkdtempSync(join(tmpdir(), 'bb-docs-sync-'));
   try {
-    const source = checkout(product, ref, from, scratch);
-    const missing = Object.values(product.files).filter((p) => !existsSync(join(source.dir, p)));
+    const source = checkout(product, ref, from, scratch, names);
+    const missing = names.map((name) => product.files[name]).filter((p) => !existsSync(join(source.dir, p)));
     if (missing.length > 0) fail(`missing in ${product.repo}@${source.ref}:\n  ${missing.join('\n  ')}`);
 
     const staged = join(scratch, 'staged');
+    const current = join(SYNC_DIR, productId);
     mkdirSync(staged, { recursive: true });
+
     const files = {};
-    let rewrites = [];
-    for (const [target, sourcePath] of Object.entries(product.files)) {
+    for (const name of Object.keys(product.files)) {
+      const sourcePath = product.files[name];
+      if (!names.includes(name)) {
+        // Not synced this time: the copy on disk is kept byte for byte, with its manifest entry.
+        mkdirSync(dirname(join(staged, name)), { recursive: true });
+        cpSync(join(current, name), join(staged, name));
+        files[name] = previous.files[name];
+        continue;
+      }
       let bytes = readFileSync(join(source.dir, sourcePath));
-      if (target === 'openapi.json') {
+      let rewrites;
+      if (name === 'openapi.json') {
         const result = rewriteServers(bytes.toString('utf8'), product.apiUrl);
         bytes = Buffer.from(result.text);
         rewrites = result.rewrites;
       }
-      mkdirSync(dirname(join(staged, target)), { recursive: true });
-      writeFileSync(join(staged, target), bytes);
-      files[target] = { source: sourcePath, sha256: sha256(bytes) };
+      mkdirSync(dirname(join(staged, name)), { recursive: true });
+      writeFileSync(join(staged, name), bytes);
+      files[name] = {
+        source: sourcePath,
+        sha256: sha256(bytes),
+        ref: source.ref,
+        commit: source.commit,
+        commitDate: source.commitDate,
+        ...(source.uncommitted.includes(sourcePath) ? { uncommitted: true } : {}),
+        ...(rewrites ? { rewrites } : {}),
+      };
     }
 
     // Render every legal page before anything is moved into place: a refused text changes nothing.
@@ -164,38 +225,30 @@ function main() {
       text: renderLegalPage(readFileSync(join(staged, mirror.synced), 'utf8'), mirror, productId),
     }));
 
-    const manifest = {
-      repo: product.repo,
-      ref: source.ref,
-      commit: source.commit,
-      commitDate: source.commitDate,
-      ...(source.uncommitted.length > 0 ? { uncommitted: source.uncommitted } : {}),
-      rewrites,
-      files,
-    };
+    const manifest = { repo: product.repo, files };
     writeFileSync(join(staged, `${productId}.json`), `${JSON.stringify(manifest, null, 2)}\n`);
 
     mkdirSync(SYNC_DIR, { recursive: true });
     const target = join(SYNC_DIR, productId);
-    const previous = join(SYNC_DIR, `${productId}.tmp`);
-    if (existsSync(target)) renameSync(target, previous);
+    const backup = join(SYNC_DIR, `${productId}.tmp`);
+    if (existsSync(target)) renameSync(target, backup);
     try {
       cpSync(staged, target, { recursive: true });
     } catch (error) {
-      if (existsSync(previous)) renameSync(previous, target);
+      if (existsSync(backup)) renameSync(backup, target);
       throw error;
     }
-    rmSync(previous, { recursive: true, force: true });
+    rmSync(backup, { recursive: true, force: true });
 
-    // Downloadable copies: the developer pages link to the vectors and the raw contract.
+    // Downloadable copies: the developer pages link to the vectors and the raw contract. Only what was synced.
     const publicDir = join(PUBLIC_SYNC_DIR, productId);
     mkdirSync(publicDir, { recursive: true });
-    for (const name of product.publish ?? []) cpSync(join(target, name), join(publicDir, name));
+    for (const name of (product.publish ?? []).filter((n) => names.includes(n))) cpSync(join(target, name), join(publicDir, name));
 
     for (const page of pages) writeFileSync(page.path, page.text);
 
     console.log(`sync-product: ${productId} synced from ${product.repo}@${source.ref} (${source.commit.slice(0, 12)})`);
-    for (const [name, meta] of Object.entries(files)) console.log(`  ${name}  ${meta.sha256.slice(0, 12)}  <- ${meta.source}`);
+    for (const name of names) console.log(`  ${name}  ${files[name].sha256.slice(0, 12)}  <- ${files[name].source}`);
     for (const page of pages) console.log(`  generated ${page.path.slice(ROOT.length + 1)}`);
     if (source.uncommitted.length > 0) {
       console.warn(`sync-product: WARNING ${source.ref} has uncommitted changes in: ${source.uncommitted.join(', ')}`);

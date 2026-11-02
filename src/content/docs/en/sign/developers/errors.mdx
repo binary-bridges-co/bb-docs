@@ -7,7 +7,7 @@ audience: developer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK, OTP, SIGN_REQUEST } from '../../../../facts/sign';
+import { AUTH, QUOTA, ERROR_CODES, RATE_LIMITS, AUDIT, RESTORE, VERIFY, SDK, OTP, SIGN_REQUEST, STORAGE_NOT_READY } from '../../../../facts/sign';
 
 export const codeHelp = {
   VALIDATION_FAILED: ['The request failed a validation rule: a missing or invalid value, a malformed body, or a path or query value of the wrong type. `message` says what was refused, for example `signers[1].signOrder must be 1 or greater`', 'Fix the value `message` points to and send the request again. Base your logic on `code`, not on the text of `message`'],
@@ -54,7 +54,7 @@ it and why an envelope the credential cannot access returns `404`.
 | `413` | The body is too large: a file above <Fact of={VERIFY.fileMaxMb} unit="MB" /> on verify by file, an audit export above <Fact of={AUDIT.exportMaxRows} /> rows, or a signature above <Fact of={SIGN_REQUEST.maxBodyMib} unit="MiB" /> | Send the right file, request the export in pages, or make the signature image smaller |
 | `422` | A business rule rejected the request, for example sending an envelope with no document or no signer | Fix the envelope and try again |
 | <code>{QUOTA.httpStatusWhenExhausted.value}</code> | The server did not process the request. `code` says why: an exhausted quota (`QUOTA_EXCEEDED`), a rate limit (`RATE_LIMITED`) or too many restores in progress (`RESTORE_LIMIT_REACHED`) | Depends on `code`: raise the quota, wait for `Retry-After`, or wait for the restores to end |
-| `503` | A service the operation depends on did not answer. On signing, `SIGNING_BUSY`: bb-sign is at its signing capacity right now | Try again later; for `SIGNING_BUSY`, after the seconds in `Retry-After` |
+| `503` | A service the operation depends on did not answer. On signing, `SIGNING_BUSY`: bb-sign is at its signing capacity right now. On a document upload, `STORAGE_NOT_READY`: the [organization's storage](/en/sign/admin/storage/) is still being prepared and nothing was stored | Try again later; for `SIGNING_BUSY` or `STORAGE_NOT_READY`, after the seconds in `Retry-After` (<Fact of={STORAGE_NOT_READY.retryAfterSeconds} unit="s" /> for `STORAGE_NOT_READY`) |
 | `0` (SDKs only) | The request got no answer: it never reached bb-sign or the reply was lost | For a `POST`, **list before you retry** (see below) |
 
 `401` and `403` are produced by the security filter chain and carry **no body**. Every other error

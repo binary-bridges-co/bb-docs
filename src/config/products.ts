@@ -64,6 +64,8 @@ export interface Product {
   };
   /** Starlight icon for the topic switcher. */
   readonly icon: string;
+  /** Optional pricing page slug (path without locale); the hub card links to it. Must be in the sidebar. */
+  readonly pricing?: string;
   readonly sidebar: readonly SidebarGroup[];
 }
 
@@ -85,16 +87,16 @@ export const PRODUCTS: readonly Product[] = [
       extra: [
         'docs/api/webhook-signature-vectors.json',
         'docs/legal/terminos-y-condiciones.md',
-        'docs/guias/certificado-propio.md',
-        'docs/guias/conservacion-y-restauracion.md',
       ],
     },
     icon: 'document',
+    pricing: 'sign/pricing',
     sidebar: [
       {
         label: { es: 'Empezar', en: 'Start here' },
         pages: [
           page('sign/index', 'Qué es bb-sign', 'What bb-sign is'),
+          page('sign/pricing', 'Precios', 'Pricing'),
           page('sign/getting-started/your-account', 'Tu cuenta', 'Your account'),
           page('sign/getting-started/first-envelope', 'Tu primer sobre', 'Your first envelope'),
         ],
@@ -147,7 +149,7 @@ export const PRODUCTS: readonly Product[] = [
           page('sign/admin/api-credentials', 'Credenciales de API', 'API credentials'),
           page('sign/admin/webhooks', 'Webhooks', 'Webhooks'),
           page('sign/admin/own-certificate', 'Certificado propio', 'Your own certificate'),
-          page('sign/admin/storage', 'Almacenamiento', 'Storage'),
+          page('sign/admin/storage', 'Almacenamiento y conservación', 'Storage and retention'),
           page('sign/admin/quota-and-usage', 'Cuota y uso', 'Quota and usage'),
           page('sign/admin/audit-trail', 'Auditoría', 'Audit trail'),
           page('sign/admin/permissions', 'Matriz de permisos', 'Permissions matrix'),
@@ -177,8 +179,6 @@ export const PRODUCTS: readonly Product[] = [
         label: { es: 'Legal', en: 'Legal' },
         pages: [
           page('sign/legal/terms', 'Términos y condiciones', 'Terms and conditions'),
-          page('sign/legal/own-certificate-guide', 'Guía de certificado propio', 'Own certificate guide'),
-          page('sign/legal/retention-guide', 'Guía de conservación y restauración', 'Retention and restore guide'),
           page('sign/legal/retention', 'Alcance y conservación', 'Scope and retention'),
           page('sign/legal/electronic-vs-digital-signature', 'Firma electrónica y firma digital', 'Electronic and digital signature'),
         ],

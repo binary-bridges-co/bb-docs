@@ -7,7 +7,7 @@ audience: user
 
 import { LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { DOCUMENTS, RETENTION_POLICY } from '../../../../facts/sign';
+import { ORG_STORAGE, DOCUMENTS, RETENTION_POLICY } from '../../../../facts/sign';
 
 In the **Documents** step of the **Create Envelope** wizard you attach the files to be signed.
 Each document uploads right away and is fixed when you send the envelope, so every signer signs
@@ -57,7 +57,7 @@ envelope completes.
 | Maximum size per file | <Fact of={DOCUMENTS.maxUploadMb} unit="MB" /> |
 | Unattached documents per organization | <Fact of={DOCUMENTS.maxUnassignedPerOrgMb} unit="MB" /> |
 | How long an unattached document is kept | <Fact of={DOCUMENTS.unassignedRetentionHours} unit="h" /> |
-| How long each file of an envelope is kept | <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. See [Retention and restore](/en/sign/sending/retention-and-restore/). |
+| How long each file of an envelope is kept | Your organization's policy period: <Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the standard configuration. See [Storage and retention](/en/sign/admin/storage/). |
 
 An envelope can include as many documents as you need. Each one counts towards your
 organization's storage quota when the envelope is created. See [Quotas](/en/sign/concepts/quotas/).

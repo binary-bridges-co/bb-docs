@@ -10,9 +10,10 @@ interface Props {
 const { product, locale } = Astro.props;
 const prefix = locale === 'es' ? '' : `/${locale}`;
 const docsHref = `${prefix}/${product.id}/`;
+const pricingHref = product.pricing ? `${prefix}/${product.pricing}/` : undefined;
 const labels = {
-  es: { open: 'Abrir la documentación', app: 'Ir a la aplicación' },
-  en: { open: 'Open the documentation', app: 'Go to the application' },
+  es: { open: 'Abrir la documentación', app: 'Ir a la aplicación', pricing: 'Precios' },
+  en: { open: 'Open the documentation', app: 'Go to the application', pricing: 'Pricing' },
 }[locale];
 ---
 
@@ -23,7 +24,10 @@ const labels = {
     <span class="card__tagline">{product.tagline[locale]}</span>
     <span class="card__cta">{labels.open}</span>
   </a>
-  <a class="card__app" href={product.appUrl} rel="noopener">{labels.app}</a>
+  <span class="card__links">
+    <a class="card__app" href={product.appUrl} rel="noopener">{labels.app}</a>
+    {pricingHref && <a class="card__app" href={pricingHref}>{labels.pricing}</a>}
+  </span>
 </li>
 
 <style>
@@ -67,8 +71,13 @@ const labels = {
     color: var(--sl-color-text-accent);
     font-weight: 600;
   }
-  .card__app {
+  .card__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
     justify-self: start;
+  }
+  .card__app {
     font-size: 0.875rem;
     color: var(--sl-color-gray-2);
     text-decoration: underline;

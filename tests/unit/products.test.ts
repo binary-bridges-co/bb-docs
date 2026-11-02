@@ -50,6 +50,16 @@ describe('product registry', () => {
     }
   });
 
+  test('a pricing page, when declared, exists in both locales and is in the sidebar', () => {
+    for (const product of PRODUCTS.filter((p) => p.pricing)) {
+      const slug = product.pricing as string;
+      expect(slug.startsWith(`${product.id}/`)).toBe(true);
+      for (const localeDir of LOCALE_DIRS) expect(exists(localeDir, slug), `${localeDir || 'es'}:${slug}`).toBe(true);
+      expect(sidebarSlugs(product)).toContain(slug);
+    }
+    expect(productById('sign')?.pricing).toBe('sign/pricing');
+  });
+
   test('sidebar slugs are unique and stay under the product prefix', () => {
     for (const product of PRODUCTS) {
       const slugs = sidebarSlugs(product);

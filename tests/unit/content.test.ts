@@ -43,6 +43,14 @@ const FACT_DENYLIST: readonly RegExp[] = [
   // it will be reduced (SIGNATURE_UPLOAD), quoted UI strings included.
   /\b10\s*MB\b/,
   /\b1\s*MB\b/,
+  // Added with retention per organization and pricing (plan B4): the prices next to their currency or tax, the
+  // volume threshold, the longest period in days and years, and the deepest restore time.
+  /(\$|COP)\s*(1[.,]000|1[.,]200|400)\b/i,
+  /\b(1[.,]000|1[.,]200|400)\s*(\+\s*)?(IVA|VAT)\b/i,
+  /\b100[.,]000\b/,
+  /\b3[.,]?650\b/,
+  /\b10\s*(a[ñn]os|years)\b/i,
+  /\b12\s*(h|horas|hours)\b/i,
 ];
 
 /**

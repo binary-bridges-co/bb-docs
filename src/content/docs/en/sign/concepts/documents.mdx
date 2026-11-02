@@ -7,7 +7,7 @@ audience: user
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { DOCUMENTS, RETENTION_IMPLEMENTED } from '../../../../facts/sign';
+import { ORG_STORAGE, DOCUMENTS } from '../../../../facts/sign';
 
 An envelope contains one or more documents, and every signer signs all of them. You decide where on
 each document each signer's seal appears. This page explains which files bb-sign accepts, how they
@@ -110,12 +110,13 @@ audit trail and in the evidence certificate.
 
 ## File retention
 
-bb-sign keeps each file for <Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="days" />:
-the original from upload and the signed document from the envelope's completion. It then deletes it
-permanently. In the envelope detail, the **Retention** block shows the date ("No longer available
+bb-sign keeps each file for the period of your organization's policy
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the standard configuration): the
+original from upload and the signed document from the envelope's completion. It then deletes it
+permanently. See [Storage and retention](/en/sign/admin/storage/). In the envelope detail, the **Retention** block shows the date ("No longer available
 from...") for each envelope.
 
-Today no file is moved to archive storage: for the whole period, documents download directly. If a
-file were ever archived, the detail says so and lets you request its restore; see
+With the standard configuration, documents download directly for the whole period. If your
+organization's policy has a tier that needs a restore, the detail says so and lets you request it; see
 [Retention and restore](/en/sign/sending/retention-and-restore/). Keep in your own systems whatever
 you must retain for longer. The terms are in [Scope and retention](/en/sign/legal/retention/).

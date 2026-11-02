@@ -7,7 +7,7 @@ audience: signer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD } from '../../../facts/sign';
+import { ORG_STORAGE, EVIDENCE, RATE_LIMITS, RESTORE, RETENTION_POLICY, SIGNATURE_UPLOAD } from '../../../facts/sign';
 
 En la pantalla **Añade tu firma** usted firma el documento y, una vez que todas las personas han
 firmado, descarga su copia sellada.
@@ -106,13 +106,14 @@ la copia esté disponible.
 
 ## Disponibilidad de la copia
 
-Su copia firmada se puede descargar desde su enlace durante
-<Fact of={RETENTION_POLICY.retentionDays} unit="días" /> desde que el sobre se completó, aunque el
+Su copia firmada se puede descargar desde su enlace durante el plazo de conservación que fijó la
+organización que le envió el documento, contado desde que el sobre se completó
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> con la configuración estándar), aunque el
 plazo para firmar haya vencido y aunque el sobre ya esté archivado. Le recomendamos guardar su copia en
 cuanto la descargue.
 
-Si su copia llegara a estar en almacenamiento de archivo, la página lo indica y le permite pedirla.
-Hoy bb-sign no traslada ninguna copia a ese almacenamiento, pero si ocurre, verá:
+Si la organización que le envió el documento guarda las copias antiguas en un nivel de almacenamiento
+que requiere restauración, la página lo indica y le permite pedir su copia. En ese caso verá:
 
 | Lo que ve | Qué significa | Qué hacer |
 |---|---|---|
@@ -123,7 +124,8 @@ Hoy bb-sign no traslada ninguna copia a ese almacenamiento, pero si ocurre, ver�
 | "No pudimos solicitar tu copia. Inténtalo de nuevo en unos minutos." | La solicitud no se completó. | Vuelva a intentarlo en unos minutos. |
 
 Pasado el plazo de conservación, la página muestra "Tu copia firmada ya no está disponible: se cumplió
-su plazo de conservación de <Fact of={RETENTION_POLICY.retentionDays} unit="días" />." En ese caso,
+su plazo de conservación de <Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" />." (el mensaje
+nombra el plazo de la configuración estándar). En ese caso,
 solicite el documento a quien se lo envió: desde entonces, conservarlo es responsabilidad de la
 organización que lo envió.
 

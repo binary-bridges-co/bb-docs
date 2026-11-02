@@ -19,19 +19,21 @@ import {
   NOT_SHIPPED,
   ORG_API_NEVER,
   ORG_PERMISSIONS,
+  ORG_STORAGE,
   OTP,
   PERMISSION_SCOPE,
+  PRICING,
   QUOTA,
   RATE_LIMITS,
   REMINDERS,
   RESTORE,
-  RETENTION_IMPLEMENTED,
   RETENTION_POLICY,
   SDK,
   SIGN_REQUEST,
   SIGNATURE_UPLOAD,
   SIGNER,
   SIGNING_ORDER,
+  STORAGE_NOT_READY,
   URLS,
   VERIFY,
   VERIFY_QR_ARCHIVED_ISSUE,
@@ -60,11 +62,28 @@ describe('bb-sign fact sheet', () => {
     const groups = {
       URLS, AUTH, ADMIN_MFA, PERMISSION_SCOPE, AGREEMENTS, ENVELOPE, ARCHIVED_ENVELOPES, OTP, SIGNER, DOCUMENTS, LABELS,
       REMINDERS, QUOTA, WEBHOOKS, RATE_LIMITS, SIGN_REQUEST, VERIFY, SDK, CERTIFICATE, EVIDENCE, AUDIT, RETENTION_POLICY,
-      RETENTION_IMPLEMENTED, RESTORE, WIZARD, SIGNING_ORDER,
+      RESTORE, WIZARD, SIGNING_ORDER, PRICING, STORAGE_NOT_READY, ORG_STORAGE,
     };
     expect(walk(groups, 'facts')).toEqual([]);
     for (const email of EMAILS) expect(email.source.length).toBeGreaterThan(10);
     for (const error of ERROR_CODES) expect(error.source.length, error.code).toBeGreaterThan(10);
+  });
+
+  /** The public-source rule (plan P1): a fact source is one of three forms, never a path into the product. */
+  const P1_SOURCE = /^(Sign v\d+\.\d+\.\d+ behaviour: |production configuration, read \d{4}-\d{2}-\d{2}: |owner decision \d{4}-\d{2}-\d{2} in issue #\d+: )/;
+  const p1Offenders = (group: Record<string, { source: string }>): string[] =>
+    Object.entries(group).filter(([, f]) => !P1_SOURCE.test(f.source)).map(([k]) => k);
+
+  test('prices: every source is an owner decision, and the volume floor < standard < 10 years', () => {
+    expect(p1Offenders(PRICING)).toEqual([]);
+    for (const f of Object.values(PRICING)) expect(f.source).toMatch(/^owner decision /);
+    expect(PRICING.volumeFloorPerEnvelopeCop.value).toBeLessThan(PRICING.standardPerEnvelopeCop.value);
+    expect(PRICING.standardPerEnvelopeCop.value).toBeLessThan(PRICING.tenYearPerEnvelopeCop.value);
+    expect(PRICING.volumeThresholdEnvelopesPerMonth.value).toBeGreaterThan(0);
+    expect(PRICING.billedUnit.value).toContain('drafts and cancelled included');
+    expect(PRICING.tenYearTiersManagedByBinaryBridges.value).toBe(true);
+    // Prices are published; checkout and self-service plans are still not shipped.
+    expect(NOT_SHIPPED).toContain('billing or self-service plans');
   });
 
   test('an OTP outlives its resend cooldown and its verified window fits the link', () => {
@@ -74,30 +93,21 @@ describe('bb-sign fact sheet', () => {
     expect(OTP.verifiedValidityMinutes.value).toBeLessThan(ENVELOPE.linkTtlHoursDefault.value * 60);
   });
 
-  test('the retention policy outlives the cold archive and the database archive', () => {
-    expect(RETENTION_POLICY.retentionDays.value).toBeGreaterThan(RETENTION_POLICY.archiveAfterDays.value);
+  test('every retention period outlives the cold archive and the database archive', () => {
+    expect(ORG_STORAGE.minRetentionDays.value).toBeGreaterThanOrEqual(RETENTION_POLICY.archiveAfterDays.value);
     expect(RETENTION_POLICY.archiveAfterDays.value).toBeGreaterThan(ENVELOPE.archiveAfterDays.value);
-    expect(RETENTION_POLICY.configurable.value).toBe(false);
+    expect(ORG_STORAGE.minRetentionDays.value).toBeGreaterThan(ENVELOPE.archiveAfterDays.value);
+    expect(RETENTION_POLICY.configurable.value).toBe(true);
   });
 
-  test('what runs today never claims more than the policy (production wins over the template, D1)', () => {
-    // Live: one 365-day expiration on the whole bucket, no transition to archive storage.
-    expect(RETENTION_IMPLEMENTED.documentsExpirationDays.value).toBe(RETENTION_POLICY.retentionDays.value);
-    expect(RETENTION_IMPLEMENTED.documentsArchiveTransitionLive.value).toBe(false);
-    expect(RETENTION_IMPLEMENTED.documentsExpirationDays.source).toContain('live read 2026-10-21');
-    // The template's numbers are kept as declared, never as what happens.
-    expect(RETENTION_IMPLEMENTED.documentsGlacierDaysDeclared.value).toBe(RETENTION_POLICY.archiveAfterDays.value);
-    expect(RETENTION_IMPLEMENTED.documentsGlacierDaysDeclared.source).toContain('not applied');
-    expect(RETENTION_IMPLEMENTED.archiveDatesVisible.value).toBe(false);
-    // Restore is deployed and idle; it is no longer "not shipped".
-    expect(RETENTION_IMPLEMENTED.restoreOnRequest.value).toMatch(/^deployed, idle/);
+  test('restore on request serves files in a tier that needs one; evidence is never archived', () => {
+    expect(ORG_STORAGE.restoreOnRequest.value).toMatch(/^live/);
     expect(NOT_SHIPPED).not.toContain('restore on request');
     expect(RESTORE.days.value).toBe(RETENTION_POLICY.restoredCopyDays.value);
     expect(RESTORE.firstPollHours.value).toBeLessThan(RESTORE.timeoutHours.value);
-    expect(RESTORE.purgeAfterDays.value).toBeGreaterThan(RETENTION_POLICY.retentionDays.value);
-    // Evidence is kept as long as the documents and never archived.
-    expect(EVIDENCE.retentionDays.value).toBe(RETENTION_POLICY.retentionDays.value);
+    expect(RESTORE.purgeAfterDays.value).toBeGreaterThan(ORG_STORAGE.defaultRetentionDays.value);
     expect(EVIDENCE.archived.value).toBe(false);
+    expect(ORG_STORAGE.evidenceAlwaysImmediate.value).toBe(true);
   });
 
   test('an archived envelope (the 30-day view) is not an archived file (D2)', () => {
@@ -216,6 +226,50 @@ describe('bb-sign fact sheet', () => {
     expect(SDK.honoursRetryAfter.value).toBe(false);
   });
 
+  test('retention per organization: the standard period sits inside the range a policy may take', () => {
+    expect(p1Offenders(ORG_STORAGE)).toEqual([]);
+    expect(ORG_STORAGE.minRetentionDays.value).toBeLessThan(ORG_STORAGE.defaultRetentionDays.value);
+    expect(ORG_STORAGE.defaultRetentionDays.value).toBeLessThan(ORG_STORAGE.maxRetentionDays.value);
+    expect(ORG_STORAGE.maxRetentionDays.value).toBe(3650);
+    expect(ORG_STORAGE.maxRetentionYears.value * 365).toBe(ORG_STORAGE.maxRetentionDays.value);
+    expect(ORG_STORAGE.legacyRetentionDays.value).toBe(ORG_STORAGE.defaultRetentionDays.value);
+    expect(ORG_STORAGE.defaultCheaperTierAfterDays.value).toBeLessThan(ORG_STORAGE.defaultRetentionDays.value);
+    expect(ORG_STORAGE.defaultAllImmediate.value).toBe(true);
+    // A restore from the deepest tier finishes before a restore gives up.
+    expect(RESTORE.timeoutHours.value).toBeGreaterThanOrEqual(ORG_STORAGE.deepestRestoreMaxHours.value);
+    // A shorter period deletes long before a restored copy would be purged.
+    expect(ORG_STORAGE.shortenDeletionDays.value).toBeLessThan(RESTORE.days.value);
+    expect(ORG_STORAGE.requestReasonMin.value).toBeLessThan(ORG_STORAGE.requestReasonMax.value);
+    expect(ORG_STORAGE.onePendingRequest.value).toBe(true);
+    // Evidence is locked and always immediate; documents are versioned, not locked (plan D10).
+    expect(ORG_STORAGE.evidenceLocked.value).toBe(true);
+    expect(ORG_STORAGE.documentsVersionedNotLocked.value).toBe(true);
+    expect(ORG_STORAGE.evidenceAlwaysImmediate.value).toBe(true);
+    expect(ORG_STORAGE.onlyCompletedFilesNeedRestore.value).toBe(true);
+    expect(ORG_STORAGE.certificateStatesPeriod.value).toBe(true);
+    expect(ORG_STORAGE.archiveDatesVisible.value).toBe(false);
+    expect(ORG_STORAGE.preparingBlocksUploads.value).toBe(true);
+    // The permission is a real org permission, held by both admin roles and never by an API key.
+    const row = ORG_PERMISSIONS.find((p) => p.key === ORG_STORAGE.managePermission.value);
+    expect(row?.holders).toEqual(['platform_admin', 'org_admin']);
+    expect(ORG_API_NEVER).toContain(ORG_STORAGE.managePermission.value);
+    // Per-organization retention is shipped; billing and self-service plans are not.
+    expect(NOT_SHIPPED).not.toContain('per-organisation retention');
+    expect(NOT_SHIPPED).toContain('billing or self-service plans');
+    expect(AUDIT_EVENT_TYPES).toEqual(
+      expect.arrayContaining(['ORG_STORAGE_PROVISIONED', 'ORG_STORAGE_POLICY_CHANGED', 'ORG_STORAGE_POLICY_REQUESTED', 'ORG_STORAGE_POLICY_REQUEST_DECIDED']),
+    );
+  });
+
+  test('an upload while the organization storage is being prepared is a 503 with Retry-After and stores nothing', () => {
+    const row = ERROR_CODES.find((e) => e.code === 'STORAGE_NOT_READY');
+    expect(row?.status).toBe(503);
+    expect(row?.source).toMatch(P1_SOURCE);
+    expect(STORAGE_NOT_READY.retryAfterSeconds.value).toBeGreaterThan(0);
+    expect(STORAGE_NOT_READY.nothingStored.value).toBe(true);
+    expect(p1Offenders(STORAGE_NOT_READY)).toEqual([]);
+  });
+
   test('the sign call names every refusal with its own code (bb-sign#298, #292)', () => {
     const status = (code: string) => ERROR_CODES.find((e) => e.code === code)?.status;
     expect(status('SIGNATURE_IMAGE_INVALID')).toBe(400);
@@ -290,13 +344,12 @@ describe('bb-sign fact sheet', () => {
     expect(RESTORE.emailGenericWithoutConfirmedAccess.value).toBe(true);
   });
 
-  test('admin access: invitation, lost authenticator, certificate expiry highlight, storage action', () => {
+  test('admin access: invitation, lost authenticator, certificate expiry highlight', () => {
     expect(AUTH.invitationActions.value[0]).toBe('UPDATE_PASSWORD');
     expect(AUTH.invitationActions.value).toContain('CONFIGURE_TOTP');
     expect(ADMIN_MFA.lostAuthenticatorResetBySupport.value).toBe(true);
     expect(ADMIN_MFA.passwordResetClearsSecondFactor.value).toBe(false);
     expect(CERTIFICATE.expiryHighlightDays.value).toBeGreaterThan(0);
-    expect(RETENTION_IMPLEMENTED.storageApplyWritesProduction.value).toBe(true);
     expect(AUDIT.orgEventsPublished.value).toBe(false);
   });
 

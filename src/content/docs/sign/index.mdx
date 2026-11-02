@@ -7,7 +7,7 @@ audience: all
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 import Fact from '../../../components/facts/Fact.astro';
-import { RETENTION_POLICY, URLS } from '../../facts/sign';
+import { ORG_STORAGE, URLS } from '../../facts/sign';
 
 bb-sign es la plataforma de firma electrónica de Binary Bridges. Con ella, una organización envía
 documentos a firma, identifica a cada firmante, recibe los documentos sellados con su certificado y
@@ -38,11 +38,14 @@ La aplicación está disponible en <a href={URLS.app.value}>{URLS.app.value}</a>
   que bb-sign lo produjo. Consulte [Verificar un documento firmado](/sign/signing/verify-a-document/).
 - **Trazabilidad.** Cada acción relevante sobre un sobre queda en su historial.
 
-bb-sign conserva los documentos firmados y su evidencia durante un plazo fijo de
-<Fact of={RETENTION_POLICY.retentionDays} unit="días" />, contados para cada archivo; a partir de ese
-momento, su conservación es responsabilidad de la organización, como se detalla en
-[Alcance y conservación](/sign/legal/retention/). Si un archivo llegara a estar archivado, se puede
-solicitar de nuevo; consulte [Conservación y restauración](/sign/sending/retention-and-restore/).
+bb-sign guarda los archivos de cada organización en un almacenamiento dedicado y los conserva durante
+el plazo de su política: <Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> en la configuración
+estándar, contados para cada archivo, o el plazo que su organización solicite, hasta
+<Fact of={ORG_STORAGE.maxRetentionYears} unit="años" />. Al terminar el plazo, su conservación es
+responsabilidad de la organización, como se detalla en [Alcance y conservación](/sign/legal/retention/).
+Consulte [Almacenamiento y conservación](/sign/admin/storage/) y los [precios](/sign/pricing/). Si un
+archivo necesita una restauración antes de descargarse, se solicita desde el sobre; consulte
+[Conservación y restauración](/sign/sending/retention-and-restore/).
 
 Para que el sello de cada documento lleve el nombre de su organización y los lectores de PDF lo
 reconozcan como confiable, le recomendamos configurar su

@@ -29,12 +29,8 @@
  * `NS` = bb-sign/notification-service/.../notification, `yml` = bb-sign/edge-api/src/main/resources/application.yml,
  * `prod` = bb-infrastructure/apps/bb-sign/edge-api.yaml.
  *
- * Two layers are kept apart on purpose:
- *   - RETENTION_POLICY is the binding service term (terms §3, code constants in `Retention.kt`).
- *   - RETENTION_IMPLEMENTED is what production does today (plan decision D1: production wins over
- *     declared templates).
- * Pages say "policy" for the first and "today" for the second, and never
- * claim the second does what only the first promises.
+ * Retention is each organization's policy (ORG_STORAGE in `sign-storage.ts`); RETENTION_POLICY keeps the terms'
+ * archive threshold and the restored-copy window.
  *
  * Integration facts (webhooks, error codes, rate limits, SDKs) live in `sign-integrations.ts` and are
  * re-exported from here, so every page imports from `facts/sign` alone. Facts completed on 2026-10-20
@@ -50,9 +46,8 @@ import { RATE_LIMITS, WEBHOOKS } from './sign-integrations';
 export type { Fact } from './fact';
 export * from './sign-integrations';
 export * from './sign-signing-order';
-
-const LIVE_LIFECYCLE_READ =
-  'live read 2026-10-21T00:02Z: aws s3api get-bucket-lifecycle-configuration --bucket production-bbsign-documents (one rule, Expiration 365 d, prefix "", no transitions); bb-infrastructure/docs/runbooks/documents-lifecycle-guard.md:8-17';
+export * from './sign-pricing';
+export * from './sign-storage';
 
 // ---------------------------------------------------------------- urls ---
 
@@ -163,6 +158,8 @@ export const ORG_PERMISSIONS: readonly { readonly key: string; readonly holders:
   { key: 'workspace:access-all', holders: ['platform_admin', 'org_admin'] },
   { key: 'agreement:read', holders: ['platform_admin', 'org_admin', 'org_member', 'org_api'] },
   { key: 'agreement:manage', holders: ['platform_admin', 'org_admin'] },
+  // Sign v0.42.0 behaviour: document-settings:manage, held by platform_admin and org_admin, shows Settings > Storage.
+  { key: 'document-settings:manage', holders: ['platform_admin', 'org_admin'] },
 ];
 
 /** Workspace-scope permissions per workspace role. Source: EA/domain/security/WorkspaceRoleBundles.kt:29-33. */
@@ -187,6 +184,8 @@ export const ORG_API_NEVER: readonly string[] = [
   'workspace:manage-members',
   'workspace:access-all',
   'agreement:manage',
+  // Sign v0.42.0 behaviour: an API key can never ask for the organization's files to be kept for a shorter time.
+  'document-settings:manage',
 ];
 
 /**
@@ -544,8 +543,6 @@ export const EVIDENCE = {
   downloadLinkSeconds: fact(300, 'EA/presentation/admin/EvidenceCertificateController.kt:124; EA/application/usecase/GetEvidenceCertificateUseCase.kt:26-27'),
   /** The same 5 minutes, for non-technical pages. `facts.test.ts` keeps the two equal. */
   downloadLinkMinutes: fact(5, 'EA/application/usecase/GetEvidenceCertificateUseCase.kt:26-27 (300 s)'),
-  /** Kept from issue under a GOVERNANCE Object Lock; never moved to archive storage. */
-  retentionDays: fact(365, 'W/application/evidence/IssueEvidenceCertificateUseCase.kt:155 (Retention.DAYS)'),
   archived: fact(false, 'bb-sign/platform/contracts/.../retention/Retention.kt:68,79 (RetainedFile.EVIDENCE -> null); bb-infrastructure/aws/bb-sign-aws.yml:439-441'),
   /** Same permission as the documents. */
   downloadPermission: fact('document:download', 'EA/presentation/admin/EvidenceCertificateController.kt:37-45; bb-sign/frontend/src/i18n/locales/es/envelopes.json:96'),
@@ -608,60 +605,29 @@ export const AUDIT_EVENT_TYPES: readonly string[] = [
   'EVIDENCE_CERTIFICATE_ISSUED', 'EVIDENCE_CERTIFICATE_FAILED', 'EVIDENCE_CERTIFICATE_ACCESSED', 'EVIDENCE_CERTIFICATE_REISSUE_REQUESTED',
   'DOCUMENT_RESTORE_REQUESTED', 'DOCUMENT_RESTORED',
   'CERTIFICATE_UPLOADED', 'CERTIFICATE_DELETED', 'CERTIFICATE_EXPIRING',
+  // Sign v0.42.0 behaviour: the organization's storage events, on the organization's audit trail.
+  'ORG_STORAGE_PROVISIONED', 'ORG_STORAGE_POLICY_CHANGED', 'ORG_STORAGE_POLICY_REQUESTED', 'ORG_STORAGE_POLICY_REQUEST_DECIDED',
 ];
 
 // ----------------------------------------------------------- retention ---
 
-/** Binding service terms (terms §3), backed by code constants. Source: bb-sign/platform/contracts/.../retention/Retention.kt. */
+/**
+ * Binding service terms (terms §3). The period itself is each organization's policy: see ORG_STORAGE
+ * (`sign-storage.ts`), which replaced the fixed retention and the production-today layer.
+ */
 export const RETENTION_POLICY = {
-  /** Counted per file: the original from upload, the signed copy from completion, the evidence certificate from issue. */
-  retentionDays: fact(365, 'bb-sign/platform/contracts/.../retention/Retention.kt:33-34 (DAYS); :59 (per-file creation proxy)'),
   /** From this age a file tagged archivable (signed PDFs, originals of COMPLETED envelopes; evidence never) MAY move to archive storage. */
   archiveAfterDays: fact(90, 'bb-sign/platform/contracts/.../retention/Retention.kt:36-37 (ARCHIVE_AFTER_DAYS); :70-80'),
   /** How long a restored copy stays readable (allowed range 1-30, production 7). */
   restoredCopyDays: fact(7, 'bb-sign/edge-api/src/main/resources/application.yml:291; EA/application/service/RestoreSettings.kt:15,33; bb-infrastructure/apps/bb-sign/edge-api.yaml:72'),
-  /** Fixed: `Retention` is a code object with no property behind it. */
-  configurable: fact(false, 'bb-sign/platform/contracts/.../retention/Retention.kt:31-37 (const val, no property)'),
-} as const;
-
-/** What production does today (plan decision D1: the live read wins over the declared CloudFormation template). */
-export const RETENTION_IMPLEMENTED = {
-  /** The single live rule on the documents bucket. */
-  documentsLifecycleLive: fact('one rule: expiration after 365 days on the whole bucket; no transitions', LIVE_LIFECYCLE_READ),
-  documentsExpirationDays: fact(365, LIVE_LIFECYCLE_READ),
-  /** Nothing is moved to archive storage today, so in production no file needs a restore. */
-  documentsArchiveTransitionLive: fact(false, `${LIVE_LIFECYCLE_READ}; bb-infrastructure/docs/runbooks/lv-retention-restore-iam.md:184-185 (until bb-sign#214 P5)`),
-  /** Declared in the CloudFormation template and shown by Storage as the declared policy, but NOT applied in production. */
-  documentsStandardIaDaysDeclared: fact(30, 'bb-infrastructure/aws/bb-sign-aws.yml:284-290 (declared, not applied: :275); EA/presentation/admin/LifecycleController.kt:10-15,94-103'),
-  documentsGlacierDaysDeclared: fact(90, 'bb-infrastructure/aws/bb-sign-aws.yml:291-295 (declared, not applied: :275, :439-443)'),
-  /** Archive dates ("Se archiva a partir del") are hidden in production; "Deja de estar disponible el" is always shown. */
-  archiveDatesVisible: fact(false, 'bb-sign/edge-api/src/main/resources/application.yml:287; EA/application/service/RetentionDates.kt:11-29; not set in bb-infrastructure/apps/bb-sign/edge-api.yaml'),
-  /**
-   * Storage page: platform admins (only) see an expiration field and **Aplicar**. In production that still writes:
-   * it replaces the lifecycle of the documents and evidence buckets with one expiration rule (bb-sign#227 removes
-   * the action; bb-sign#214 P4b the permission). Org admins see the page read-only.
-   */
-  storageApplyWritesProduction: fact(
-    true,
-    'EA/presentation/admin/LifecycleController.kt:14-15,107-117; EA/infrastructure/storage/BucketLifecycleService.kt:56-75,123-127; bb-sign/frontend/src/pages/StorageLifecycle.tsx:19,35-36,99-118; bb-infrastructure/aws/bb-sign-aws.yml:435,476 (s3:PutLifecycleConfiguration); bb-infrastructure/docs/runbooks/documents-lifecycle-guard.md:174-176',
-  ),
-  /** Local and CI (MinIO): expiration only, no transitions. */
-  nonProdLifecycleDefaultDays: fact(365, 'EA/infrastructure/storage/LifecycleInitializer.kt:40,46-47 (@Profile("!prod")); Retention.kt:33-34'),
-  evidenceBucketWriter: fact('evidence certificates and their audit trail (365-day GOVERNANCE lock)', 'W/application/evidence/IssueEvidenceCertificateUseCase.kt:155; bb-infrastructure/aws/bb-sign-aws.yml:480-528'),
-  backupsRetentionDays: fact(30, 'bb-infrastructure/aws/bb-sign-aws.yml:363-366 (noncurrent versions 7 d)'),
-  /** No purge job, and append-only triggers make one impossible without a migration. */
-  auditEventsPurge: fact('none', 'bb-sign/audit-service/src/main/resources/db/migration/V006__lv212_audit_append_only.sql:11-17'),
-  /** Restore on request is deployed (v0.34.0) and idle: nothing is archived in production. */
-  restoreOnRequest: fact(
-    'deployed, idle until archiving is enabled (bb-sign#214 P5)',
-    'EA/presentation/admin/EnvelopeController.kt:675-689; EA/presentation/signer/SigningController.kt:277-290; bb-infrastructure/apps/bb-sign/edge-api.yaml:72-75; lv-retention-restore-iam.md:184-185',
-  ),
+  /** Each organization has its own policy, changed on request (ORG_STORAGE). */
+  configurable: fact(true, 'Sign v0.42.0 behaviour: each organization has its own retention policy, changed by Binary Bridges on the organization admin\'s request; terms Versión 6 §3.1'),
 } as const;
 
 export type RestoreStatus = 'REQUESTED' | 'IN_PROGRESS' | 'RESTORED' | 'AVAILABLE' | 'EXPIRED' | 'FAILED';
 export type FileAvailability = 'AVAILABLE' | 'ARCHIVED' | 'RESTORE_IN_PROGRESS' | 'RESTORED' | 'DELETED';
 
-/** How a restore of an archived file works. Deployed, idle in production (RETENTION_IMPLEMENTED.restoreOnRequest). */
+/** How a restore works, for a file in a tier that needs one (ORG_STORAGE.restoreOnRequest). */
 export const RESTORE = {
   days: RETENTION_POLICY.restoredCopyDays,
   /** A Standard-tier Glacier restore: the UI says "usually within a few hours". */
@@ -735,7 +701,6 @@ export const NOT_SHIPPED: readonly string[] = [
   'signer acceptance of agreement texts (data-processing authorization)',
   'TSA / PAdES / LTV',
   'legal hold',
-  'per-organisation retention',
   'per-organisation branding',
   'billing or self-service plans',
   'free trial',

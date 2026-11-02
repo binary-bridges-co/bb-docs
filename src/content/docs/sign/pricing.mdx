@@ -1,0 +1,34 @@
+---
+title: Precios
+description: "Cuánto cuesta bb-sign: un precio por sobre en pesos colombianos más IVA, según el tiempo que se conservan los archivos, con descuentos por volumen."
+product: sign
+audience: all
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+import Fact from '../../../components/facts/Fact.astro';
+import Price from '../../../components/facts/Price.astro';
+import { CONTACT_EMAIL } from '../../../config/site';
+import { ORG_STORAGE, PRICING } from '../../facts/sign';
+
+bb-sign se cobra por sobre, en pesos colombianos, más IVA. El precio depende de cuánto tiempo se
+conservan los archivos de su organización.
+
+| Configuración | Precio por sobre |
+| --- | --- |
+| **Configuración estándar.** Cada archivo se conserva <Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" />. | <Price of={PRICING.standardPerEnvelopeCop} /> |
+| **Conservación de <Fact of={ORG_STORAGE.maxRetentionYears} unit="años" />.** Binary Bridges administra los niveles de almacenamiento. | <Price of={PRICING.tenYearPerEnvelopeCop} /> |
+| **Más de <Fact of={PRICING.volumeThresholdEnvelopesPerMonth} /> sobres al mes.** | Descuentos por volumen, hasta <Price of={PRICING.volumeFloorPerEnvelopeCop} />. Escríbanos para cotizar. |
+| **Otras configuraciones.** | Escríbanos para cotizar. |
+
+## Qué se cobra
+
+Cada sobre creado cuenta, también los borradores y los cancelados, igual que en la
+[cuota](/sign/concepts/quotas/).
+
+## Cotizar otra configuración o un volumen mayor
+
+Escriba a <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> con la configuración de conservación
+que necesita y cuántos sobres crea su organización al mes.
+
+<LinkCard title="Almacenamiento y conservación" href="/sign/admin/storage/" description="La configuración estándar, el rango de plazos que admite una política y cómo se solicita un cambio." />

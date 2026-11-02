@@ -7,7 +7,7 @@ audience: user
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { ENVELOPE, EVIDENCE, RETENTION_POLICY } from '../../../../facts/sign';
+import { ORG_STORAGE, ENVELOPE, EVIDENCE, RETENTION_POLICY } from '../../../../facts/sign';
 
 When an envelope completes, bb-sign generates a signed PDF for every document: the original with
 each signer's seal, signed with the organization's certificate and its certificate chain. Every
@@ -77,22 +77,22 @@ Once <Fact of={ENVELOPE.archiveAfterDays} unit="days" /> have passed since its c
 envelope moves to [Archived envelopes](/en/sign/sending/archived-envelopes/). From there it opens
 read-only and its files still download the same way.
 
-bb-sign keeps each file for <Fact of={RETENTION_POLICY.retentionDays} unit="days" />, a fixed,
-non-negotiable period counted per file: the original from upload, the signed PDF from the envelope's
+bb-sign keeps each file for the period of your organization's policy
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the standard configuration), counted
+per file: the original from upload, the signed PDF from the envelope's
 completion and the certificate from its issue. The **Retention** section of the envelope page shows
 the date from which its files are no longer available. After that, retention is your organization's
 responsibility. See [Scope and retention](/en/sign/legal/retention/).
 
-If a file is archived, the page shows **Request restore** instead of the download button. Today
-bb-sign does not move any file to archive storage; when a copy is archived, the procedure is described
-in [Retention and restore](/en/sign/sending/retention-and-restore/).
+If a file is in a tier that needs a restore, the page shows **Request restore** instead of the download
+button. With the standard configuration no file needs one; the procedure is described in [Retention and restore](/en/sign/sending/retention-and-restore/).
 
 <Aside type="tip" title="Download the envelope when it completes">
   As soon as an envelope becomes **Completed**, download the **Signed PDF** of every document and its
   evidence certificate, and store them in your organization's document system. An administrator can
   automate this step with the `envelope.completed` and `envelope.evidence_issued` webhooks; see
-  [Webhooks](/en/sign/admin/webhooks/) and section 4 of the
-  [retention and restore guide](/en/sign/legal/retention-guide/).
+  [Webhooks](/en/sign/admin/webhooks/) and "Keep every envelope in your systems" in
+  [Retention and restore](/en/sign/sending/retention-and-restore/).
 </Aside>
 
 <LinkCard title="Retention and restore" href="/en/sign/sending/retention-and-restore/" description="How long each file is kept and how to request an archived one." />

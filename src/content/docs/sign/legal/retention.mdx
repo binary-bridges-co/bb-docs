@@ -7,12 +7,12 @@ audience: legal
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE, EVIDENCE, RETENTION_IMPLEMENTED, RETENTION_POLICY } from '../../../facts/sign';
+import { ENVELOPE, EVIDENCE, ORG_STORAGE, RETENTION_POLICY } from '../../../facts/sign';
 
 bb-sign respalda cada documento firmado con integridad, identificación del firmante y evidencia, y lo
-conserva durante un plazo fijo. Esta página explica qué cubre el servicio, cuánto tiempo guarda los
-documentos, cómo se aplica hoy esa política y cómo su organización puede archivar cada sobre para
-conservarlo el tiempo que exija la ley o sus propias reglas.
+conserva durante el plazo de la política de cada organización. Esta página explica qué cubre el
+servicio, cuánto tiempo guarda los documentos, cómo se aplica esa política y cómo su organización puede
+archivar cada sobre para conservarlo el tiempo que exija la ley o sus propias reglas.
 
 ## Qué cubre bb-sign
 
@@ -27,37 +27,38 @@ conservarlo el tiempo que exija la ley o sus propias reglas.
   (quién, qué, cuándo y desde dónde), que la organización descarga.
 - **Trazabilidad.** Cada acción relevante sobre un sobre queda en su historial.
 
-bb-sign conserva los documentos durante un plazo fijo, establecido en sus términos. Una vez vencido
-ese plazo, la conservación corresponde a la organización que envió los documentos.
+bb-sign conserva los documentos durante el plazo que establecen sus términos y el contrato de cada
+organización. Una vez vencido ese plazo, la conservación corresponde a la organización que envió los
+documentos.
 
 ## Política de conservación
 
 Estos son los compromisos del servicio, recogidos en la sección 3 de los
 [Términos y condiciones](/sign/legal/terms/). La
-[Guía de conservación y restauración](/sign/legal/retention-guide/) explica cómo aplicarlos.
+página [Conservación y restauración](/sign/sending/retention-and-restore/) explica cómo aplicarlos.
 
 | Concepto | Política |
 |---|---|
-| Conservación | Los documentos originales, los documentos firmados y las evidencias de cada sobre se conservan <Fact of={RETENTION_POLICY.retentionDays} unit="días" />, contados desde que cada archivo se carga o se genera. Plazo fijo, igual para todas las organizaciones. Al cumplirse, el archivo se elimina de forma definitiva. |
-| Paso a almacenamiento de archivo | Los documentos con más de <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" /> pueden trasladarse a almacenamiento de archivo; en ese caso no se descargan de inmediato. |
+| Conservación | Los documentos originales, los documentos firmados y las evidencias de cada sobre se conservan durante el plazo pactado en el contrato del cliente: <Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" />, salvo que se haya pactado otro, y como máximo <Fact of={ORG_STORAGE.maxRetentionYears} unit="años" />, contados desde que cada archivo se carga o se genera. Al cumplirse, el archivo se elimina de forma definitiva. |
+| Cambio del plazo | Un cambio del plazo pactado se aplica a los archivos que se conservan en ese momento, y un plazo más corto puede adelantar su borrado. |
+| Paso a almacenamiento de archivo | Los documentos pueden trasladarse a almacenamiento de archivo después de <Fact of={RETENTION_POLICY.archiveAfterDays} unit="días" />, o del tiempo pactado en el contrato; en ese caso no se descargan de inmediato. |
 | Restauración | Un usuario autorizado de la organización, en la aplicación o por la API, puede solicitarla, y el firmante, desde su enlace, la de su copia firmada. Al terminar, bb-sign avisa por correo a quienes la pidieron y envía el webhook `document.restored` a las integraciones suscritas. Normalmente tarda unas horas, sin un tiempo garantizado. La copia restaurada queda disponible <Fact of={RETENTION_POLICY.restoredCopyDays} unit="días" />. |
-| Certificado de evidencia y registro de auditoría | No se archivan: se descargan de inmediato durante todo el plazo. |
+| Certificado de evidencia y registro de auditoría | No se archivan: se descargan de inmediato durante todo el plazo. El certificado indica el plazo de cada archivo. |
 | Después del plazo | La conservación es responsabilidad del cliente (Ley 527 de 1999, artículo 12). |
 
-## Cómo se aplica la política hoy
+## Cómo se aplica la política
 
-Esta tabla describe el comportamiento vigente del servicio en producción.
-
-| Elemento | Comportamiento actual |
+| Elemento | Cómo funciona |
 |---|---|
-| Conservación de los documentos | Una sola regla: cada archivo se elimina a los <Fact of={RETENTION_IMPLEMENTED.documentsExpirationDays} unit="días" />. |
-| Paso a almacenamiento de archivo | Ningún archivo pasa hoy a almacenamiento de archivo, así que todos se descargan de inmediato durante su plazo. |
-| Restauración a solicitud | Está disponible en la aplicación, por la API y desde el enlace del firmante. Mientras nada se archive, no hace falta usarla. |
+| Almacenamiento | Los archivos de cada organización se guardan en un almacenamiento dedicado a ella, aislado del de los demás clientes y cifrado. |
+| Política de cada organización | La configuración estándar conserva cada archivo <Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> y lo pasa a los <Fact of={ORG_STORAGE.defaultCheaperTierAfterDays} unit="días" /> a un nivel más económico que sigue siendo de acceso inmediato. Una organización puede solicitar un plazo de <Fact of={ORG_STORAGE.minRetentionDays} unit="días" /> a <Fact of={ORG_STORAGE.maxRetentionYears} unit="años" />, con niveles más económicos a medida que los archivos envejecen; Binary Bridges aprueba, ajusta o rechaza la solicitud. |
+| Restauración a solicitud | Solo la necesitan los archivos que están en un nivel marcado «Requiere restaurar, listo en horas». Con la configuración estándar, ningún archivo la necesita. |
+| Protección contra el borrado | Los certificados de evidencia y su registro de auditoría quedan bloqueados contra el borrado hasta el final de su plazo. Los documentos se guardan con versiones y se eliminan al terminar el plazo de su organización. |
+| Archivos anteriores al almacenamiento dedicado | Conservan la regla anterior: <Fact of={ORG_STORAGE.legacyRetentionDays} unit="días" />. |
 | Paso del sobre a "Archivados" | <Fact of={ENVELOPE.archiveAfterDays} unit="días" /> después de su creación, un sobre completado, cancelado o vencido pasa a la vista "Archivados". Es un cambio de lista: el sobre y sus archivos se siguen descargando hasta que termina su plazo de conservación. |
 
-La página **Almacenamiento** de la aplicación muestra, por separado, la política declarada del
-producto y las reglas que el almacenamiento aplica realmente. Ver
-[Almacenamiento](/sign/admin/storage/).
+La pestaña **Almacenamiento** de **Configuración** muestra la política de su organización y permite
+solicitar un cambio. Ver [Almacenamiento y conservación](/sign/admin/storage/).
 
 ## Lo que dice la Ley 527 de 1999
 

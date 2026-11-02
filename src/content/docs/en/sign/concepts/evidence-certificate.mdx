@@ -7,7 +7,7 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { EVIDENCE } from '../../../../facts/sign';
+import { ORG_STORAGE, EVIDENCE } from '../../../../facts/sign';
 
 export const STATUS = {
   PENDING: { label: '"Evidence certificate processing..."', meaning: 'bb-sign is issuing the certificate. Check again in a few minutes.' },
@@ -109,9 +109,10 @@ same permission as the documents.
 
 ## How long it is kept
 
-bb-sign keeps the certificate and the audit trail for
-<Fact of={EVIDENCE.retentionDays} unit="days" /> from issue, protected against deletion and modification for that period. They are never
-moved to archive storage, so they download directly for the whole period. At the end, the detail
+bb-sign keeps the certificate and the audit trail for your organization's retention period in force
+when the certificate was issued, counted from issue, locked against deletion and modification for that
+period. They are never moved to a tier that needs a restore, so they download directly for the whole
+period. The certificate states the retention period of each file of the envelope. At the end, the detail
 shows "The retention period has ended and the certificate was deleted.".
 
 <Aside type="caution" title="Keep your copy">

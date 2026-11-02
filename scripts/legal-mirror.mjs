@@ -18,15 +18,19 @@
  * Plain ESM with no dependencies: the sync script (Node) and the unit tests (Vitest) both import it.
  */
 
-/** App routes in bb-sign's frontend and the docs pages that mirror them. Nothing else may be app-relative. */
+/**
+ * App routes in bb-sign's frontend and the docs pages that carry their content. Nothing else may be app-relative.
+ * The two guides are no longer mirrored: bb-docs owns their content (plan D3), at the pages the app links to (D1),
+ * and the terms' links to the in-app guide routes are rewritten to those pages (D4).
+ */
 export const LEGAL_LINK_MAP = Object.freeze({
   '/legal/terminos': '/sign/legal/terms',
-  '/guias/certificado-propio': '/sign/legal/own-certificate-guide',
-  '/guias/conservacion-y-restauracion': '/sign/legal/retention-guide',
+  '/guias/certificado-propio': '/sign/admin/own-certificate',
+  '/guias/conservacion-y-restauracion': '/sign/sending/retention-and-restore',
 });
 
 /**
- * The three mirrored texts. `synced` is the path under `src/content/sync/<product>/`, `source` the path
+ * The mirrored texts: the terms of service only. `synced` is the path under `src/content/sync/<product>/`, `source` the path
  * in the product repo, `page` the docs slug of the generated Spanish page (its English twin is
  * `en/<page>`, a hand translation). `versioned` texts must carry the version line.
  */
@@ -36,21 +40,7 @@ export const LEGAL_MIRRORS = Object.freeze([
     source: 'docs/legal/terminos-y-condiciones.md',
     page: 'sign/legal/terms',
     versioned: true,
-    description: 'Términos vigentes del servicio bb-sign: naturaleza del servicio, certificado de sello y conservación de documentos y evidencias.',
-  }),
-  Object.freeze({
-    synced: 'legal/certificado-propio.md',
-    source: 'docs/guias/certificado-propio.md',
-    page: 'sign/legal/own-certificate-guide',
-    versioned: false,
-    description: 'Guía que acompaña los términos de bb-sign: qué certificado comprar, cómo exportarlo con su cadena, subirlo, renovarlo y comprobar un PDF sellado.',
-  }),
-  Object.freeze({
-    synced: 'legal/conservacion-y-restauracion.md',
-    source: 'docs/guias/conservacion-y-restauracion.md',
-    page: 'sign/legal/retention-guide',
-    versioned: false,
-    description: 'Guía que acompaña la sección 3 de los términos: el plazo de conservación, las fechas, cómo restaurar un archivo y cómo guardar cada sobre.',
+    description: 'Términos vigentes del servicio Sign: naturaleza del servicio, certificado de sello y conservación de documentos y evidencias.',
   }),
 ]);
 

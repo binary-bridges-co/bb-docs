@@ -93,11 +93,15 @@ describe('legal mirrors', () => {
     });
   }
 
-  test('the terms carry the clauses of Versión 4, including 2.4 and section 3, and nothing invented', () => {
+  test('the terms carry the clauses of Versión 6, including 3.4, and nothing invented', () => {
     const { clauses, history, sections } = structure(read('', 'sign/legal/terms'));
     expect(sections).toEqual(['1', '2', '3']);
-    expect(clauses).toEqual(['1.1', '1.2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '3.1', '3.2', '3.3']);
-    expect(history).toEqual(['1 2026-10-07', '2 2026-10-19', '3 2026-10-19', '4 2026-10-20']);
+    expect(clauses).toEqual(['1.1', '1.2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '3.1', '3.2', '3.3', '3.4']);
+    expect(history).toEqual(['1 2026-10-07', '2 2026-10-19', '3 2026-10-19', '4 2026-10-20', '5 2026-10-30', '6 2026-10-31']);
+  });
+
+  test('only the terms are mirrored: the guides are bb-docs pages now (plan D3)', () => {
+    expect(LEGAL_MIRRORS.map((m) => m.page)).toEqual(['sign/legal/terms']);
   });
 
   test('the legal-review banner appears nowhere in the site, its rules or its tests', () => {

@@ -7,7 +7,7 @@ audience: all
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { AUDIT, AUDIT_EVENT_TYPES, CERTIFICATE, ENVELOPE, EVIDENCE, VERIFY } from '../../../facts/sign';
+import { ORG_STORAGE, AUDIT, AUDIT_EVENT_TYPES, CERTIFICATE, ENVELOPE, EVIDENCE, VERIFY } from '../../../facts/sign';
 
 export const ENVELOPE_EVENTS = {
   ENVELOPE_CREATED: { label: 'Sobre creado', when: 'Se crea el sobre, en la aplicación o por la API.' },
@@ -226,8 +226,8 @@ de <Fact of={VERIFY.fileMaxSeconds} unit="segundos" />. Desde cada conexión se 
 La evidencia de cada sobre se consulta en su **Registro de auditoría**, dentro de la aplicación. Al
 completarse el sobre, bb-sign la entrega además en el **certificado de evidencia**, un PDF sellado,
 junto con el registro de auditoría congelado en JSON. Los descargan quienes pueden descargar los
-documentos del sobre; los firmantes no los reciben. bb-sign los conserva
-<Fact of={EVIDENCE.retentionDays} unit="días" /> desde su emisión. Consulte
+documentos del sobre; los firmantes no los reciben. bb-sign los conserva durante el plazo de su
+organización, contado desde su emisión, bloqueados contra el borrado hasta que termina. Consulte
 [Certificado de evidencia](/sign/concepts/evidence-certificate/).
 
 Las integraciones pueden además verificar la cadena de un sobre (resultado

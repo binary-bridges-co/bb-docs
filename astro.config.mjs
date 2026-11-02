@@ -17,6 +17,14 @@ export default defineConfig({
   site: SITE_URL,
   output: 'static',
   trailingSlash: 'ignore',
+  // The two guides that used to be mirrored from the app live in their product pages now (plan D1, D2). The old
+  // URLs keep working; Astro's redirect pages carry no script, so the CSP is unaffected.
+  redirects: {
+    '/sign/legal/own-certificate-guide': '/sign/admin/own-certificate/',
+    '/en/sign/legal/own-certificate-guide': '/en/sign/admin/own-certificate/',
+    '/sign/legal/retention-guide': '/sign/sending/retention-and-restore/',
+    '/en/sign/legal/retention-guide': '/en/sign/sending/retention-and-restore/',
+  },
   integrations: [
     starlight({
       title: { 'es-CO': 'Documentación de Binary Bridges', en: 'Binary Bridges Docs' },

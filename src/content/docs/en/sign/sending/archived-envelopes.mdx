@@ -7,7 +7,7 @@ audience: user
 
 import { Aside, LinkCard } from '@astrojs/starlight/components';
 import Fact from '../../../../../components/facts/Fact.astro';
-import { DOCUMENTS, ENVELOPE, RETENTION_POLICY } from '../../../../facts/sign';
+import { ORG_STORAGE, DOCUMENTS, ENVELOPE, RETENTION_POLICY } from '../../../../facts/sign';
 
 bb-sign keeps the Envelopes list focused on work in progress. After a while, closed envelopes move
 to the **Archived Envelopes** view, where they remain available read-only, with their documents, their
@@ -58,14 +58,15 @@ An archived envelope has no actions: its labels cannot be changed and it cannot 
 ## Archived is not archive storage
 
 Moving to **Archived** is a change of list, not of storage: the envelope's files download just as
-before. Archive storage is something else: the terms allow a file more than
-<Fact of={RETENTION_POLICY.archiveAfterDays} unit="days" /> old to be moved there, and it then has to
-be restored before it can be downloaded. Today bb-sign does not move any file to that storage. See
+before. A storage tier that needs a restore is something else: if your organization's policy has one,
+a file that reaches it has to be restored before it can be downloaded. With the standard configuration
+no file reaches such a tier. See
 [Retention and restore](/en/sign/sending/retention-and-restore/).
 
 Archiving an envelope deletes nothing: the envelope, its signers, its documents and its evidence are
-kept until each file's period ends, <Fact of={RETENTION_POLICY.retentionDays} unit="days" />. See
-[Scope and retention](/en/sign/legal/retention/).
+kept until each file's period ends, the one of your organization's policy
+(<Fact of={ORG_STORAGE.defaultRetentionDays} unit="days" /> with the standard configuration). See
+[Storage and retention](/en/sign/admin/storage/).
 
 ## Signers keep their access
 

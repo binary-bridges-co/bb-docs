@@ -7,7 +7,7 @@ audience: signer
 
 import { Aside } from '@astrojs/starlight/components';
 import Fact from '../../../../components/facts/Fact.astro';
-import { ENVELOPE, EVIDENCE, REMINDERS, RESTORE, RETENTION_POLICY, URLS } from '../../../facts/sign';
+import { ORG_STORAGE, ENVELOPE, EVIDENCE, REMINDERS, RESTORE, RETENTION_POLICY, URLS } from '../../../facts/sign';
 
 La invitación a firmar llega por correo y contiene su enlace personal de firma. bb-sign también le
 avisa por correo cuando es su turno, cuando falta su firma y cuando el documento está completo.
@@ -65,6 +65,7 @@ invitación, bb-sign le envía un recordatorio. Luego envía como máximo uno ca
 
 El enlace es válido durante <Fact of={ENVELOPE.linkTtlHoursDefault} unit="horas" /> por defecto, o
 el plazo que haya definido quien envió el documento. Ese plazo solo limita la firma. Una vez que firma,
-el mismo enlace lo lleva a su copia firmada durante
-<Fact of={RETENTION_POLICY.retentionDays} unit="días" /> desde que el sobre se completó, aunque el
-plazo para firmar haya vencido y aunque el sobre ya esté archivado.
+el mismo enlace lo lleva a su copia firmada durante el plazo de conservación que fijó la organización
+que le envió el documento (<Fact of={ORG_STORAGE.defaultRetentionDays} unit="días" /> con la
+configuración estándar), contado desde que el sobre se completó, aunque el plazo para firmar haya
+vencido y aunque el sobre ya esté archivado.

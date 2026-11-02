@@ -97,11 +97,13 @@ the page that explains it in detail.
 ## Retention
 
 - **Retention period (plazo de conservación).** How long bb-sign keeps each file before deleting it.
-  In the envelope detail: "No longer available from". See
-  [Scope and retention](/en/sign/legal/retention/).
-- **File archiving (archivo de un archivo).** Moving a file to cheaper storage, from which it only
-  downloads after a restore. The terms of service allow it, but today no file is moved. It is not the
-  same as the Archived view.
+  Each organization's policy sets it. In the envelope detail: "No longer available from". See
+  [Storage and retention](/en/sign/admin/storage/).
+- **Storage tier (nivel de almacenamiento).** Each stage of an organization's retention policy. A tier
+  with "Instant access" downloads directly; one that "Needs a restore, ready in hours" only downloads
+  after the file is restored.
+- **File archiving (archivo de un archivo).** Moving a file to a storage tier that needs a restore. It
+  does not happen with the standard configuration. It is not the same as the Archived view.
 - **Restore (restauración).** The request to download an archived file again. The restored copy stays
   available for <Fact of={RESTORE.days} unit="days" /> ("restored, available until"){RESTORE.requestableAgainAfterWindow.value && '; after that it can be requested again'}. See
   [Retention and restore](/en/sign/sending/retention-and-restore/).

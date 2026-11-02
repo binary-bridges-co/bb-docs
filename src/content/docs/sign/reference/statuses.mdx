@@ -115,8 +115,9 @@ El estado del certificado de evidencia de un sobre completado. Ver
 
 Cada archivo de un sobre (el PDF original y el PDF firmado) tiene una disponibilidad, que la API
 devuelve con la lista de documentos y el bloque **Conservación** del detalle muestra junto al nombre
-del archivo. Hoy ningún archivo se traslada a almacenamiento de archivo, así que en la práctica solo
-se ven `AVAILABLE` y, al terminar el plazo de conservación, `DELETED`. Ver
+del archivo. Con la configuración estándar ningún archivo necesita restauración, así que solo se ven
+`AVAILABLE` y, al terminar el plazo de conservación, `DELETED`; los demás valores aparecen cuando la
+política de la organización incluye un nivel que requiere restauración. Ver
 [Conservación y restauración](/sign/sending/retention-and-restore/).
 
 <table>
